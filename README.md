@@ -24,7 +24,7 @@ Status: Inception planning complete. See project-plan.md to begin execution.
 Dev → Prod
 
 - Local dev: docker-compose for DB, Redis, and optional Ollama; create a `.env` using keys in `docs/configuration.md`
-- Staging/Prod: k3s manifests with Kustomize overlays; images built via Gitea Actions
+- Prod: k3s manifests with Kustomize overlays; images built via Gitea Actions
 - Optional analytics enrichment via OpenAI or Ollama; disabled by default
 
 

@@ -24,5 +24,3 @@ services:
     profiles: ["llm"]
 volumes:
   pgdata:
-
-

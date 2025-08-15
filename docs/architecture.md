@@ -50,10 +50,48 @@ Frontend Micro‑Frontend Topology
 
 Dev → Prod Strategy
 
-- Environments: `dev` (local via docker-compose), `staging` (single‑node k3s), `prod` (k3s HA optional later)
+- Environments: `dev` (local via docker-compose), `prod` (k3s deployment)
 - Images: Dockerfiles per service; images published to container registry on CI
-- Deploy: k8s manifests (manifests/*.yaml) with Kustomize overlays for `staging` and `prod`
+- Deploy: k8s manifests (manifests/*.yaml) with Kustomize overlays for prod
 - Database: managed PostgreSQL (preferred) or statefulset with backup jobs; migrations via Alembic
-- CI/CD: Gitea Actions pipeline builds, tests, scans, and deploys on tag or main branch
+- CI/CD: Gitea Actions pipeline builds, tests, scans, and deploys on git tags
+
+## System Architecture Overview
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │      API        │    │     Worker      │
+│   (React MF)    │    │   (FastAPI)     │    │   (Celery)      │
+│   Port 80       │    │   Port 8080     │    │   Background    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Ingress       │    │   PostgreSQL    │    │     Redis       │
+│   / → Frontend  │    │   (Database)    │    │   (Queue/Cache) │
+│   /api → API    │    └─────────────────┘    └─────────────────┘
+└─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│   CronJob       │
+│   Analytics     │
+│   Daily 00:30   │
+└─────────────────┘
+```
+
+## Request Routing Flow
+
+- **`/`** → Frontend (React micro-frontend app shell)
+- **`/api/*`** → API Backend (FastAPI with `/api/v1` endpoints)
+- **Background**: Worker processes + Analytics CronJob
+
+## Service Responsibilities
+
+- **Frontend**: React micro-frontend app shell, routing, shared components
+- **API**: FastAPI serving `/api/v1` endpoints, health checks, data access
+- **Worker**: Celery background tasks, data ingestion, ETL processing
+- **Analytics CronJob**: Daily scheduled analytics and recommendations generation
 
 
