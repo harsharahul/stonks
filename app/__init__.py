@@ -1,0 +1,1 @@
+# Stonks application package
