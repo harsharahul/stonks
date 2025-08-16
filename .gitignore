@@ -24,4 +24,10 @@ coverage.xml
 .env
 .env.*
 
+# Logs
+.uvicorn.log
+
+# Runtime
+.uvicorn.pid
+
 
