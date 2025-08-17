@@ -49,6 +49,17 @@ class Alert(Base):
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses"""
+        # Helper function to convert Decimal to float recursively
+        def convert_decimals(obj):
+            if isinstance(obj, dict):
+                return {k: convert_decimals(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_decimals(item) for item in obj]
+            elif hasattr(obj, '__class__') and 'Decimal' in str(obj.__class__):
+                return float(obj)
+            else:
+                return obj
+        
         return {
             "id": str(self.id),
             "user_id": str(self.user_id) if self.user_id else None,
@@ -60,7 +71,7 @@ class Alert(Base):
             "triggered_at": self.triggered_at.isoformat() if self.triggered_at else None,
             "acknowledged_at": self.acknowledged_at.isoformat() if self.acknowledged_at else None,
             "signal_id": str(self.signal_id) if self.signal_id else None,
-            "metadata": self.alert_metadata or {},
+            "metadata": convert_decimals(self.alert_metadata or {}),
             "age_minutes": self.age_minutes,
             "is_acknowledged": self.is_acknowledged
         }

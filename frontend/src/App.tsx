@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import StockDetail from './components/StockDetail';
+import RealTimeAlerts from './components/RealTimeAlerts';
 import { useFeaturesSummary, useFeatureStats } from './hooks/useFeatures';
 import { cn } from './utils/format';
 
@@ -367,6 +368,9 @@ const AppContent: React.FC = () => {
         <Route path="/stocks" element={<StockList />} />
         <Route path="/stocks/:symbol" element={<StockDetail />} />
       </Routes>
+      
+      {/* Real-time alerts overlay */}
+      <RealTimeAlerts maxAlerts={15} autoAcknowledge={false} />
     </div>
   );
 };

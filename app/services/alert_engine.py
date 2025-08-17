@@ -199,8 +199,8 @@ class AlertEngine:
             signal_id=signal.id,
             alert_metadata={
                 "signal_type": signal.signal_type,
-                "signal_strength": signal.strength,
-                "signal_confidence": signal.confidence,
+                "signal_strength": float(signal.strength),  # Convert Decimal to float
+                "signal_confidence": float(signal.confidence),  # Convert Decimal to float
                 "signal_direction": signal.direction,
                 "rule_matched": matching_rule.alert_type
             }

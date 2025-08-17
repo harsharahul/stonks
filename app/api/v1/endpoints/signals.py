@@ -71,6 +71,117 @@ async def get_signals(
     }
 
 
+# Alert endpoints - MUST be defined BEFORE parameterized routes to avoid conflicts
+@router.get("/alerts")
+async def get_alerts(
+    ticker: Optional[str] = Query(None, description="Filter by ticker symbol"),
+    alert_type: Optional[str] = Query(None, description="Filter by alert type"),
+    severity: Optional[str] = Query(None, description="Filter by severity"),
+    hours: int = Query(24, ge=1, le=168, description="Hours to look back"),
+    acknowledged: Optional[bool] = Query(None, description="Filter by acknowledgment status"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of alerts"),
+    db: Session = Depends(get_db)
+):
+    """Get alerts with optional filtering"""
+    
+    cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+    query = db.query(Alert).filter(Alert.triggered_at > cutoff_time)
+    
+    # Apply filters
+    if ticker:
+        query = query.filter(Alert.ticker == ticker.upper())
+    
+    if alert_type:
+        query = query.filter(Alert.alert_type == alert_type)
+    
+    if severity:
+        query = query.filter(Alert.severity == severity)
+    
+    if acknowledged is not None:
+        if acknowledged:
+            query = query.filter(Alert.acknowledged_at.isnot(None))
+        else:
+            query = query.filter(Alert.acknowledged_at.is_(None))
+    
+    alerts = query.order_by(Alert.triggered_at.desc()).limit(limit).all()
+    
+    return {
+        "alerts": [alert.to_dict() for alert in alerts],
+        "count": len(alerts),
+        "filters": {
+            "ticker": ticker,
+            "alert_type": alert_type,
+            "severity": severity,
+            "hours": hours,
+            "acknowledged": acknowledged
+        }
+    }
+
+
+@router.get("/alerts/{alert_id}")
+async def get_alert(
+    alert_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get a specific alert by ID"""
+    
+    alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    return alert.to_dict()
+
+
+@router.post("/alerts/{alert_id}/acknowledge")
+async def acknowledge_alert(
+    alert_id: str,
+    db: Session = Depends(get_db)
+):
+    """Mark an alert as acknowledged"""
+    
+    alert_engine = AlertEngine(db)
+    success = alert_engine.acknowledge_alert(alert_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    return {
+        "message": "Alert acknowledged successfully",
+        "alert_id": alert_id,
+        "acknowledged_at": datetime.utcnow().isoformat()
+    }
+
+
+@router.get("/alerts/stats")
+async def get_alert_stats(
+    days: int = Query(7, ge=1, le=30, description="Days to analyze"),
+    db: Session = Depends(get_db)
+):
+    """Get alert statistics for the specified period"""
+    
+    alert_engine = AlertEngine(db)
+    stats = alert_engine.get_alert_stats(days)
+    
+    return stats
+
+
+@router.post("/alerts/generate", dependencies=[Depends(verify_api_key)])
+async def trigger_alert_generation(
+    background_tasks: BackgroundTasks,
+    hours: int = Query(1, ge=1, le=24, description="Process signals from last N hours"),
+    db: Session = Depends(get_db)
+):
+    """Trigger alert generation from recent signals"""
+    
+    task = generate_alerts_task.delay(hours)
+    
+    return {
+        "message": f"Alert generation triggered for signals from last {hours} hours",
+        "task_id": task.id,
+        "hours": hours
+    }
+
+
 @router.get("/{signal_id}")
 async def get_signal(
     signal_id: str,
@@ -193,115 +304,7 @@ async def get_signal_types(
     }
 
 
-# Alert endpoints
-@router.get("/alerts")
-async def get_alerts(
-    ticker: Optional[str] = Query(None, description="Filter by ticker symbol"),
-    alert_type: Optional[str] = Query(None, description="Filter by alert type"),
-    severity: Optional[str] = Query(None, description="Filter by severity"),
-    hours: int = Query(24, ge=1, le=168, description="Hours to look back"),
-    acknowledged: Optional[bool] = Query(None, description="Filter by acknowledgment status"),
-    limit: int = Query(50, ge=1, le=200, description="Maximum number of alerts"),
-    db: Session = Depends(get_db)
-):
-    """Get alerts with optional filtering"""
-    
-    cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-    query = db.query(Alert).filter(Alert.triggered_at > cutoff_time)
-    
-    # Apply filters
-    if ticker:
-        query = query.filter(Alert.ticker == ticker.upper())
-    
-    if alert_type:
-        query = query.filter(Alert.alert_type == alert_type)
-    
-    if severity:
-        query = query.filter(Alert.severity == severity)
-    
-    if acknowledged is not None:
-        if acknowledged:
-            query = query.filter(Alert.acknowledged_at.isnot(None))
-        else:
-            query = query.filter(Alert.acknowledged_at.is_(None))
-    
-    alerts = query.order_by(Alert.triggered_at.desc()).limit(limit).all()
-    
-    return {
-        "alerts": [alert.to_dict() for alert in alerts],
-        "count": len(alerts),
-        "filters": {
-            "ticker": ticker,
-            "alert_type": alert_type,
-            "severity": severity,
-            "hours": hours,
-            "acknowledged": acknowledged
-        }
-    }
 
-
-@router.get("/alerts/{alert_id}")
-async def get_alert(
-    alert_id: str,
-    db: Session = Depends(get_db)
-):
-    """Get a specific alert by ID"""
-    
-    alert = db.query(Alert).filter(Alert.id == alert_id).first()
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    
-    return alert.to_dict()
-
-
-@router.post("/alerts/{alert_id}/acknowledge")
-async def acknowledge_alert(
-    alert_id: str,
-    db: Session = Depends(get_db)
-):
-    """Mark an alert as acknowledged"""
-    
-    alert_engine = AlertEngine(db)
-    success = alert_engine.acknowledge_alert(alert_id)
-    
-    if not success:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    
-    return {
-        "message": "Alert acknowledged successfully",
-        "alert_id": alert_id,
-        "acknowledged_at": datetime.utcnow().isoformat()
-    }
-
-
-@router.get("/alerts/stats")
-async def get_alert_stats(
-    days: int = Query(7, ge=1, le=30, description="Days to analyze"),
-    db: Session = Depends(get_db)
-):
-    """Get alert statistics for the specified period"""
-    
-    alert_engine = AlertEngine(db)
-    stats = alert_engine.get_alert_stats(days)
-    
-    return stats
-
-
-@router.post("/alerts/generate", dependencies=[Depends(verify_api_key)])
-async def trigger_alert_generation(
-    background_tasks: BackgroundTasks,
-    hours: int = Query(1, ge=1, le=24, description="Process signals from last N hours"),
-    db: Session = Depends(get_db)
-):
-    """Trigger alert generation from recent signals"""
-    
-    task = generate_alerts_task.delay(hours)
-    
-    return {
-        "message": f"Alert generation triggered for signals from last {hours} hours",
-        "task_id": task.id,
-        "hours": hours
-    }
 
 
 @router.get("/market/overview")
