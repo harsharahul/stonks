@@ -186,26 +186,30 @@ def _persist_article(
     return True, str(article.id)
 
 
-def ingest_google_news_for_ticker(db, ticker: str, days: int = 7) -> Dict:
+@shared_task(bind=True)
+def fetch_google_news_by_ticker(self, ticker: str, days: int = 7) -> Dict:
     """Fetch Google News RSS for a given ticker and persist as articles.
 
-    This is a synchronous helper for API-triggered ingestion without requiring Celery workers.
+    This is a Celery task for API-triggered ingestion.
     """
-    source_name = "Google News"
-    query = ticker
-    rss_url = GOOGLE_NEWS_URL_TEMPLATE.format(query=query, days=days)
-
-    # Create ETL job run
-    job_run = ETLJobRun(
-        job_name=f"google_news_{ticker}",
-        started_at=datetime.utcnow(),
-        status="running",
-        details={"ticker": ticker, "rss_url": rss_url},
-    )
-    db.add(job_run)
-    db.commit()
-
+    db = SessionLocal()
+    task_id = self.request.id
+    
     try:
+        source_name = "Google News"
+        query = ticker
+        rss_url = GOOGLE_NEWS_URL_TEMPLATE.format(query=query, days=days)
+
+        # Create ETL job run
+        job_run = ETLJobRun(
+            job_name=f"google_news_{ticker}",
+            started_at=datetime.utcnow(),
+            status="running",
+            details={"ticker": ticker, "rss_url": rss_url, "task_id": task_id},
+        )
+        db.add(job_run)
+        db.commit()
+
         headers = {"User-Agent": "Mozilla/5.0 (compatible; Stonks-Analytics/1.0)"}
         resp = requests.get(rss_url, headers=headers, timeout=30)
         resp.raise_for_status()
@@ -252,11 +256,14 @@ def ingest_google_news_for_ticker(db, ticker: str, days: int = 7) -> Dict:
             "articles_duplicate": dup_count,
         }
     except Exception as e:
-        job_run.status = "error"
-        job_run.finished_at = datetime.utcnow()
-        job_run.details.update({"error": str(e)})
-        db.commit()
+        if 'job_run' in locals():
+            job_run.status = "error"
+            job_run.finished_at = datetime.utcnow()
+            job_run.details.update({"error": str(e)})
+            db.commit()
         raise
+    finally:
+        db.close()
 
 
 @shared_task(bind=True)
