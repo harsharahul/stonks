@@ -12,6 +12,7 @@ from app.models.ticker_features_daily import TickerFeaturesDaily
 from .sentiment import SentimentFeatures, SentimentMetrics
 from .momentum import MomentumFeatures, MomentumMetrics
 from .novelty import NoveltyFeatures, NoveltyMetrics
+from .retail_sentiment import RetailSentimentFeatures, RetailSentimentMetrics
 
 
 @dataclass
@@ -38,6 +39,14 @@ class AggregatedFeatures:
     earnings_d: Optional[int] = None
     conflict_score: Optional[float] = None
     novelty_mean_3d: Optional[float] = None
+    
+    # Retail sentiment features (WSB)
+    wsb_sentiment_3d: Optional[float] = None
+    wsb_sentiment_7d: Optional[float] = None
+    wsb_mention_count_7d: int = 0
+    wsb_engagement_score: Optional[float] = None
+    retail_buzz_score: Optional[float] = None
+    meme_stock_indicator: Optional[float] = None
     
     # Metadata
     article_count_7d: int = 0
@@ -85,6 +94,11 @@ class FeatureAggregator:
             self.db, ticker, target_date
         )
         
+        # Calculate retail sentiment features (WSB)
+        retail_sentiment = RetailSentimentFeatures.calculate_for_ticker(
+            self.db, ticker, target_date
+        )
+        
         # Calculate conflict score (variance in sentiment across recent articles)
         conflict_score = self._calculate_conflict_score(ticker, target_date)
         
@@ -117,6 +131,14 @@ class FeatureAggregator:
             earnings_d=earnings_d,
             conflict_score=conflict_score,
             novelty_mean_3d=novelty.novelty_mean_3d,
+            
+            # Retail sentiment (WSB)
+            wsb_sentiment_3d=retail_sentiment.wsb_sentiment_3d,
+            wsb_sentiment_7d=retail_sentiment.wsb_sentiment_7d,
+            wsb_mention_count_7d=retail_sentiment.wsb_mention_count_7d,
+            wsb_engagement_score=retail_sentiment.wsb_engagement_score,
+            retail_buzz_score=retail_sentiment.retail_buzz_score,
+            meme_stock_indicator=retail_sentiment.meme_stock_indicator,
             
             # Metadata
             article_count_7d=sentiment.article_count,

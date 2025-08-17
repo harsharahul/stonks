@@ -38,6 +38,14 @@ class TickerFeaturesDaily(Base):
     conflict_score: Mapped[Optional[float]] = mapped_column(Numeric(5, 3), nullable=True)
     novelty_mean_3d: Mapped[Optional[float]] = mapped_column(Numeric(5, 3), nullable=True)
     
+    # Retail sentiment features (WSB)
+    wsb_sentiment_3d: Mapped[Optional[float]] = mapped_column(Numeric(5, 3), nullable=True)
+    wsb_sentiment_7d: Mapped[Optional[float]] = mapped_column(Numeric(5, 3), nullable=True)
+    wsb_mention_count_7d: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    wsb_engagement_score: Mapped[Optional[float]] = mapped_column(Numeric(5, 3), nullable=True)
+    retail_buzz_score: Mapped[Optional[float]] = mapped_column(Numeric(5, 3), nullable=True)
+    meme_stock_indicator: Mapped[Optional[float]] = mapped_column(Numeric(5, 3), nullable=True)
+    
     # Document references
     top_doc_ids: Mapped[Optional[List[str]]] = mapped_column(ARRAY(PG_UUID), nullable=True)
     article_count_7d: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -74,6 +82,14 @@ class TickerFeaturesDaily(Base):
                 "conflict_score": float(self.conflict_score) if self.conflict_score else None,
                 "novelty_mean_3d": float(self.novelty_mean_3d) if self.novelty_mean_3d else None,
                 "article_count_7d": self.article_count_7d,
+            },
+            "retail_sentiment": {
+                "wsb_sentiment_3d": float(self.wsb_sentiment_3d) if self.wsb_sentiment_3d else None,
+                "wsb_sentiment_7d": float(self.wsb_sentiment_7d) if self.wsb_sentiment_7d else None,
+                "wsb_mention_count_7d": self.wsb_mention_count_7d,
+                "wsb_engagement_score": float(self.wsb_engagement_score) if self.wsb_engagement_score else None,
+                "retail_buzz_score": float(self.retail_buzz_score) if self.retail_buzz_score else None,
+                "meme_stock_indicator": float(self.meme_stock_indicator) if self.meme_stock_indicator else None,
             },
             "references": {
                 "top_doc_ids": self.top_doc_ids or [],

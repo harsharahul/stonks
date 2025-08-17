@@ -11,6 +11,14 @@ from sqlalchemy.orm import Session
 from app.models.article import Article
 from app.models.doc_entity import DocEntity
 
+# For sentiment analysis
+import re
+try:
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+    VADER_AVAILABLE = True
+except ImportError:
+    VADER_AVAILABLE = False
+
 
 @dataclass
 class SentimentMetrics:
@@ -171,4 +179,90 @@ class SentimentFeatures:
             "count": len(sentiment_values),
             "min": min(sentiment_values),
             "max": max(sentiment_values)
+        }
+
+
+class SentimentCalculator:
+    """Calculate sentiment scores for text using VADER or basic rules"""
+    
+    def __init__(self):
+        self.analyzer = None
+        if VADER_AVAILABLE:
+            self.analyzer = SentimentIntensityAnalyzer()
+        
+        # Financial keywords for basic sentiment
+        self.positive_words = {
+            'bull', 'bullish', 'moon', 'rocket', 'diamond', 'hands', 'hold', 'hodl',
+            'buy', 'calls', 'pump', 'squeeze', 'rally', 'breakout', 'gains', 'profit',
+            'green', 'stonks', 'tendies', 'lambo', 'winner', 'beat', 'earnings',
+            'growth', 'strong', 'solid', 'excellent', 'amazing', 'incredible'
+        }
+        
+        self.negative_words = {
+            'bear', 'bearish', 'crash', 'dump', 'paper', 'hands', 'sell', 'puts',
+            'short', 'drop', 'fall', 'red', 'loss', 'losses', 'missed', 'weak',
+            'terrible', 'awful', 'disaster', 'concern', 'worried', 'fear', 'panic',
+            'bankruptcy', 'debt', 'decline', 'disappointed', 'failed'
+        }
+    
+    def calculate(self, text: str) -> Dict:
+        """
+        Calculate sentiment score for given text
+        
+        Returns:
+            Dict with sentiment_score (0-1), confidence, method
+        """
+        if not text or not isinstance(text, str):
+            return {
+                'sentiment_score': 0.5,
+                'confidence': 0.0,
+                'method': 'default'
+            }
+        
+        text = text.lower()
+        
+        # Try VADER first if available
+        if self.analyzer:
+            scores = self.analyzer.polarity_scores(text)
+            # Convert compound score (-1 to 1) to 0-1 scale
+            sentiment_score = (scores['compound'] + 1) / 2
+            
+            return {
+                'sentiment_score': max(0.0, min(1.0, sentiment_score)),
+                'confidence': abs(scores['compound']),
+                'method': 'vader',
+                'raw_scores': scores
+            }
+        
+        # Fallback to basic keyword sentiment
+        return self._basic_sentiment(text)
+    
+    def _basic_sentiment(self, text: str) -> Dict:
+        """Basic keyword-based sentiment analysis"""
+        words = re.findall(r'\b\w+\b', text.lower())
+        
+        positive_count = sum(1 for word in words if word in self.positive_words)
+        negative_count = sum(1 for word in words if word in self.negative_words)
+        
+        total_sentiment_words = positive_count + negative_count
+        
+        if total_sentiment_words == 0:
+            return {
+                'sentiment_score': 0.5,
+                'confidence': 0.0,
+                'method': 'basic_neutral'
+            }
+        
+        # Calculate sentiment ratio
+        sentiment_ratio = positive_count / total_sentiment_words
+        
+        # Confidence based on number of sentiment words relative to text length
+        confidence = min(total_sentiment_words / max(len(words), 1), 1.0)
+        
+        return {
+            'sentiment_score': sentiment_ratio,
+            'confidence': confidence,
+            'method': 'basic_keywords',
+            'positive_words': positive_count,
+            'negative_words': negative_count
         }

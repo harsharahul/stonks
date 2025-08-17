@@ -3,6 +3,7 @@ Feed API endpoints
 Handles mixed feed of articles and signals
 """
 from typing import Optional, List
+from datetime import datetime
 from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -10,7 +11,9 @@ from app.core.database import get_db
 from app.tasks.data_ingestion import fetch_google_news_by_ticker
 from app.tasks.sec_edgar_ingestion import fetch_sec_edgar_rss, map_cik_to_tickers
 from app.tasks.earnings_calendar import fetch_nasdaq_earnings_calendar, fetch_yahoo_earnings_calendar
+from app.tasks.reddit_wsb_ingestion import fetch_wsb_hot_posts, fetch_wsb_daily_thread
 from app.tasks.post_ingest_hooks import process_new_articles, update_source_reliability
+from app.features.retail_sentiment import RetailSentimentFeatures
 from app.api.dependencies import verify_api_key
 
 router = APIRouter()
@@ -164,3 +167,52 @@ async def update_reliability(
         "message": "Source reliability update triggered",
         "task_id": task.id
     }
+
+
+@router.post("/ingest/wsb-hot", dependencies=[Depends(verify_api_key)])
+async def ingest_wsb_hot_posts(
+    background_tasks: BackgroundTasks,
+    limit: int = Query(50, ge=10, le=100, description="Number of hot posts to fetch"),
+    time_filter: str = Query("day", description="Time filter: hour, day, week, month"),
+    db: Session = Depends(get_db)
+):
+    """Fetch hot posts from r/wallstreetbets for retail sentiment analysis."""
+    task = fetch_wsb_hot_posts.delay(limit, time_filter)
+    return {
+        "message": f"WSB hot posts ingestion triggered (limit: {limit}, filter: {time_filter})",
+        "task_id": task.id,
+        "limit": limit,
+        "time_filter": time_filter
+    }
+
+
+@router.post("/ingest/wsb-daily", dependencies=[Depends(verify_api_key)])
+async def ingest_wsb_daily_thread(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """Fetch WSB daily discussion thread for general market sentiment."""
+    task = fetch_wsb_daily_thread.delay()
+    return {
+        "message": "WSB daily thread ingestion triggered",
+        "task_id": task.id
+    }
+
+
+@router.get("/wsb/trending")
+async def get_wsb_trending_tickers(
+    days: int = Query(7, ge=1, le=30, description="Days to look back"),
+    limit: int = Query(20, ge=5, le=50, description="Max tickers to return"),
+    db: Session = Depends(get_db)
+):
+    """Get tickers trending on WallStreetBets based on mentions and engagement."""
+    try:
+        trending = RetailSentimentFeatures.get_trending_tickers(db, days, limit)
+        return {
+            "trending_tickers": trending,
+            "days": days,
+            "total_found": len(trending),
+            "generated_at": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
