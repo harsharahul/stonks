@@ -73,29 +73,46 @@ Dev → Prod Strategy
 - Database: managed PostgreSQL (preferred) or statefulset with backup jobs; migrations via Alembic
 - CI/CD: Gitea Actions pipeline builds, tests, scans, and deploys on git tags
 
-## System Architecture Overview
+## AI-Powered System Architecture
 
+### **Core Intelligence Layer**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 🚀 AI-POWERED MARKET INTELLIGENCE                │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                     Signal Orchestration Layer                  │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   LangGraph     │  │  Signal Router  │  │ Quality Monitor │ │
+│  │    Agents       │  │   & Dispatcher  │  │   & Validator   │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### **System Components Architecture**
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │      API        │    │     Worker      │
-│   (React MF)    │    │   (FastAPI)     │    │   (Celery)      │
-│   Port 80       │    │   Port 8080     │    │   Background    │
+│   Frontend      │    │  FastAPI + AI   │    │   Celery + AI   │
+│   (React + WS)  │    │   (LangGraph)   │    │   (Background)  │
+│   Port 3000     │    │   Port 8080     │    │   Processing    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Ingress       │    │   PostgreSQL    │    │     Redis       │
-│   / → Frontend  │    │   (Database)    │    │   (Queue/Cache) │
-│   /api → API    │    └─────────────────┘    └─────────────────┘
-└─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│   CronJob       │
-│   Analytics     │
-│   Daily 00:30   │
-└─────────────────┘
+│   WebSocket     │    │   PostgreSQL    │    │     Redis       │
+│   4 Channels    │    │   15+ Tables    │    │   Queue/Cache   │
+│   Real-Time     │    │   AI Enhanced   │    │   AI Tasks      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### **Real-Time Data Flow**
+```
+Political Trades → LangGraph Processing → Self-Correcting Writes → Intelligent Routing → Real-Time Alerts
+Social Media     → AI Analysis         → Auto Validation        → Smart Distribution  → WebSocket Updates
+News & RSS       → Pattern Detection   → Error Correction       → Priority Scoring    → Dashboard Updates
+SEC Filings      → Signal Enhancement  → Data Quality Control   → Channel Management  → API Responses
+Market Data      → Sentiment Analysis  → Integrity Assurance    → Load Balancing      → User Interface
 ```
 
 ## Request Routing Flow

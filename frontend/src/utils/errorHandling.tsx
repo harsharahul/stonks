@@ -4,6 +4,8 @@
  * Provides consistent error handling, user messaging, and error recovery mechanisms.
  */
 
+import React from 'react';
+
 export interface ApiError {
   error_code: string;
   message: string;
