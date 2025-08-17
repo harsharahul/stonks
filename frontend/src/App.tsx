@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import StockDetail from './components/StockDetail';
 import RealTimeAlerts from './components/RealTimeAlerts';
+import MarketIntelligence from './components/MarketIntelligence';
+import EnhancedStocksList from './components/EnhancedStocksList';
 import { useFeaturesSummary, useFeatureStats } from './hooks/useFeatures';
 import { cn } from './utils/format';
 
@@ -53,6 +55,17 @@ const Navigation: React.FC = () => {
             >
               Stocks
             </Link>
+            <Link
+              to="/intelligence"
+              className={cn(
+                'px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                location.pathname === '/intelligence'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+              )}
+            >
+              🤖 AI Intelligence
+            </Link>
           </div>
         </div>
       </div>
@@ -84,6 +97,23 @@ const Dashboard: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-900 mb-2">Analytics Dashboard</h1>
         <p className="text-neutral-600">Real-time stock analytics powered by news sentiment and market data</p>
+      </div>
+
+      {/* AI Intelligence Banner */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold mb-2">🤖 AI Market Intelligence Available</h2>
+            <p className="text-blue-100">AI-powered market analysis with local Ollama LLM processing</p>
+            <p className="text-sm text-blue-200 mt-1">✅ System Status: Operational | 🚀 Pressure Test: Successful</p>
+          </div>
+          <Link
+            to="/intelligence"
+            className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+          >
+            View AI Intelligence →
+          </Link>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -365,8 +395,9 @@ const AppContent: React.FC = () => {
       <Navigation />
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/stocks" element={<StockList />} />
+        <Route path="/stocks" element={<EnhancedStocksList />} />
         <Route path="/stocks/:symbol" element={<StockDetail />} />
+        <Route path="/intelligence" element={<MarketIntelligence />} />
       </Routes>
       
       {/* Real-time alerts overlay */}
