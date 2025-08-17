@@ -2,19 +2,33 @@ Architecture – Stonks
 
 System Components
 
-- Data Sources: price APIs (Yahoo Finance/Alpha Vantage), news feeds (RSS/finance portals)
-- Ingestion Service: scheduled fetchers, parsers, normalizers, deduplicators
-- Analytics Service: batch jobs computing metrics/signals and daily recommendations
-- LLM Adapter (optional): integrates OpenAI or Ollama to enrich analytics with contextual rationale; strictly optional with safe fallback
-- API Backend: FastAPI serving `/api/v1` for feed, stocks, recommendations, signals
-- Task Queue & Cache: Redis (Celery broker + cache)
-- Database: PostgreSQL 16 as the system of record
-- Frontend: React micro‑frontends (Vite Module Federation) hosted by an app shell
+- **AI-Powered Signal Intelligence**: LangGraph-based multi-step AI workflows for intelligent signal processing
+- **Expandable Signal Sources**: Plugin-based architecture supporting unlimited data sources (political trades, social media, news, regulatory filings)
+- **Self-Correcting Data System**: LLM-powered validation and automatic error correction
+- **Intelligent Signal Routing**: AI-driven prioritization and multi-channel distribution
+- **Politician Trades Monitoring**: Real-time Congressional and Senate stock disclosure tracking
+- **Data Sources**: price APIs (Yahoo Finance/Alpha Vantage), news feeds (RSS/finance portals), political disclosures, social media
+- **Ingestion Service**: scheduled fetchers, parsers, normalizers, deduplicators with AI enhancement
+- **Analytics Service**: batch jobs computing metrics/signals and daily recommendations with LLM synthesis
+- **API Backend**: FastAPI serving `/api/v1` for feed, stocks, recommendations, signals, and intelligent signal processing
+- **Real-Time System**: WebSocket infrastructure for live alerts and market updates
+- **Error Handling**: Comprehensive error management with user-friendly messaging
+- **Task Queue & Cache**: Redis (Celery broker + cache)
+- **Database**: PostgreSQL 16 as the system of record with enhanced signal storage
+- **Frontend**: React micro‑frontends (Vite Module Federation) hosted by an app shell with real-time AI insights
 
-Data Flow
+Data Flow (Enhanced AI Pipeline)
 
+1. **Signal Ingestion**: Multi-source data collection (news, political trades, social media, market data)
+2. **LangGraph Processing**: AI-powered analysis, validation, and enrichment through multi-step workflows
+3. **Self-Correcting Writes**: Automatic error detection and correction before database persistence
+4. **Intelligent Routing**: AI-driven signal prioritization and multi-channel distribution
+5. **Real-Time Distribution**: WebSocket broadcasts, alerts, API responses, and dashboard updates
+6. **Quality Monitoring**: Continuous assessment and improvement of signal processing accuracy
+
+Traditional Flow (Still Supported):
 1. Ingestion fetchers pull data on schedules (Celery Beat)
-2. Raw content is parsed and normalized (ticker extraction, timestamps, source attribution)
+2. Raw content is parsed and normalized (ticker extraction, timestamps, source attribution)  
 3. Records are upserted into PostgreSQL with idempotent keys (hashes, unique constraints)
 4. Analytics jobs aggregate features and write `signals`
 5. Daily job ranks stocks and writes to `recommendations`
@@ -26,6 +40,9 @@ Quality & Observability
 - Structured logging with correlation IDs per job run
 - `etl_job_runs` table records every batch with status and metrics
 - Health (`/health`) and readiness (`/ready`) endpoints
+- Comprehensive error handling with user-friendly messaging
+- Request tracking with unique IDs for support and debugging
+- WebSocket connection monitoring and automatic recovery
 
 Scalability
 

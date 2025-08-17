@@ -2,10 +2,14 @@
  * Real-Time Alerts Component
  * 
  * Displays live alerts and notifications using WebSocket connection
+ * Enhanced with modern UI, animations, and improved UX
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAlertsWebSocket, WebSocketMessage } from '../hooks/useWebSocket';
+import { parseApiError, formatErrorForDisplay } from '../utils/errorHandling';
+import ErrorToast from './ErrorToast';
+import apiClient from '../api/client';
 
 interface Alert {
   id: string;
@@ -33,8 +37,13 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showNewAlertAnimation, setShowNewAlertAnimation] = useState(false);
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState(true);
+  const [apiError, setApiError] = useState<any>(null);
+  const alertSoundRef = useRef<HTMLAudioElement | null>(null);
 
-  const { isConnected, lastMessage, connectionError, sendMessage } = useAlertsWebSocket(
+  const { isConnected, lastMessage, connectionError, sendMessage, reconnect } = useAlertsWebSocket(
     userId,
     {
       onMessage: (message: WebSocketMessage) => {
@@ -47,6 +56,15 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
             const updated = [newAlert, ...prev];
             return updated.slice(0, maxAlerts); // Keep only recent alerts
           });
+          
+          // Trigger new alert animation
+          setShowNewAlertAnimation(true);
+          setTimeout(() => setShowNewAlertAnimation(false), 1000);
+          
+          // Play notification sound for high priority alerts
+          if (newAlert.severity === 'critical' || newAlert.severity === 'high') {
+            playNotificationSound();
+          }
           
           // Increment unread count if not auto-acknowledging
           if (!autoAcknowledge && !newAlert.acknowledged_at) {
@@ -61,12 +79,69 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
       },
       onConnect: () => {
         console.log('Connected to alerts WebSocket');
+        setApiError(null); // Clear any previous errors on successful connection
       },
       onDisconnect: () => {
         console.log('Disconnected from alerts WebSocket');
+      },
+      onError: (error) => {
+        console.error('WebSocket error:', error);
+        setApiError(error);
       }
     }
   );
+
+  // Fetch recent alerts on component mount
+  const fetchRecentAlerts = async () => {
+    try {
+      setIsLoadingAlerts(true);
+      const response = await apiClient.get('/signals/alerts?hours=6&limit=10');
+      const recentAlerts = response.data.alerts;
+      
+      if (recentAlerts && recentAlerts.length > 0) {
+        setAlerts(recentAlerts);
+        // Don't count existing alerts as unread initially
+        console.log(`📥 Loaded ${recentAlerts.length} recent alerts`);
+      } else {
+        console.log('📭 No recent alerts found');
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch recent alerts:', error);
+      const parsedError = parseApiError(error);
+      setApiError(parsedError);
+    } finally {
+      setIsLoadingAlerts(false);
+    }
+  };
+
+  // Load recent alerts on component mount
+  useEffect(() => {
+    fetchRecentAlerts();
+  }, []);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    try {
+      // Create a simple notification sound using Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log('Audio notification not available');
+    }
+  };
 
   const acknowledgeAlert = (alertId: string) => {
     const success = sendMessage({
@@ -93,11 +168,11 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-100 border-red-500 text-red-800';
-      case 'high': return 'bg-orange-100 border-orange-500 text-orange-800';
-      case 'medium': return 'bg-yellow-100 border-yellow-500 text-yellow-800';
-      case 'low': return 'bg-blue-100 border-blue-500 text-blue-800';
-      default: return 'bg-gray-100 border-gray-500 text-gray-800';
+      case 'critical': return 'bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 text-red-900 shadow-red-100';
+      case 'high': return 'bg-gradient-to-r from-orange-50 to-orange-100 border-l-4 border-orange-500 text-orange-900 shadow-orange-100';
+      case 'medium': return 'bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 text-yellow-900 shadow-yellow-100';
+      case 'low': return 'bg-gradient-to-r from-blue-50 to-blue-100 border-l-4 border-blue-500 text-blue-900 shadow-blue-100';
+      default: return 'bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-gray-500 text-gray-900 shadow-gray-100';
     }
   };
 
@@ -108,6 +183,30 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
       case 'medium': return '📊';
       case 'low': return 'ℹ️';
       default: return '📢';
+    }
+  };
+
+  const getSeverityBadgeColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-500 text-white';
+      case 'high': return 'bg-orange-500 text-white';
+      case 'medium': return 'bg-yellow-500 text-yellow-900';
+      case 'low': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getAlertTypeIcon = (alertType: string) => {
+    switch (alertType) {
+      case 'momentum_breakout': return '📈';
+      case 'sentiment_spike': return '💭';
+      case 'wsb_viral': return '🚀';
+      case 'volume_spike': return '📊';
+      case 'strong_signal': return '⚡';
+      case 'retail_buzz': return '👥';
+      case 'breaking_news': return '📰';
+      case 'sentiment_momentum_divergence': return '🔄';
+      default: return '🔔';
     }
   };
 
@@ -124,91 +223,182 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 w-96">
+    <div className="fixed top-4 right-4 z-50 w-96 max-w-sm">
       {/* Header */}
-      <div className="bg-white border border-gray-200 rounded-t-lg shadow-lg">
-        <div className="flex items-center justify-between p-3 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <h3 className="font-semibold text-gray-900">Live Alerts</h3>
+      <div className={`bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-t-xl shadow-xl transition-all duration-300 ${
+        showNewAlertAnimation ? 'animate-pulse shadow-2xl' : ''
+      }`}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="relative float">
+              <div className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                isConnected ? 'bg-green-500 shadow-green-200 pulse-green' : 'bg-red-500 shadow-red-200'
+              }`}></div>
+              {isConnected && (
+                <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75"></div>
+              )}
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg tracking-tight">Live Alerts</h3>
             {unreadCount > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                {unreadCount}
-              </span>
+              <div className="relative">
+                <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg animate-bounce">
+                  {unreadCount}
+                </span>
+              </div>
             )}
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
+            {!isConnected && (
+              <button
+                onClick={reconnect}
+                className="text-gray-400 hover:text-blue-500 text-sm font-medium px-2 py-1 rounded-md hover:bg-blue-50 transition-all duration-200"
+                title="Reconnect to server"
+              >
+                🔄
+              </button>
+            )}
             <button
               onClick={clearAllAlerts}
-              className="text-gray-500 hover:text-gray-700 text-sm"
+              className="text-gray-400 hover:text-red-500 text-sm font-medium px-2 py-1 rounded-md hover:bg-red-50 transition-all duration-200"
               title="Clear all alerts"
             >
               Clear
             </button>
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-all duration-200"
             >
-              {isMinimized ? '▲' : '▼'}
+              <svg className={`w-4 h-4 transition-transform duration-200 ${isMinimized ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
             </button>
           </div>
         </div>
         
         {/* Connection Status */}
         {connectionError && (
-          <div className="p-2 bg-red-50 border-b border-red-200">
-            <p className="text-red-600 text-sm">⚠️ {connectionError}</p>
+          <div className="p-3 bg-gradient-to-r from-red-50 to-red-100 border-b border-red-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-red-500">⚠️</span>
+                <p className="text-red-700 text-sm font-medium">
+                  {formatErrorForDisplay(connectionError, { showTechnicalDetails: false })}
+                </p>
+              </div>
+              <button
+                onClick={reconnect}
+                className="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 rounded bg-red-100 hover:bg-red-200 transition-colors"
+                title="Retry connection"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Connection Status Indicator */}
+        {!connectionError && (
+          <div className="px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <p className="text-green-700 text-xs font-medium">
+                {isConnected ? 'Connected to live market data' : 'Connecting...'}
+              </p>
+            </div>
           </div>
         )}
       </div>
 
       {/* Alerts List */}
-      {!isMinimized && (
-        <div className="bg-white border-x border-b border-gray-200 rounded-b-lg shadow-lg max-h-96 overflow-y-auto">
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+        isMinimized ? 'max-h-0' : 'max-h-96'
+      }`}>
+        <div className="bg-white/95 backdrop-blur-sm border-x border-b border-gray-200/50 rounded-b-xl shadow-xl overflow-y-auto max-h-96 alerts-scroll">
           {alerts.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              <p>No alerts yet</p>
-              <p className="text-sm mt-1">
-                {isConnected ? 'Listening for real-time alerts...' : 'Connecting...'}
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5V3h0z" />
+                </svg>
+              </div>
+              <p className="text-gray-600 font-medium mb-2">
+                {isLoadingAlerts ? "Loading alerts..." : "No alerts yet"}
+              </p>
+              <p className="text-gray-400 text-sm">
+                {isLoadingAlerts 
+                  ? "Fetching recent alerts..." 
+                  : isConnected 
+                    ? "Monitoring real-time market data..." 
+                    : "Establishing connection..."
+                }
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
-              {alerts.map((alert) => (
+            <div className="divide-y divide-gray-100">
+              {alerts.map((alert, index) => (
                 <div
                   key={alert.id}
-                  className={`p-3 ${getSeverityColor(alert.severity)} ${
-                    alert.acknowledged_at ? 'opacity-60' : ''
+                  className={`p-4 transition-all duration-500 hover:bg-gray-50 ${getSeverityColor(alert.severity)} ${
+                    alert.acknowledged_at ? 'opacity-50 scale-95' : 'transform hover:scale-[1.02]'
+                  } ${index === 0 && showNewAlertAnimation ? 'alert-shake' : ''} ${
+                    index === 0 ? 'alert-slide-in' : ''
                   }`}
+                  style={{
+                    animationDelay: `${index * 100}ms`,
+                  }}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-lg">{getSeverityIcon(alert.severity)}</span>
-                        <span className="font-medium text-sm">{alert.ticker}</span>
-                        <span className="text-xs px-2 py-1 bg-white bg-opacity-50 rounded">
+                  <div className="flex items-start justify-between space-x-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Alert Header */}
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-xl">{getSeverityIcon(alert.severity)}</span>
+                        <span className="text-lg">{getAlertTypeIcon(alert.alert_type)}</span>
+                        <span className="font-bold text-sm bg-black/10 px-2 py-1 rounded-md">
+                          {alert.ticker}
+                        </span>
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${getSeverityBadgeColor(alert.severity)}`}>
                           {alert.severity.toUpperCase()}
                         </span>
                       </div>
                       
-                      <h4 className="font-semibold text-sm mb-1">{alert.title}</h4>
-                      <p className="text-sm mb-2">{alert.message}</p>
+                      {/* Alert Content */}
+                      <h4 className="font-bold text-base mb-2 leading-tight">{alert.title}</h4>
+                      <p className="text-sm leading-relaxed mb-3 text-gray-700">{alert.message}</p>
                       
+                      {/* Alert Footer */}
                       <div className="flex items-center justify-between text-xs">
-                        <span>{formatTime(alert.triggered_at)}</span>
-                        <span className="capitalize">{alert.alert_type.replace('_', ' ')}</span>
+                        <div className="flex items-center space-x-2">
+                          <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-gray-600 font-medium">{formatTime(alert.triggered_at)}</span>
+                        </div>
+                        <span className="capitalize text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded-md">
+                          {alert.alert_type.replace('_', ' ')}
+                        </span>
                       </div>
                     </div>
                     
+                    {/* Action Button */}
                     {!alert.acknowledged_at && (
                       <button
                         onClick={() => acknowledgeAlert(alert.id)}
-                        className="ml-2 text-xs px-2 py-1 bg-white bg-opacity-70 hover:bg-opacity-90 rounded transition-colors"
+                        className="flex-shrink-0 ml-3 bg-white/80 hover:bg-white text-gray-600 hover:text-green-600 p-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 group"
                         title="Acknowledge alert"
                       >
-                        ✓
+                        <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
                       </button>
+                    )}
+                    
+                    {alert.acknowledged_at && (
+                      <div className="flex-shrink-0 ml-3 text-green-500 p-2">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -216,6 +406,20 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Error Toast for API errors */}
+      {apiError && (
+        <ErrorToast
+          error={apiError}
+          onDismiss={() => setApiError(null)}
+          onRetry={() => {
+            setApiError(null);
+            fetchRecentAlerts();
+          }}
+          autoHide={true}
+          autoHideDelay={10000}
+        />
       )}
     </div>
   );

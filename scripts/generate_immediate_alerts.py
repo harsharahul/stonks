@@ -17,7 +17,7 @@ from app.models.signal import Signal
 from app.models.alert import Alert
 from app.models.stock import Stock
 from app.services.alert_engine import AlertEngine
-from app.services.websocket_manager import connection_manager, WebSocketMessage
+from app.services.websocket_manager import connection_manager, event_broadcaster, WebSocketMessage
 
 
 def create_immediate_signals(db: SessionLocal) -> List[Signal]:
@@ -101,6 +101,18 @@ def create_immediate_signals(db: SessionLocal) -> List[Signal]:
     return test_signals
 
 
+async def broadcast_alerts_async(alerts: List[Alert]):
+    """Broadcast alerts via WebSocket asynchronously"""
+    for alert in alerts:
+        try:
+            # Use the event broadcaster for proper channel routing
+            alert_data = alert.to_dict()
+            await event_broadcaster.broadcast_alert(alert_data)
+            print(f"  📢 Broadcasted alert: {alert.ticker} - {alert.alert_type} ({alert.severity})")
+        except Exception as e:
+            print(f"  ❌ Failed to broadcast alert {alert.id}: {e}")
+
+
 def main():
     """Main function to generate immediate alerts"""
     print("🚀 Starting immediate alerts generation")
@@ -124,22 +136,12 @@ def main():
         db.commit()
         
         print("📡 Broadcasting alerts via WebSocket...")
-        for alert in alerts:
+        if alerts:
+            import asyncio
             try:
-                # Create WebSocket message
-                message = WebSocketMessage(
-                    type="alert",
-                    channel="alerts",
-                    data=alert.to_dict(),
-                    timestamp=datetime.utcnow().isoformat()
-                )
-                
-                # Broadcast to alerts channel
-                import asyncio
-                asyncio.run(connection_manager.broadcast_to_channel("alerts", message))
-                print(f"  📢 Broadcasted alert: {alert.ticker} - {alert.alert_type} ({alert.severity})")
+                asyncio.run(broadcast_alerts_async(alerts))
             except Exception as e:
-                print(f"  ❌ Failed to broadcast alert {alert.id}: {e}")
+                print(f"  ❌ Failed to broadcast alerts: {e}")
         
         print(f"\n📋 Immediate Alerts Summary:")
         print(f"   Signals created: {len(signals)}")

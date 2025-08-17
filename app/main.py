@@ -5,11 +5,14 @@ Stock Tracker & Analyzer API
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import time
+import uuid
+import logging
 
 from app.core.config import settings
 from app.api.v1.api import api_router
 from app.core.metrics import record_request_metrics
 from app.api.dependencies import enforce_rate_limit
+from app.core.error_handlers import setup_error_handlers
 
 # Create FastAPI application
 app = FastAPI(
@@ -18,6 +21,9 @@ app = FastAPI(
     version="0.1.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Setup enhanced error handling
+setup_error_handlers(app)
 
 # Add CORS middleware
 app.add_middleware(
@@ -28,6 +34,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Request ID middleware for error tracking
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    
+    return response
+
 # Best-effort global rate limit before routing
 @app.middleware("http")
 async def global_rate_limit_middleware(request: Request, call_next):
@@ -35,7 +52,15 @@ async def global_rate_limit_middleware(request: Request, call_next):
         await enforce_rate_limit(request)
     except Exception:
         from fastapi.responses import JSONResponse
-        return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
+        return JSONResponse(
+            status_code=429, 
+            content={
+                "error_code": "RATE_LIMIT_EXCEEDED",
+                "message": "Too many requests. Please try again later.",
+                "details": {"request_id": getattr(request.state, "request_id", None)},
+                "timestamp": time.time()
+            }
+        )
     return await call_next(request)
 
 # Add metrics middleware
