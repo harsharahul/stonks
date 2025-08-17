@@ -5,8 +5,11 @@ Handles stock information and details
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from math import ceil
 
 from app.core.database import get_db
+from app.models.stock import Stock
 
 router = APIRouter()
 
@@ -23,30 +26,51 @@ async def list_stocks(
     """
     List stocks with optional filtering and pagination
     """
-    # TODO: Implement database query when models are ready
+    # Build query with filters
+    query = db.query(Stock).filter(Stock.is_active == True)
+    
+    # Apply search filter
+    if q:
+        search_filter = or_(
+            Stock.symbol.ilike(f"%{q}%"),
+            Stock.company_name.ilike(f"%{q}%")
+        )
+        query = query.filter(search_filter)
+    
+    # Apply sector filter
+    if sector:
+        query = query.filter(Stock.sector.ilike(f"%{sector}%"))
+    
+    # Apply exchange filter
+    if exchange:
+        query = query.filter(Stock.exchange.ilike(f"%{exchange}%"))
+    
+    # Get total count for pagination
+    total = query.count()
+    
+    # Apply pagination
+    offset = (page - 1) * page_size
+    stocks = query.offset(offset).limit(page_size).all()
+    
+    # Calculate total pages
+    pages = ceil(total / page_size) if total > 0 else 1
+    
     return {
         "items": [
             {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "symbol": "AAPL",
-                "company_name": "Apple Inc.",
-                "sector": "Technology",
-                "exchange": "NASDAQ",
-                "is_active": True
-            },
-            {
-                "id": "550e8400-e29b-41d4-a716-446655440001", 
-                "symbol": "MSFT",
-                "company_name": "Microsoft Corporation",
-                "sector": "Technology",
-                "exchange": "NASDAQ",
-                "is_active": True
+                "id": stock.id,
+                "symbol": stock.symbol,
+                "company_name": stock.company_name,
+                "sector": stock.sector,
+                "exchange": stock.exchange,
+                "is_active": stock.is_active
             }
+            for stock in stocks
         ],
-        "total": 2,
+        "total": total,
         "page": page,
         "page_size": page_size,
-        "pages": 1
+        "pages": pages
     }
 
 
@@ -58,16 +82,23 @@ async def get_stock(
     """
     Get detailed stock information by symbol
     """
-    # TODO: Implement database query when models are ready
-    if symbol.upper() not in ["AAPL", "MSFT", "GOOGL", "TSLA"]:
+    # Query stock from database
+    stock = db.query(Stock).filter(
+        Stock.symbol == symbol.upper(),
+        Stock.is_active == True
+    ).first()
+    
+    if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
     
+    # TODO: Implement real price data and aggregates from database
     return {
-        "id": "550e8400-e29b-41d4-a716-446655440000",
-        "symbol": symbol.upper(),
-        "company_name": "Apple Inc." if symbol.upper() == "AAPL" else f"{symbol.upper()} Corporation",
-        "sector": "Technology",
-        "exchange": "NASDAQ",
+        "id": stock.id,
+        "symbol": stock.symbol,
+        "company_name": stock.company_name,
+        "sector": stock.sector,
+        "exchange": stock.exchange,
+        "is_active": stock.is_active,
         "latest_price": {
             "ts": "2025-08-15T10:30:00Z",
             "open": 185.50,

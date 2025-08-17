@@ -19,3 +19,7 @@ class Article(UUIDPrimaryKeyMixin, Base):
     tickers: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
     sentiment: Mapped[Optional[float]] = mapped_column(Numeric(5, 2), nullable=True)
     entities: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    
+    # Enhanced analytics fields
+    canonical_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    hash_sha256: Mapped[Optional[str]] = mapped_column(Text, nullable=True, unique=True)

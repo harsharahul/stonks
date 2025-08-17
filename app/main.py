@@ -2,11 +2,14 @@
 Stonks FastAPI Application
 Stock Tracker & Analyzer API
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+import time
 
 from app.core.config import settings
 from app.api.v1.api import api_router
+from app.core.metrics import record_request_metrics
+from app.api.dependencies import enforce_rate_limit
 
 # Create FastAPI application
 app = FastAPI(
@@ -24,6 +27,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Best-effort global rate limit before routing
+@app.middleware("http")
+async def global_rate_limit_middleware(request: Request, call_next):
+    try:
+        await enforce_rate_limit(request)
+    except Exception:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
+    return await call_next(request)
+
+# Add metrics middleware
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    
+    # Record metrics for all requests
+    record_request_metrics(request, response, duration)
+    
+    return response
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)

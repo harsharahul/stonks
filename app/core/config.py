@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "http://ollama:11434")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3:8b")
+
+    # Security / Auth
+    API_KEY: Optional[str] = os.getenv("API_KEY")
+    ENABLE_RATE_LIMIT: bool = os.getenv("ENABLE_RATE_LIMIT", "true").lower() == "true"
+    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
     
     # Application Configuration
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"

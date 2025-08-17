@@ -3,10 +3,11 @@ Feed API endpoints
 Handles mixed feed of articles and signals
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.tasks.data_ingestion import ingest_google_news_for_ticker
 
 router = APIRouter()
 
@@ -48,3 +49,17 @@ async def get_feed(
         "page": page,
         "page_size": page_size
     }
+
+
+@router.post("/ingest/google-news")
+async def ingest_google_news(
+    ticker: str = Query(..., min_length=1, description="Ticker symbol"),
+    days: int = Query(7, ge=1, le=30, description="Days window for news"),
+    db: Session = Depends(get_db)
+):
+    """On-demand ingestion: pull Google News RSS for a ticker and persist articles."""
+    try:
+        result = ingest_google_news_for_ticker(db, ticker.upper(), days)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
