@@ -127,6 +127,25 @@ export const feedApi = {
   }
 };
 
+// Signals & Alerts API
+export const signalsApi = {
+  async getAlerts(params?: {
+    ticker?: string;
+    alert_type?: string;
+    severity?: string;
+    hours?: number;
+    acknowledged?: boolean;
+    limit?: number;
+  }): Promise<{
+    alerts: any[];
+    count: number;
+    filters: any;
+  }> {
+    const response = await apiClient.get('/signals/alerts', { params });
+    return response.data;
+  }
+};
+
 // Utility functions
 export const formatApiError = (error: any): string => {
   if (error.response?.data?.message) {

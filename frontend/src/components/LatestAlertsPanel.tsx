@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '../api/client';
+import { signalsApi } from '../api/client';
 
 type AlertDTO = {
   id: string;
@@ -13,8 +13,8 @@ type AlertDTO = {
 };
 
 const fetchLatestAlerts = async (): Promise<AlertDTO[]> => {
-  const res = await apiClient.get('/signals/alerts', { params: { hours: 6, limit: 10 } });
-  return res.data.alerts as AlertDTO[];
+  const res = await signalsApi.getAlerts({ hours: 6, limit: 10 });
+  return res.alerts as AlertDTO[];
 };
 
 const severityBadge = (sev: AlertDTO['severity']) => {
