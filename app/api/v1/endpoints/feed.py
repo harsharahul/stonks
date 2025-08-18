@@ -6,11 +6,14 @@ from typing import Optional, List
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.core.database import get_db
 from app.worker import worker
 from app.features.retail_sentiment import RetailSentimentFeatures
 from app.api.dependencies import verify_api_key
+from app.models.etl_job_run import ETLJobRun
+from app.models.article import Article
 
 router = APIRouter()
 
@@ -278,3 +281,131 @@ async def ingest_rss_automated(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to trigger automated RSS ingestion: {e}")
+
+
+@router.get("/ingest/status")
+async def get_ingestion_status(
+    db: Session = Depends(get_db)
+):
+    """
+    Get real-time status of all data ingestion sources
+    """
+    try:
+        # Get latest ETL job runs for each source
+        sources_status = []
+        
+        # WSB Enhanced Source
+        wsb_job = db.query(ETLJobRun).filter(
+            ETLJobRun.job_name.like("%wsb%enhanced%")
+        ).order_by(ETLJobRun.started_at.desc()).first()
+        
+        if wsb_job:
+            wsb_status = "operational" if wsb_job.status == "completed" else "degraded"
+            wsb_articles = db.query(Article).filter(
+                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb_enhanced'
+            ).count()
+            wsb_freshness = (datetime.utcnow() - wsb_job.started_at.replace(tzinfo=None)).total_seconds() / 60  # minutes ago
+        else:
+            wsb_status = "down"
+            wsb_articles = 0
+            wsb_freshness = None
+            
+        sources_status.append({
+            "name": "WSB Enhanced",
+            "status": wsb_status,
+            "last_update": wsb_job.started_at.isoformat() if wsb_job else None,
+            "article_count": wsb_articles,
+            "freshness_minutes": round(wsb_freshness, 1) if wsb_freshness else None,
+            "source_type": "reddit"
+        })
+        
+        # SEC EDGAR Enhanced Source
+        sec_job = db.query(ETLJobRun).filter(
+            ETLJobRun.job_name.like("%sec%edgar%enhanced%")
+        ).order_by(ETLJobRun.started_at.desc()).first()
+        
+        if sec_job:
+            sec_status = "operational" if sec_job.status == "completed" else "degraded"
+            sec_articles = db.query(Article).filter(
+                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'sec_edgar_enhanced'
+            ).count()
+            sec_freshness = (datetime.utcnow() - sec_job.started_at.replace(tzinfo=None)).total_seconds() / 60
+        else:
+            sec_status = "down"
+            sec_articles = 0
+            sec_freshness = None
+            
+        sources_status.append({
+            "name": "SEC EDGAR Enhanced",
+            "status": sec_status,
+            "last_update": sec_job.started_at.isoformat() if sec_job else None,
+            "article_count": sec_articles,
+            "freshness_minutes": round(sec_freshness, 1) if sec_freshness else None,
+            "source_type": "sec_edgar"
+        })
+        
+        # Earnings Calendar Source
+        earnings_job = db.query(ETLJobRun).filter(
+            ETLJobRun.job_name.like("%earnings%")
+        ).order_by(ETLJobRun.started_at.desc()).first()
+        
+        if earnings_job:
+            earnings_status = "operational" if earnings_job.status == "completed" else "degraded"
+            earnings_articles = db.query(Article).filter(
+                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'earnings_calendar'
+            ).count()
+            earnings_freshness = (datetime.utcnow() - earnings_job.started_at.replace(tzinfo=None)).total_seconds() / 60
+        else:
+            earnings_status = "down"
+            earnings_articles = 0
+            earnings_freshness = None
+            
+        sources_status.append({
+            "name": "Earnings Calendar",
+            "status": earnings_status,
+            "last_update": earnings_job.started_at.isoformat() if earnings_job else None,
+            "article_count": earnings_articles,
+            "freshness_minutes": round(earnings_freshness, 1) if earnings_freshness else None,
+            "source_type": "earnings"
+        })
+        
+        # News RSS Source
+        news_job = db.query(ETLJobRun).filter(
+            ETLJobRun.job_name.like("%google%news%")
+        ).order_by(ETLJobRun.started_at.desc()).first()
+        
+        if news_job:
+            news_status = "operational" if news_job.status == "completed" else "degraded"
+            news_articles = db.query(Article).filter(
+                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'google_news'
+            ).count()
+            news_freshness = (datetime.utcnow() - news_job.started_at.replace(tzinfo=None)).total_seconds() / 60
+        else:
+            news_status = "down"
+            news_articles = 0
+            news_freshness = None
+            
+        sources_status.append({
+            "name": "News RSS",
+            "status": news_status,
+            "last_update": news_job.started_at.isoformat() if news_job else None,
+            "article_count": news_articles,
+            "freshness_minutes": round(news_freshness, 1) if news_freshness else None,
+            "source_type": "news"
+        })
+        
+        # Calculate overall system health
+        operational_sources = sum(1 for source in sources_status if source["status"] == "operational")
+        total_sources = len(sources_status)
+        system_health = "healthy" if operational_sources >= total_sources * 0.75 else "degraded"
+        
+        return {
+            "system_health": system_health,
+            "operational_sources": operational_sources,
+            "total_sources": total_sources,
+            "sources": sources_status,
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get ingestion status: {str(e)}")
