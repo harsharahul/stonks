@@ -7,6 +7,7 @@ These contain material events, annual reports, and quarterly reports.
 
 import hashlib
 import re
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from urllib.parse import urljoin
@@ -79,7 +80,11 @@ def fetch_sec_edgar_rss(self, filing_types: List[str] = None, days_back: int = 1
         print(f"📊 Fetching SEC EDGAR filings: {filing_types} (last {days_back} days)")
         
         # SEC RSS feed URL - gets latest filings
+        # Note: SEC.gov has rate limiting, so we'll use a mock feed for now
         edgar_rss_url = "https://www.sec.gov/rss/feeds/latest-filings.xml"
+        
+        # For development/testing, we can use a mock feed if SEC.gov is rate limited
+        # edgar_rss_url = "https://mock-sec-feed.example.com/latest-filings.xml"
         
         # Get or create data source
         data_source = db.query(DataSource).filter(
@@ -110,16 +115,33 @@ def fetch_sec_edgar_rss(self, filing_types: List[str] = None, days_back: int = 1
         db.add(job_run)
         db.commit()
         
-        # Fetch RSS feed
+        # Fetch RSS feed with proper headers for SEC compliance
         headers = {
-            'User-Agent': 'Stonks-Analytics/1.0 (Educational Purpose)'
+            'User-Agent': 'Stonks-Analytics/1.0 (Educational Purpose) contact@stonks-analytics.com',
+            'From': 'contact@stonks-analytics.com',
+            'Accept': 'application/rss+xml, application/xml, text/xml',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
         }
         
-        try:
-            response = requests.get(edgar_rss_url, headers=headers, timeout=30)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            raise SECEdgarIngestionError(f"Failed to fetch SEC EDGAR feed: {e}")
+        # Retry logic for SEC EDGAR
+        max_retries = 3
+        retry_delay = 2
+        
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(edgar_rss_url, headers=headers, timeout=30)
+                response.raise_for_status()
+                break  # Success, exit retry loop
+            except requests.RequestException as e:
+                if attempt == max_retries - 1:  # Last attempt
+                    raise SECEdgarIngestionError(f"Failed to fetch SEC EDGAR feed after {max_retries} attempts: {e}")
+                else:
+                    print(f"   ⚠️  SEC EDGAR attempt {attempt + 1} failed: {e}, retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
         
         feed = feedparser.parse(response.content)
         

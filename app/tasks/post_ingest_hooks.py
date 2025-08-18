@@ -107,11 +107,11 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
         
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
         
-        # Find unprocessed articles (sentiment = 0.5 indicates default/unprocessed)
+        # Find unprocessed articles (sentiment = NULL indicates unprocessed)
         articles = db.query(Article).filter(
             and_(
-                Article.created_at >= cutoff_time,
-                Article.sentiment == 0.5  # Default neutral value
+                Article.published_at >= cutoff_time,
+                Article.sentiment.is_(None)  # Unprocessed articles
             )
         ).limit(batch_size).all()
         
@@ -139,10 +139,10 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
                     sentiment_result = sentiment_calc.calculate(full_text)
                     article.sentiment = sentiment_result['sentiment_score']
                     
-                    # Store additional sentiment details in metadata
-                    if not article.metadata:
-                        article.metadata = {}
-                    article.metadata['sentiment_details'] = {
+                    # Store additional sentiment details in entities
+                    if not article.entities:
+                        article.entities = {}
+                    article.entities['sentiment_details'] = {
                         'method': sentiment_result.get('method', 'unknown'),
                         'confidence': sentiment_result.get('confidence', 0),
                         'processed_at': datetime.utcnow().isoformat()
@@ -275,7 +275,7 @@ def update_source_reliability(self) -> Dict:
             )
             
             # Smooth with existing score (avoid drastic changes)
-            source.reliability_score = (source.reliability_score * 0.7 + new_score * 0.3)
+            source.reliability_score = float(source.reliability_score * 0.7 + new_score * 0.3)
             
             updates.append({
                 "source": source.name,

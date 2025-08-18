@@ -58,9 +58,9 @@ class SentimentFeatures:
         end_date = target_date
         start_date = target_date - timedelta(days=baseline_days)
         
-        # Query articles with entity links and sentiment
-        articles_query = db.query(Article).join(DocEntity).filter(
-            DocEntity.ticker == ticker,
+        # Query articles with sentiment for this ticker
+        articles_query = db.query(Article).filter(
+            Article.tickers.contains([ticker]),
             Article.sentiment.isnot(None),
             Article.published_at >= start_date,
             Article.published_at <= end_date

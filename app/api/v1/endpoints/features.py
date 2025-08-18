@@ -152,7 +152,7 @@ async def get_features_summary(
     }
 
 
-@router.post("/calculate/{ticker}", dependencies=[Depends(verify_api_key), Depends(enforce_rate_limit)])
+@router.post("/calculate/by-ticker/{ticker}", dependencies=[Depends(verify_api_key), Depends(enforce_rate_limit)])
 async def trigger_feature_calculation(
     ticker: str,
     background_tasks: BackgroundTasks,
@@ -182,6 +182,52 @@ async def trigger_feature_calculation(
         "task_id": task.id,
         "target_date": target_date or date.today().isoformat()
     }
+
+
+@router.post("/calculate/sync/{ticker}", dependencies=[Depends(verify_api_key)])
+async def calculate_features_sync(
+    ticker: str,
+    target_date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
+    db: Session = Depends(get_db)
+):
+    """
+    Calculate features synchronously for immediate results
+    """
+    try:
+        # Validate ticker exists
+        stock = db.query(Stock).filter(Stock.symbol == ticker.upper()).first()
+        if not stock:
+            raise HTTPException(status_code=404, detail=f"Stock {ticker} not found")
+        
+        # Parse date
+        if target_date:
+            try:
+                target_date_obj = datetime.strptime(target_date, "%Y-%m-%d").date()
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        else:
+            target_date_obj = date.today()
+        
+        # Calculate features directly
+        from app.features.aggregator import FeatureAggregator
+        aggregator = FeatureAggregator(db)
+        features = aggregator.calculate_features_for_ticker(ticker.upper(), target_date_obj)
+        
+        # Store features
+        record = aggregator.store_features(features)
+        db.commit()
+        
+        return {
+            "message": f"Features calculated successfully for {ticker}",
+            "ticker": ticker.upper(),
+            "target_date": target_date_obj.isoformat(),
+            "features": record.to_dict(),
+            "mode": "synchronous"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Feature calculation failed: {str(e)}")
 
 
 @router.post("/calculate/daily", dependencies=[Depends(verify_api_key), Depends(enforce_rate_limit)])
@@ -337,11 +383,23 @@ def get_enhanced_features(
     Get enhanced features with LLM-powered insights for a specific ticker
     """
     try:
-        # Get base features (sync helper)
+        # Get the latest available features for this ticker
+        latest_features = db.query(TickerFeaturesDaily).filter(
+            TickerFeaturesDaily.ticker == ticker.upper(),
+            TickerFeaturesDaily.feature_version == "v1.0.0"
+        ).order_by(TickerFeaturesDaily.date.desc()).first()
+        
+        if not latest_features:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No features found for {ticker}"
+            )
+        
+        # Get base features for the latest available date
         features = _fetch_daily_features_dict(
             db=db,
             ticker=ticker,
-            target_date=None,  # today
+            target_date=latest_features.date.strftime("%Y-%m-%d"),
             feature_version="v1.0.0",
         )
         
@@ -352,7 +410,7 @@ def get_enhanced_features(
             rows = (
                 db.query(Article)
                 .filter(
-                    Article.tickers.any(ticker),
+                    Article.tickers.contains([ticker]),
                     Article.published_at >= cutoff_date,
                 )
                 .order_by(Article.published_at.desc())

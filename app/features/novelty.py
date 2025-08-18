@@ -191,8 +191,8 @@ class NoveltyFeatures:
         start_date = target_date - timedelta(days=lookback_days)
         recent_3d = target_date - timedelta(days=3)
         
-        articles_query = db.query(Article).join(DocEntity).filter(
-            DocEntity.ticker == ticker,
+        articles_query = db.query(Article).filter(
+            Article.tickers.contains([ticker]),
             Article.raw_content.isnot(None),
             Article.published_at >= start_date,
             Article.published_at <= target_date

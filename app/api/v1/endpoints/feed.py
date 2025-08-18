@@ -8,11 +8,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.tasks.data_ingestion import fetch_google_news_by_ticker
-from app.tasks.sec_edgar_ingestion import fetch_sec_edgar_rss, map_cik_to_tickers
-from app.tasks.earnings_calendar import fetch_nasdaq_earnings_calendar, fetch_yahoo_earnings_calendar
-from app.tasks.reddit_wsb_ingestion import fetch_wsb_hot_posts, fetch_wsb_daily_thread
-from app.tasks.post_ingest_hooks import process_new_articles, update_source_reliability
+from app.worker import worker
 from app.features.retail_sentiment import RetailSentimentFeatures
 from app.api.dependencies import verify_api_key
 
@@ -66,7 +62,7 @@ async def ingest_google_news(
     db: Session = Depends(get_db)
 ):
     """On-demand ingestion: pull Google News RSS for a ticker and persist articles."""
-    task = fetch_google_news_by_ticker.delay(ticker.upper(), days)
+    task = worker.send_task('app.tasks.data_ingestion.fetch_google_news_by_ticker', args=[ticker.upper(), days])
     return {
         "message": f"Google News ingestion triggered for {ticker.upper()}",
         "task_id": task.id,
@@ -83,13 +79,39 @@ async def ingest_sec_edgar(
     db: Session = Depends(get_db)
 ):
     """Trigger SEC EDGAR RSS feed ingestion for material filings."""
-    task = fetch_sec_edgar_rss.delay(filing_types, days_back)
+    task = worker.send_task('app.tasks.sec_edgar_ingestion.fetch_sec_edgar_rss', args=[filing_types, days_back])
     return {
         "message": "SEC EDGAR ingestion triggered",
         "task_id": task.id,
         "filing_types": filing_types or ["8-K", "10-K", "10-Q"],
         "days_back": days_back
     }
+
+
+@router.post("/ingest/sec-edgar-enhanced", dependencies=[Depends(verify_api_key)])
+async def ingest_sec_edgar_enhanced(
+    background_tasks: BackgroundTasks,
+    filing_types: str = Query("8-K,10-K,10-Q", description="Comma-separated filing types to fetch"),
+    days_back: int = Query(7, ge=1, le=30, description="Days to look back"),
+    tickers: Optional[str] = Query(None, description="Comma-separated tickers to fetch"),
+    db: Session = Depends(get_db)
+):
+    """Enhanced SEC EDGAR ingestion using sec-parser library"""
+    try:
+        # Parse comma-separated strings into lists
+        filing_types_list = [ft.strip() for ft in filing_types.split(",")]
+        tickers_list = [t.strip() for t in tickers.split(",")] if tickers else None
+        
+        task = worker.send_task('app.tasks.sec_edgar_enhanced.fetch_sec_edgar_enhanced', args=[days_back, filing_types_list, tickers_list])
+        return {
+            "message": "Enhanced SEC EDGAR ingestion triggered",
+            "task_id": task.id,
+            "days_back": days_back,
+            "filing_types": filing_types_list,
+            "tickers": tickers_list
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger enhanced SEC EDGAR ingestion: {str(e)}")
 
 
 @router.post("/ingest/earnings-calendar", dependencies=[Depends(verify_api_key)])
@@ -100,7 +122,7 @@ async def ingest_earnings_calendar(
     db: Session = Depends(get_db)
 ):
     """Trigger earnings calendar ingestion."""
-    task = fetch_nasdaq_earnings_calendar.delay(days_ahead, days_back)
+    task = worker.send_task('app.tasks.earnings_calendar.fetch_nasdaq_earnings_calendar', args=[days_ahead, days_back])
     return {
         "message": "Earnings calendar ingestion triggered",
         "task_id": task.id,
@@ -116,7 +138,7 @@ async def ingest_earnings_for_ticker(
     db: Session = Depends(get_db)
 ):
     """Fetch earnings date for a specific ticker from Yahoo Finance."""
-    task = fetch_yahoo_earnings_calendar.delay(ticker.upper())
+    task = worker.send_task('app.tasks.earnings_calendar.fetch_yahoo_earnings_calendar', args=[ticker.upper()])
     return {
         "message": f"Earnings date fetch triggered for {ticker.upper()}",
         "task_id": task.id,
@@ -132,7 +154,7 @@ async def process_articles(
     db: Session = Depends(get_db)
 ):
     """Process recently ingested articles for sentiment and ticker extraction."""
-    task = process_new_articles.delay(hours_back, batch_size)
+    task = worker.send_task('app.tasks.post_ingest_hooks.process_new_articles', args=[hours_back, batch_size])
     return {
         "message": "Article processing triggered",
         "task_id": task.id,
@@ -148,7 +170,7 @@ async def map_cik_tickers(
     db: Session = Depends(get_db)
 ):
     """Map CIK numbers to stock tickers for SEC filings."""
-    task = map_cik_to_tickers.delay(limit)
+    task = worker.send_task('app.tasks.sec_edgar_ingestion.map_cik_to_tickers', args=[limit])
     return {
         "message": "CIK to ticker mapping triggered",
         "task_id": task.id,
@@ -162,7 +184,7 @@ async def update_reliability(
     db: Session = Depends(get_db)
 ):
     """Update data source reliability scores based on article quality."""
-    task = update_source_reliability.delay()
+    task = worker.send_task('app.tasks.post_ingest_hooks.update_source_reliability', args=[])
     return {
         "message": "Source reliability update triggered",
         "task_id": task.id
@@ -177,7 +199,7 @@ async def ingest_wsb_hot_posts(
     db: Session = Depends(get_db)
 ):
     """Fetch hot posts from r/wallstreetbets for retail sentiment analysis."""
-    task = fetch_wsb_hot_posts.delay(limit, time_filter)
+    task = worker.send_task('app.tasks.reddit_wsb_ingestion.fetch_wsb_hot_posts', args=[limit, time_filter])
     return {
         "message": f"WSB hot posts ingestion triggered (limit: {limit}, filter: {time_filter})",
         "task_id": task.id,
@@ -186,13 +208,33 @@ async def ingest_wsb_hot_posts(
     }
 
 
+@router.post("/ingest/wsb-enhanced", dependencies=[Depends(verify_api_key)])
+async def ingest_wsb_enhanced(
+    background_tasks: BackgroundTasks,
+    limit: int = Query(50, ge=10, le=100, description="Number of posts to fetch"),
+    sort: str = Query("hot", description="Sort method (hot, new, top, rising)"),
+    db: Session = Depends(get_db)
+):
+    """Enhanced WSB ingestion using improved Reddit parser."""
+    try:
+        task = worker.send_task('app.tasks.reddit_wsb_enhanced.fetch_wsb_enhanced', args=[limit, sort])
+        return {
+            "message": "Enhanced WSB ingestion triggered",
+            "task_id": task.id,
+            "limit": limit,
+            "sort": sort
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger enhanced WSB ingestion: {str(e)}")
+
+
 @router.post("/ingest/wsb-daily", dependencies=[Depends(verify_api_key)])
 async def ingest_wsb_daily_thread(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """Fetch WSB daily discussion thread for general market sentiment."""
-    task = fetch_wsb_daily_thread.delay()
+    task = worker.send_task('app.tasks.reddit_wsb_ingestion.fetch_wsb_daily_thread', args=[])
     return {
         "message": "WSB daily thread ingestion triggered",
         "task_id": task.id
@@ -216,3 +258,23 @@ async def get_wsb_trending_tickers(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ingest/rss-automated", dependencies=[Depends(verify_api_key)])
+async def ingest_rss_automated(
+    tickers: Optional[List[str]] = Query(None, description="Specific tickers to process (defaults to all active)")
+):
+    """
+    Trigger automated RSS ingestion for all configured sources and tickers
+    """
+    try:
+        task = worker.send_task('app.tasks.data_ingestion.ingest_rss_feeds_task', args=[tickers])
+        
+        return {
+            "message": "Automated RSS ingestion triggered",
+            "task_id": task.id,
+            "tickers_requested": tickers,
+            "mode": "automated"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger automated RSS ingestion: {e}")

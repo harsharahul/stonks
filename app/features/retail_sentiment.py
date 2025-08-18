@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 from statistics import mean, stdev
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import and_, or_, func
 
 from app.models.article import Article
 
@@ -90,13 +90,16 @@ class RetailSentimentFeatures:
     ) -> Dict:
         """Get WSB-specific metrics for a ticker in date range"""
         
-        # Query WSB articles
+        # Query WSB articles (both old and enhanced sources)
         wsb_articles = db.query(Article).filter(
             and_(
                 Article.tickers.contains([ticker]),
                 func.date(Article.published_at) >= start_date,
                 func.date(Article.published_at) <= end_date,
-                func.jsonb_extract_path_text(Article.metadata, 'source') == 'reddit_wsb'
+                or_(
+                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb',
+                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb_enhanced'
+                )
             )
         ).all()
         
@@ -128,7 +131,7 @@ class RetailSentimentFeatures:
                 Article.tickers.contains([ticker]),
                 func.date(Article.published_at) >= start_date,
                 func.date(Article.published_at) <= end_date,
-                func.jsonb_extract_path_text(Article.metadata, 'source') == 'reddit_wsb'
+                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb'
             )
         ).all()
         
@@ -139,7 +142,7 @@ class RetailSentimentFeatures:
         total_comments = 0
         
         for article in wsb_articles:
-            metadata = article.metadata or {}
+            metadata = article.article_metadata or {}
             reddit_score = metadata.get('reddit_score', 0)
             num_comments = metadata.get('num_comments', 0)
             
@@ -185,7 +188,7 @@ class RetailSentimentFeatures:
         
         # Sentiment deviation from neutral (0.5)
         # High positive or negative sentiment both contribute to buzz
-        sentiment_intensity = abs(sentiment - 0.5) * 2  # 0-1 scale
+        sentiment_intensity = abs(float(sentiment) - 0.5) * 2  # 0-1 scale
         
         # Weighted combination
         buzz_score = (
@@ -212,7 +215,10 @@ class RetailSentimentFeatures:
                 Article.tickers.contains([ticker]),
                 func.date(Article.published_at) >= start_date,
                 func.date(Article.published_at) <= end_date,
-                func.jsonb_extract_path_text(Article.metadata, 'source') == 'reddit_wsb'
+                or_(
+                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb',
+                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb_enhanced'
+                )
             )
         ).all()
         
@@ -235,7 +241,7 @@ class RetailSentimentFeatures:
             meme_keyword_count = sum(1 for keyword in meme_keywords if keyword in text)
             
             # Check metadata for high engagement
-            metadata = article.metadata or {}
+            metadata = article.article_metadata or {}
             reddit_score = metadata.get('reddit_score', 0)
             num_comments = metadata.get('num_comments', 0)
             
@@ -255,7 +261,7 @@ class RetailSentimentFeatures:
                 post_meme_score += 0.3
             if multiple_mentions:
                 post_meme_score += 0.2
-            if article.sentiment and article.sentiment > 0.7:  # Very positive sentiment
+            if article.sentiment and float(article.sentiment) > 0.7:  # Very positive sentiment
                 post_meme_score += 0.1
             
             if post_meme_score > 0.5:  # Threshold for meme behavior
@@ -278,12 +284,15 @@ class RetailSentimentFeatures:
         end_date = date.today()
         start_date = end_date - timedelta(days=days)
         
-        # Query for WSB articles with tickers
+        # Query for WSB articles with tickers (both old and enhanced sources)
         wsb_articles = db.query(Article).filter(
             and_(
                 func.date(Article.published_at) >= start_date,
                 func.date(Article.published_at) <= end_date,
-                func.jsonb_extract_path_text(Article.metadata, 'source') == 'reddit_wsb',
+                or_(
+                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb',
+                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb_enhanced'
+                ),
                 Article.tickers.isnot(None),
                 func.array_length(Article.tickers, 1) > 0
             )
@@ -305,10 +314,10 @@ class RetailSentimentFeatures:
                 
                 stats = ticker_stats[ticker]
                 stats['mention_count'] += 1
-                stats['total_sentiment'] += article.sentiment or 0.5
+                stats['total_sentiment'] += float(article.sentiment) if article.sentiment else 0.5
                 stats['articles'].append(article)
                 
-                metadata = article.metadata or {}
+                metadata = article.article_metadata or {}
                 stats['total_score'] += metadata.get('reddit_score', 0)
                 stats['total_comments'] += metadata.get('num_comments', 0)
         

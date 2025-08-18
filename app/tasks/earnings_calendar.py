@@ -7,6 +7,7 @@ Earnings dates are critical events that often drive significant price movements.
 
 import hashlib
 import json
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
@@ -67,11 +68,10 @@ def fetch_nasdaq_earnings_calendar(self, days_ahead: int = 7, days_back: int = 3
     try:
         print(f"📅 Fetching Nasdaq earnings calendar (-{days_back} to +{days_ahead} days)")
         
-        # Note: This is a mock implementation. Real implementation would need
-        # proper API access or web scraping with appropriate rate limiting
-        
-        # For now, we'll use Yahoo Finance earnings calendar endpoint
-        # In production, consider using Alpha Vantage, IEX Cloud, or Polygon.io
+        # Try multiple earnings data sources with fallback
+        # Primary: Alpha Vantage (free tier available)
+        # Fallback: Mock data for development
+        # Future: IEX Cloud, Polygon.io for production
         
         start_date = (datetime.utcnow() - timedelta(days=days_back)).strftime("%Y-%m-%d")
         end_date = (datetime.utcnow() + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
@@ -95,8 +95,8 @@ def fetch_nasdaq_earnings_calendar(self, days_ahead: int = 7, days_back: int = 3
         # Create ETL job run
         job_run = ETLJobRun(
             job_name="earnings_calendar",
-            status="running",
             started_at=datetime.utcnow(),
+            status="running",
             details={
                 "task_id": task_id,
                 "start_date": start_date,
@@ -106,106 +106,21 @@ def fetch_nasdaq_earnings_calendar(self, days_ahead: int = 7, days_back: int = 3
         db.add(job_run)
         db.commit()
         
-        # Get list of tracked stocks
-        stocks = db.query(Stock).all()
-        stock_tickers = {stock.symbol: stock for stock in stocks}
-        
-        earnings_processed = 0
-        earnings_new = 0
-        earnings_duplicate = 0
-        
-        # For each stock, check if there's an earnings date in range
-        # This is a simplified approach - real implementation would batch query
-        for ticker, stock in stock_tickers.items():
+        # Try Alpha Vantage earnings calendar first
+        alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY')
+        if alpha_vantage_key:
             try:
-                # Generate mock earnings data for demonstration
-                # In production, this would call actual API
-                
-                # Simulate quarterly earnings (every ~90 days)
-                days_since_ipo = (datetime.utcnow() - stock.created_at).days
-                quarters_since = days_since_ipo // 90
-                next_earnings_days = (quarters_since + 1) * 90 - days_since_ipo
-                
-                # Check if earnings falls within our window
-                if -days_back <= next_earnings_days <= days_ahead:
-                    earnings_date = datetime.utcnow() + timedelta(days=next_earnings_days)
-                    
-                    # Create unique identifier for this earnings event
-                    event_id = f"{ticker}_earnings_{earnings_date.strftime('%Y%m%d')}"
-                    url = f"https://earnings.example.com/{ticker}/{earnings_date.strftime('%Y-%m-%d')}"
-                    url_hash = hashlib.sha256(url.encode('utf-8')).hexdigest()
-                    
-                    # Check if already exists
-                    existing = db.query(Article).filter(
-                        Article.url_hash == url_hash
-                    ).first()
-                    
-                    if existing:
-                        earnings_duplicate += 1
-                        continue
-                    
-                    # Determine timing
-                    if next_earnings_days < 0:
-                        timing = "reported"
-                        title = f"{ticker} Reported Q{(quarters_since % 4) + 1} Earnings"
-                        content = f"{stock.company_name} reported earnings on {earnings_date.strftime('%B %d, %Y')}."
-                    elif next_earnings_days == 0:
-                        timing = "today"
-                        title = f"{ticker} Reports Earnings Today"
-                        content = f"{stock.company_name} is scheduled to report earnings today after market close."
-                    else:
-                        timing = "upcoming"
-                        title = f"{ticker} Earnings Scheduled for {earnings_date.strftime('%B %d')}"
-                        content = f"{stock.company_name} will report Q{((quarters_since + 1) % 4) + 1} earnings on {earnings_date.strftime('%B %d, %Y')}."
-                    
-                    # Create article record for earnings event
-                    article = Article(
-                        source_id=data_source.id,
-                        url=url,
-                        url_hash=url_hash,
-                        title=title,
-                        published_at=datetime.utcnow(),
-                        raw_content=content,
-                        tickers=[ticker],
-                        sentiment=0.5,  # Neutral for earnings announcements
-                        language="en",
-                        metadata={
-                            "event_type": "earnings",
-                            "earnings_date": earnings_date.isoformat(),
-                            "timing": timing,
-                            "quarter": f"Q{((quarters_since + 1) % 4) + 1}",
-                            "fiscal_year": earnings_date.year
-                        }
-                    )
-                    
-                    db.add(article)
-                    earnings_new += 1
-                    earnings_processed += 1
-                    
+                earnings_data = fetch_alpha_vantage_earnings(alpha_vantage_key, start_date, end_date)
+                if earnings_data:
+                    print(f"   ✅ Alpha Vantage earnings data: {len(earnings_data)} companies")
+                    return process_earnings_data(earnings_data, db, data_source, job_run)
             except Exception as e:
-                print(f"   ⚠️  Error processing earnings for {ticker}: {e}")
-                continue
+                print(f"   ⚠️  Alpha Vantage failed: {e}, falling back to mock data")
         
-        db.commit()
-        
-        # Update job run
-        job_run.status = "success"
-        job_run.finished_at = datetime.utcnow()
-        job_run.items_processed = earnings_new
-        job_run.details.update({
-            "earnings_new": earnings_new,
-            "earnings_duplicate": earnings_duplicate,
-            "total_processed": earnings_processed
-        })
-        db.commit()
-        
-        print(f"✅ Earnings calendar ingestion complete: {earnings_new} new events")
-        
-        return {
-            "status": "success",
-            "earnings_new": earnings_new,
-            "earnings_duplicate": earnings_duplicate
-        }
+        # Fallback to mock data for development
+        print("   📝 Using mock earnings data (development mode)")
+        mock_earnings = generate_mock_earnings_data(days_ahead, days_back)
+        return process_earnings_data(mock_earnings, db, data_source, job_run)
         
     except Exception as e:
         if 'job_run' in locals():
@@ -296,7 +211,12 @@ def fetch_yahoo_earnings_calendar(self, ticker: str) -> Dict:
                     ).first()
                     
                     if not existing:
-                        days_until = (earnings_date - datetime.utcnow()).days
+                        # Ensure both datetimes are timezone-naive for comparison
+                        now = datetime.utcnow()
+                        if earnings_date.tzinfo is not None:
+                            earnings_date = earnings_date.replace(tzinfo=None)
+                        
+                        days_until = (earnings_date - now).days
                         
                         if days_until < 0:
                             title = f"{ticker} Reported Earnings on {earnings_date.strftime('%B %d')}"
@@ -310,7 +230,7 @@ def fetch_yahoo_earnings_calendar(self, ticker: str) -> Dict:
                             url=event_url,
                             url_hash=url_hash,
                             title=title,
-                            published_at=datetime.utcnow(),
+                            published_at=now,
                             raw_content=f"Earnings date for {ticker}: {earnings_date.strftime('%B %d, %Y')}",
                             tickers=[ticker],
                             sentiment=0.5,
@@ -361,3 +281,202 @@ def fetch_yahoo_earnings_calendar(self, ticker: str) -> Dict:
         
     finally:
         db.close()
+
+
+def fetch_alpha_vantage_earnings(api_key: str, start_date: str, end_date: str) -> List[Dict]:
+    """
+    Fetch earnings calendar from Alpha Vantage API
+    
+    Args:
+        api_key: Alpha Vantage API key
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date in YYYY-MM-DD format
+        
+    Returns:
+        List of earnings data dictionaries
+    """
+    try:
+        # Alpha Vantage earnings calendar endpoint
+        url = "https://www.alphavantage.co/query"
+        params = {
+            'function': 'EARNINGS_CALENDAR',
+            'horizon': '3month',  # 3 month horizon
+            'apikey': api_key
+        }
+        
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        
+        # Parse CSV response
+        if response.text.strip():
+            lines = response.text.strip().split('\n')
+            if len(lines) > 1:  # Has header + data
+                headers = lines[0].split(',')
+                earnings_data = []
+                
+                for line in lines[1:]:  # Skip header
+                    values = line.split(',')
+                    if len(values) >= len(headers):
+                        earnings_entry = dict(zip(headers, values))
+                        earnings_data.append(earnings_entry)
+                
+                print(f"   📊 Alpha Vantage: {len(earnings_data)} earnings entries")
+                return earnings_data
+        
+        return []
+        
+    except Exception as e:
+        print(f"   ❌ Alpha Vantage API error: {e}")
+        return []
+
+
+def generate_mock_earnings_data(days_ahead: int, days_back: int) -> List[Dict]:
+    """
+    Generate mock earnings data for development/testing
+    
+    Args:
+        days_ahead: Days to look ahead
+        days_back: Days to look back
+        
+    Returns:
+        List of mock earnings data
+    """
+    from app.models.stock import Stock
+    
+    mock_data = []
+    db = SessionLocal()
+    
+    try:
+        # Get some active stocks
+        stocks = db.query(Stock).filter(Stock.is_active == True).limit(10).all()
+        
+        for stock in stocks:
+            # Generate random earnings dates within range
+            import random
+            days_offset = random.randint(-days_back, days_ahead)
+            earnings_date = datetime.utcnow() + timedelta(days=days_offset)
+            
+            mock_data.append({
+                'symbol': stock.symbol,
+                'company': stock.company_name,
+                'earnings_date': earnings_date.strftime('%Y-%m-%d'),
+                'estimate': round(random.uniform(0.5, 5.0), 2),
+                'actual': None,  # Will be filled after earnings
+                'source': 'mock_data'
+            })
+        
+        print(f"   📝 Generated {len(mock_data)} mock earnings entries")
+        return mock_data
+        
+    except Exception as e:
+        print(f"   ❌ Error generating mock data: {e}")
+        return []
+    finally:
+        db.close()
+
+
+def process_earnings_data(earnings_data: List[Dict], db: Session, data_source: DataSource, job_run: ETLJobRun) -> Dict:
+    """
+    Process and store earnings data
+    
+    Args:
+        earnings_data: List of earnings data dictionaries
+        db: Database session
+        data_source: Data source record
+        job_run: ETL job run record
+        
+    Returns:
+        Processing results
+    """
+    try:
+        processed_count = 0
+        new_count = 0
+        
+        for earnings in earnings_data:
+            symbol = earnings.get('symbol', '').upper()
+            if not symbol:
+                continue
+                
+            # Check if stock exists
+            stock = db.query(Stock).filter(Stock.symbol == symbol).first()
+            if not stock:
+                continue  # Skip unknown stocks
+            
+            # Create earnings event article
+            earnings_date = parse_earnings_date(earnings.get('earnings_date', ''))
+            if not earnings_date:
+                continue
+            
+            event_url = f"earnings://{symbol}/{earnings_date.strftime('%Y-%m-%d')}"
+            url_hash = hashlib.sha256(event_url.encode('utf-8')).hexdigest()
+            
+            # Check if exists
+            existing = db.query(Article).filter(Article.url_hash == url_hash).first()
+            if existing:
+                processed_count += 1
+                continue
+            
+            # Create new earnings article
+            # Ensure both datetimes are timezone-naive for comparison
+            now = datetime.utcnow()
+            if earnings_date.tzinfo is not None:
+                earnings_date = earnings_date.replace(tzinfo=None)
+            
+            days_until = (earnings_date - now).days
+            
+            if days_until < 0:
+                title = f"{symbol} Reported Earnings on {earnings_date.strftime('%B %d')}"
+            elif days_until == 0:
+                title = f"{symbol} Reports Earnings Today"
+            else:
+                title = f"{symbol} Earnings in {days_until} Days ({earnings_date.strftime('%B %d')})"
+            
+            article = Article(
+                source_id=data_source.id,
+                url=event_url,
+                url_hash=url_hash,
+                title=title,
+                published_at=now,
+                raw_content=f"Earnings date for {symbol}: {earnings_date.strftime('%B %d, %Y')}",
+                tickers=[symbol],
+                sentiment=0.5,
+                language="en",
+                metadata={
+                    "event_type": "earnings",
+                    "earnings_date": earnings_date.isoformat(),
+                    "days_until": days_until,
+                    "source": earnings.get('source', 'alpha_vantage'),
+                    "estimate": earnings.get('estimate'),
+                    "actual": earnings.get('actual')
+                }
+            )
+            
+            db.add(article)
+            new_count += 1
+            processed_count += 1
+        
+        # Update job run
+        job_run.status = "success"
+        job_run.finished_at = datetime.utcnow()
+        job_run.items_processed = processed_count
+        job_run.details.update({
+            "new_earnings_events": new_count,
+            "total_processed": processed_count
+        })
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "processed": processed_count,
+            "new_events": new_count,
+            "source": "earnings_calendar"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        job_run.status = "failed"
+        job_run.finished_at = datetime.utcnow()
+        job_run.details.update({"error": str(e)})
+        db.commit()
+        raise EarningsCalendarError(f"Failed to process earnings data: {e}")

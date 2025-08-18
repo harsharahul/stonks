@@ -44,6 +44,7 @@ def calculate_daily_features(
         # Create ETL job run record
         job_run = ETLJobRun(
             job_name="calculate_daily_features",
+            started_at=datetime.utcnow(),
             status="running",
             details={
                 "task_id": task_id,

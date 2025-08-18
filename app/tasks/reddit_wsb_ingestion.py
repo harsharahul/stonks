@@ -187,6 +187,13 @@ def fetch_wsb_hot_posts(self, limit: int = 100, time_filter: str = "day") -> Dic
         stocks = db.query(Stock.symbol).all()
         known_tickers = set(stock.symbol for stock in stocks)
         
+        # Add some common WSB tickers that might not be in our database
+        wsb_common_tickers = {
+            'GME', 'AMC', 'BBBY', 'NOK', 'BB', 'PLTR', 'WISH', 'CLOV', 'SNDL', 'NAKD',
+            'EXPR', 'KOSS', 'SENS', 'ZOM', 'IDEX', 'CTRM', 'MARK', 'HOFV', 'GNUS'
+        }
+        known_tickers.update(wsb_common_tickers)
+        
         # Fetch Reddit data
         headers = {
             'User-Agent': 'Stonks-Analytics/1.0 (Educational Research)'
@@ -253,6 +260,13 @@ def fetch_wsb_hot_posts(self, limit: int = 100, time_filter: str = "day") -> Dic
                     title + " " + selftext, 
                     known_tickers
                 )
+                
+                # Debug: print what we found
+                if posts_processed < 5:  # Only debug first few posts
+                    print(f"   Post: {title[:50]}...")
+                    print(f"   Text preview: {(title + ' ' + selftext)[:100]}...")
+                    print(f"   Extracted tickers: {extracted_tickers}")
+                    print(f"   Known tickers count: {len(known_tickers)}")
                 
                 # Skip posts with no valid tickers
                 if not extracted_tickers:

@@ -286,8 +286,8 @@ class FeatureAggregator:
         recent_7d = target_date - timedelta(days=7)
         
         # Get recent articles with sentiment from different sources
-        articles = self.db.query(Article).join(DocEntity).filter(
-            DocEntity.ticker == ticker,
+        articles = self.db.query(Article).filter(
+            Article.tickers.contains([ticker]),
             Article.sentiment.isnot(None),
             Article.published_at >= recent_7d,
             Article.published_at <= target_date
@@ -328,8 +328,8 @@ class FeatureAggregator:
         recent_7d = target_date - timedelta(days=7)
         
         # Get recent articles, prioritize by novelty/sentiment
-        articles = self.db.query(Article).join(DocEntity).filter(
-            DocEntity.ticker == ticker,
+        articles = self.db.query(Article).filter(
+            Article.tickers.contains([ticker]),
             Article.published_at >= recent_7d,
             Article.published_at <= target_date
         ).order_by(

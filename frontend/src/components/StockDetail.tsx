@@ -7,6 +7,20 @@ import FeatureCard from './FeatureCard';
 import FeatureChart from './FeatureChart';
 import { cn, formatDate, formatRelativeTime, prepareChartData } from '../utils/format';
 
+// Hook to fetch WSB trending data for a specific ticker
+const useWSBTrendingData = (ticker: string) => {
+  return useQuery({
+    queryKey: ['wsb-trending', ticker],
+    queryFn: async () => {
+      const response = await fetch(`http://localhost:8080/api/v1/feed/wsb/trending?days=7&limit=50`);
+      const data = await response.json();
+      return data.trending_tickers?.find((t: any) => t.ticker === ticker) || null;
+    },
+    enabled: !!ticker,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
 const StockDetail: React.FC = () => {
   const { symbol } = useParams<{ symbol: string }>();
   const ticker = symbol?.toUpperCase() || '';
@@ -16,22 +30,54 @@ const StockDetail: React.FC = () => {
   const { data: history, isLoading: historyLoading } = useFeatureHistory(ticker, 30);
   const calculateFeatures = useCalculateFeatures();
   const { data: enhanced, isLoading: enhancedLoading } = useEnhancedAnalytics(ticker);
+  
+  // Fetch WSB trending data as fallback
+  const { data: wsbTrending, isLoading: wsbLoading } = useWSBTrendingData(ticker);
 
   // Prepare chart data
   const sentimentData = history?.features ? prepareChartData(
     history.features,
     'date',
-    'sent_mean_7d'
+    'sentiment.mean_7d'
   ) : [];
 
   const returnsData = history?.features ? prepareChartData(
     history.features,
     'date', 
-    'ret_5d'
+    'returns.ret_5d'
   ) : [];
 
   const handleRefreshFeatures = () => {
     calculateFeatures.mutate({ ticker });
+  };
+
+  // Helper function to get the best available WSB data
+  const getWSBData = (field: string) => {
+    // First try to get from stored features
+    const storedValue = features?.retail_sentiment?.[field];
+    
+    // If stored value exists and is not null/0, use it
+    if (storedValue !== null && storedValue !== undefined && storedValue !== 0) {
+      return storedValue;
+    }
+    
+    // Fallback to trending data
+    if (wsbTrending) {
+      switch (field) {
+        case 'wsb_mention_count_7d':
+          return wsbTrending.mention_count || 0;
+        case 'wsb_sentiment_7d':
+          return wsbTrending.avg_sentiment || null;
+        case 'wsb_engagement_score':
+          return wsbTrending.avg_reddit_score || null;
+        case 'meme_stock_indicator':
+          return wsbTrending.trending_score || null;
+        default:
+          return storedValue;
+      }
+    }
+    
+    return storedValue;
   };
 
   if (featuresError) {
@@ -92,46 +138,144 @@ const StockDetail: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div className="flex items-center justify-between sm:justify-start sm:space-x-2">
               <span className="text-neutral-600">Articles (7d)</span>
-              <span className="font-semibold text-neutral-900">{features.article_count_7d}</span>
+              <span className="font-semibold text-neutral-900">{features.context?.article_count_7d || 0}</span>
             </div>
             <div className="flex items-center justify-between sm:justify-start sm:space-x-2">
               <span className="text-neutral-600">Feature Version</span>
               <span className="font-semibold text-neutral-900">{features.feature_version}</span>
             </div>
             <div className="flex items-center justify-between sm:justify-start sm:space-x-2">
-              <span className="text-neutral-600">Last Calculated</span>
-              <span className="font-semibold text-neutral-900">{formatDate(features.created_at)}</span>
+              <span className="text-neutral-600">WSB Sentiment</span>
+              <span className="font-semibold text-neutral-900">
+                {getWSBData('wsb_sentiment_7d') ? getWSBData('wsb_sentiment_7d').toFixed(3) : 'N/A'}
+              </span>
             </div>
           </div>
         </div>
       )}
 
+      {/* WSB Sentiment Section */}
+      <div className="card mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-neutral-900">🦍 WSB Sentiment Analysis</h2>
+          <div className="flex items-center space-x-2">
+            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+              LIVE DATA
+            </span>
+            {wsbLoading && (
+              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                🔄 Loading Trending Data
+              </span>
+            )}
+            {wsbTrending && !features?.retail_sentiment?.wsb_mention_count_7d && (
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                📊 From Trending Data
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border border-red-200">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-red-600">📊</span>
+              <span className="text-sm font-medium text-red-700">WSB Mentions</span>
+            </div>
+            <div className="text-2xl font-bold text-red-900">
+              {getWSBData('wsb_mention_count_7d')}
+            </div>
+            <div className="text-xs text-red-600 mt-1">Last 7 days</div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-blue-600">💬</span>
+              <span className="text-sm font-medium text-blue-700">Sentiment (7d)</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-900">
+              {getWSBData('wsb_sentiment_7d') ? getWSBData('wsb_sentiment_7d').toFixed(3) : 'N/A'}
+            </div>
+            <div className="text-xs text-blue-600 mt-1">
+              {getWSBData('wsb_sentiment_7d') && getWSBData('wsb_sentiment_7d') > 0.5 ? 'Bullish' : 
+               getWSBData('wsb_sentiment_7d') && getWSBData('wsb_sentiment_7d') < 0.5 ? 'Bearish' : 'Neutral'}
+            </div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-green-600">🚀</span>
+              <span className="text-sm font-medium text-green-700">Engagement</span>
+            </div>
+            <div className="text-2xl font-bold text-green-900">
+              {getWSBData('wsb_engagement_score') ? getWSBData('wsb_engagement_score').toFixed(3) : 'N/A'}
+            </div>
+            <div className="text-xs text-green-600 mt-1">Reddit activity</div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-purple-600">🎭</span>
+              <span className="text-sm font-medium text-purple-700">Meme Potential</span>
+            </div>
+            <div className="text-2xl font-bold text-purple-900">
+              {getWSBData('meme_stock_indicator') ? getWSBData('meme_stock_indicator').toFixed(3) : 'N/A'}
+            </div>
+            <div className="text-xs text-purple-600 mt-1">WSB meme score</div>
+          </div>
+        </div>
+
+        {/* Sentiment Visualization */}
+        {getWSBData('wsb_sentiment_7d') && (
+          <div className="mt-6">
+            <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
+              <span>Sentiment Distribution</span>
+              <span className="font-medium">
+                {getWSBData('wsb_sentiment_7d') > 0.6 ? 'Very Bullish' :
+                 getWSBData('wsb_sentiment_7d') > 0.4 ? 'Moderately Bullish' :
+                 getWSBData('wsb_sentiment_7d') > 0.2 ? 'Slightly Bearish' : 'Very Bearish'}
+              </span>
+            </div>
+            <div className="w-full bg-neutral-200 rounded-full h-3">
+              <div
+                className="bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${getWSBData('wsb_sentiment_7d') * 100}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs text-neutral-500 mt-1">
+              <span>Bearish</span>
+              <span>Neutral</span>
+              <span>Bullish</span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Feature Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <FeatureCard
           title="7-Day Sentiment"
-          value={features?.sent_mean_7d}
+          value={features?.sentiment?.mean_7d}
           format="sentiment"
-          subtitle={`${features?.article_count_7d || 0} articles analyzed`}
+          subtitle={`${features?.context?.article_count_7d || 0} articles analyzed`}
           isLoading={featuresLoading}
         />
         <FeatureCard
           title="5-Day Return"
-          value={features?.ret_5d}
+          value={features?.returns?.ret_5d}
           format="return"
           subtitle="Price performance"
           isLoading={featuresLoading}
         />
         <FeatureCard
           title="1-Day Return"
-          value={features?.ret_1d}
+          value={features?.returns?.ret_1d}
           format="return"
           subtitle="Latest session"
           isLoading={featuresLoading}
         />
         <FeatureCard
           title="20-Day Return"
-          value={features?.ret_20d}
+          value={features?.returns?.ret_20d}
           format="return"
           subtitle="Monthly trend"
           isLoading={featuresLoading}
@@ -142,28 +286,28 @@ const StockDetail: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <FeatureCard
           title="Sentiment Shock"
-          value={features?.sent_shock}
+          value={features?.sentiment?.shock}
           format="number"
           subtitle="vs 90-day baseline"
           isLoading={featuresLoading}
         />
         <FeatureCard
           title="Volume Z-Score"
-          value={features?.vol_z}
+          value={features?.context?.vol_z}
           format="number"
           subtitle="Volume deviation"
           isLoading={featuresLoading}
         />
         <FeatureCard
           title="14-Day Momentum"
-          value={features?.momentum_14d}
+          value={features?.returns?.momentum_14d}
           format="return"
           subtitle="Avg daily return"
           isLoading={featuresLoading}
         />
         <FeatureCard
           title="Novelty Score"
-          value={features?.novelty_mean_3d}
+          value={features?.context?.novelty_mean_3d}
           format="number"
           subtitle="Content uniqueness"
           isLoading={featuresLoading}
@@ -244,19 +388,19 @@ const StockDetail: React.FC = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-neutral-600">3-Day Average:</span>
-                  <span className="font-medium">{features.sent_mean_3d?.toFixed(3) || '—'}</span>
+                  <span className="font-medium">{features.sentiment?.mean_3d?.toFixed(3) || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">7-Day Average:</span>
-                  <span className="font-medium">{features.sent_mean_7d?.toFixed(3) || '—'}</span>
+                  <span className="font-medium">{features.sentiment?.mean_7d?.toFixed(3) || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">10-Day Average:</span>
-                  <span className="font-medium">{features.sent_mean_10d?.toFixed(3) || '—'}</span>
+                  <span className="font-medium">{features.sentiment?.mean_10d?.toFixed(3) || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">Volume Weighted:</span>
-                  <span className="font-medium">{features.sent_volume_weighted?.toFixed(3) || '—'}</span>
+                  <span className="font-medium">{features.sentiment?.volume_weighted?.toFixed(3) || '—'}</span>
                 </div>
               </div>
             </div>
@@ -269,15 +413,15 @@ const StockDetail: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">Model Version:</span>
-                  <span className="font-medium">{features.model_version || '—'}</span>
+                  <span className="font-medium">{features.metadata?.model_version || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">Articles (7d):</span>
-                  <span className="font-medium">{features.article_count_7d}</span>
+                  <span className="font-medium">{features.context?.article_count_7d || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">Last Calculated:</span>
-                  <span className="font-medium">{formatDate(features.created_at)}</span>
+                  <span className="font-medium">{formatDate(features.metadata?.created_at)}</span>
                 </div>
               </div>
             </div>

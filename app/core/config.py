@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "http://ollama:11434")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3:8b")
+    
+    # External API Keys
+    ALPHA_VANTAGE_API_KEY: Optional[str] = os.getenv("ALPHA_VANTAGE_API_KEY")
 
     # Security / Auth
     API_KEY: Optional[str] = os.getenv("API_KEY")

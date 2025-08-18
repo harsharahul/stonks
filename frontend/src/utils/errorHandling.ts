@@ -4,7 +4,7 @@
  * Provides consistent error handling, user messaging, and error recovery mechanisms.
  */
 
-import React from 'react';
+
 
 export interface ApiError {
   error_code: string;
@@ -259,60 +259,7 @@ export const getRetryDelay = (error: ApiError | WebSocketError, attemptNumber: n
   return delay + jitter;
 };
 
-/**
- * Error boundary utility for React components
- */
-export const createErrorBoundary = (
-  onError: (error: Error, errorInfo: any) => void,
-  fallbackComponent?: React.ComponentType<{ error: Error }>
-) => {
-  return class ErrorBoundary extends React.Component<
-    { children: React.ReactNode },
-    { hasError: boolean; error?: Error }
-  > {
-    constructor(props: { children: React.ReactNode }) {
-      super(props);
-      this.state = { hasError: false };
-    }
 
-    static getDerivedStateFromError(error: Error) {
-      return { hasError: true, error };
-    }
-
-    componentDidCatch(error: Error, errorInfo: any) {
-      console.error('Error caught by boundary:', error, errorInfo);
-      onError(error, errorInfo);
-    }
-
-    render() {
-      if (this.state.hasError) {
-        if (fallbackComponent) {
-          const FallbackComponent = fallbackComponent;
-          return <FallbackComponent error={this.state.error!} />;
-        }
-
-        return (
-          <div className="error-boundary p-4 border border-red-300 rounded-lg bg-red-50">
-            <h2 className="text-lg font-semibold text-red-800 mb-2">
-              Something went wrong
-            </h2>
-            <p className="text-red-700 mb-3">
-              An unexpected error occurred. Please refresh the page to continue.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-            >
-              Refresh Page
-            </button>
-          </div>
-        );
-      }
-
-      return this.props.children;
-    }
-  };
-};
 
 /**
  * Utility to safely execute async operations with error handling

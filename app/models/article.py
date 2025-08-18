@@ -1,5 +1,6 @@
 from typing import Optional, List
-from sqlalchemy import Text, ForeignKey, DateTime, ARRAY, Numeric, JSON
+from sqlalchemy import Text, ForeignKey, DateTime, Numeric, JSON
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, UUIDPrimaryKeyMixin
@@ -19,6 +20,7 @@ class Article(UUIDPrimaryKeyMixin, Base):
     tickers: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
     sentiment: Mapped[Optional[float]] = mapped_column(Numeric(5, 2), nullable=True)
     entities: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    article_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
     # Enhanced analytics fields
     canonical_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

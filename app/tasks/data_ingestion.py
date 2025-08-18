@@ -543,3 +543,122 @@ def test_rss_ingestion(self, limit_sources: int = 2) -> Dict:
             })
     
     return results
+
+
+@shared_task(bind=True)
+def ingest_rss_feeds_task(self, tickers: Optional[List[str]] = None) -> Dict:
+    """
+    Automated RSS ingestion task for all configured sources
+    
+    Args:
+        tickers: Specific tickers to fetch news for (defaults to all active)
+        
+    Returns:
+        Dict with ingestion statistics
+    """
+    db = SessionLocal()
+    task_id = self.request.id
+    
+    try:
+        print(f"📰 Starting automated RSS ingestion task {task_id}")
+        
+        # Get or create data source
+        source_name = "Automated RSS Ingestion"
+        data_source = db.query(DataSource).filter(
+            DataSource.name == source_name
+        ).first()
+        
+        if not data_source:
+            data_source = DataSource(
+                name=source_name,
+                source_type="automated",
+                base_url="rss_automation",
+                reliability_score=0.9
+            )
+            db.add(data_source)
+            db.flush()
+        
+        # Create ETL job run
+        job_run = ETLJobRun(
+            job_name="automated_rss_ingestion",
+            started_at=datetime.utcnow(),
+            status="running",
+            details={
+                "task_id": task_id,
+                "tickers_requested": tickers,
+                "sources_processed": []
+            }
+        )
+        db.add(job_run)
+        db.commit()
+        
+        # Get tickers to process
+        if tickers is None:
+            # Get all active tickers from stocks table
+            from app.models.stock import Stock
+            stocks = db.query(Stock).filter(Stock.is_active == True).all()
+            tickers = [stock.symbol for stock in stocks]
+        
+        print(f"   📊 Processing {len(tickers)} tickers")
+        
+        total_articles = 0
+        total_new = 0
+        total_duplicate = 0
+        sources_processed = []
+        
+        # Process each ticker
+        for ticker in tickers[:20]:  # Limit to 20 for performance
+            try:
+                print(f"   🔍 Processing {ticker}...")
+                
+                # Fetch Google News for this ticker
+                google_result = fetch_google_news_by_ticker(ticker, 1)
+                if google_result.get('status') == 'success':
+                    total_articles += google_result.get('articles_new', 0)
+                    total_new += google_result.get('articles_new', 0)
+                    total_duplicate += google_result.get('articles_duplicate', 0)
+                    sources_processed.append(f"google_news_{ticker}")
+                
+                # Small delay to avoid rate limiting
+                time.sleep(1)
+                
+            except Exception as e:
+                print(f"   ⚠️  Error processing {ticker}: {e}")
+                continue
+        
+        # Update job run
+        job_run.status = "success"
+        job_run.finished_at = datetime.utcnow()
+        job_run.items_processed = total_articles
+        job_run.details.update({
+            "total_articles": total_articles,
+            "new_articles": total_new,
+            "duplicate_articles": total_duplicate,
+            "sources_processed": sources_processed
+        })
+        
+        db.commit()
+        
+        print(f"✅ RSS ingestion complete: {total_new} new, {total_duplicate} duplicate")
+        
+        return {
+            "status": "success",
+            "task_id": task_id,
+            "total_articles": total_articles,
+            "new_articles": total_new,
+            "duplicate_articles": total_duplicate,
+            "tickers_processed": len(tickers),
+            "sources_processed": sources_processed
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in automated RSS ingestion: {e}")
+        if 'job_run' in locals():
+            job_run.status = "failed"
+            job_run.finished_at =datetime.utcnow()
+            job_run.details.update({"error": str(e)})
+            db.commit()
+        raise
+        
+    finally:
+        db.close()

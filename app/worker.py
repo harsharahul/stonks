@@ -11,8 +11,8 @@ worker = Celery('stonks')
 
 # Configure Celery
 worker.conf.update(
-    broker_url=f'redis://{settings.redis_host}:{settings.redis_port}/0',
-    result_backend=f'redis://{settings.redis_host}:{settings.redis_port}/0',
+    broker_url=settings.CELERY_BROKER,
+    result_backend=settings.CELERY_BACKEND,
     task_serializer='json',
     accept_content=['json'],
     result_serializer='json',
@@ -36,9 +36,16 @@ worker.autodiscover_tasks([
     'app.tasks.signal_generation', 
     'app.tasks.feature_calculation',
     'app.tasks.data_ingestion',
+    'app.tasks.earnings_calendar',
+    'app.tasks.post_ingest_hooks',
     'app.tasks.price_ingestion',
-    'app.tasks.reddit_wsb_ingestion'
+    'app.tasks.reddit_wsb_ingestion',
+    'app.tasks.sec_edgar_ingestion',
+    'app.tasks.sec_edgar_enhanced',
+    'app.tasks.reddit_wsb_enhanced'
 ])
+
+
 
 
 @worker.task
