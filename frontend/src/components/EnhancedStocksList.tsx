@@ -88,6 +88,8 @@ const EnhancedStocksList: React.FC = () => {
         params.append('priority_filter', filterPriority);
       }
 
+      console.log('🔍 Fetching stocks with params:', params.toString());
+      
       const [stocksRes, suggestionsRes, statsRes] = await Promise.all([
         fetch(`${baseUrl}/api/v1/stocks-enhanced/comprehensive?${params}`),
         fetch(`${baseUrl}/api/v1/stocks-enhanced/discovery-suggestions?limit=5`).catch(() => null),
@@ -96,6 +98,13 @@ const EnhancedStocksList: React.FC = () => {
 
       if (stocksRes.ok) {
         const stocksData = await stocksRes.json();
+        console.log('📊 Stocks response:', {
+          success: stocksData.success,
+          total: stocksData.total,
+          filters: stocksData.filters_applied,
+          sampleStocks: stocksData.stocks?.slice(0, 3)?.map(s => ({ symbol: s.symbol, priority: s.priority_level }))
+        });
+        
         if (stocksData.success && stocksData.stocks) {
           setStocks(stocksData.stocks);
         } else {
