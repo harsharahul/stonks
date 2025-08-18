@@ -223,7 +223,7 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 w-96 max-w-sm">
+    <div className="fixed top-4 right-6 z-30 w-80 max-w-sm">
       {/* Header */}
       <div className={`bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-t-xl shadow-xl transition-all duration-300 ${
         showNewAlertAnimation ? 'animate-pulse shadow-2xl' : ''
