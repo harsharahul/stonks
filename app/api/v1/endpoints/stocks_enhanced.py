@@ -84,7 +84,7 @@ async def get_comprehensive_stocks(
             recent_alerts = db.query(Alert).filter(
                 and_(
                     Alert.ticker == stock.symbol,
-                    Alert.created_at >= datetime.utcnow() - timedelta(days=7)
+                    Alert.triggered_at >= datetime.utcnow() - timedelta(days=7)
                 )
             ).count()
             
@@ -292,7 +292,7 @@ async def get_ai_discovered_stocks(
         
         # Find stocks with recent alerts
         alert_stocks = db.query(Alert.ticker, func.count(Alert.id).label('alert_count')).filter(
-            Alert.created_at >= cutoff_date
+            Alert.triggered_at >= cutoff_date
         ).group_by(Alert.ticker).having(func.count(Alert.id) >= 1).all()
         
         # Combine and analyze
@@ -425,7 +425,7 @@ async def get_stock_tracking_stats(db: Session = Depends(get_db)):
         ).scalar()
         
         recent_alerts = db.query(func.count(Alert.id)).filter(
-            Alert.created_at >= datetime.utcnow() - timedelta(days=7)
+            Alert.triggered_at >= datetime.utcnow() - timedelta(days=7)
         ).scalar()
         
         # Stocks with recent features
