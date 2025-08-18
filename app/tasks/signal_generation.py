@@ -16,6 +16,8 @@ from app.models.signal import Signal
 from app.models.alert import Alert
 from app.services.signal_generator import SignalGenerator
 from app.services.alert_engine import AlertEngine
+from app.services.websocket_manager import event_broadcaster
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +166,13 @@ def generate_alerts_task(self, hours_back: int = 1) -> Dict:
             alerts_by_type[alert.alert_type] = alerts_by_type.get(alert.alert_type, 0) + 1
             alerts_by_severity[alert.severity] = alerts_by_severity.get(alert.severity, 0) + 1
         
+        # Broadcast alerts to websocket clients
+        try:
+            for alert in alerts:
+                asyncio.run(event_broadcaster.broadcast_alert(alert.to_dict()))
+        except Exception as be:
+            logger.error(f"Broadcast error: {be}")
+
         # Update job run
         job_run.status = "success"
         job_run.finished_at = datetime.utcnow()

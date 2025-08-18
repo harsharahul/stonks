@@ -43,6 +43,11 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
   const [apiError, setApiError] = useState<any>(null);
   const alertSoundRef = useRef<HTMLAudioElement | null>(null);
 
+  // Draggable overlay state
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 100 });
+
   const { isConnected, lastMessage, connectionError, sendMessage, reconnect } = useAlertsWebSocket(
     userId,
     {
@@ -90,6 +95,95 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
       }
     }
   );
+
+  // Initialize position (persisted or default below navbar, top-right)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('liveAlertsPosition');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
+          setPosition({ x: parsed.x, y: parsed.y });
+          return;
+        }
+      }
+    } catch {}
+
+    // Default after first paint to compute width
+    requestAnimationFrame(() => {
+      const width = containerRef.current?.offsetWidth ?? 320;
+      const x = Math.max(16, window.innerWidth - width - 16);
+      const y = 96; // place below navbar by default
+      setPosition({ x, y });
+    });
+  }, []);
+
+  // Keep overlay inside viewport on resize
+  useEffect(() => {
+    const onResize = () => {
+      const width = containerRef.current?.offsetWidth ?? 320;
+      const height = containerRef.current?.offsetHeight ?? 400;
+      const x = Math.min(Math.max(position.x, 8), window.innerWidth - width - 8);
+      const y = Math.min(Math.max(position.y, 8), window.innerHeight - height - 8);
+      if (x !== position.x || y !== position.y) setPosition({ x, y });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [position]);
+
+  // Drag handlers
+  const onHeaderMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    const rect = containerRef.current?.getBoundingClientRect();
+    dragOffsetRef.current = { x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) };
+    e.preventDefault();
+  };
+
+  const onHeaderTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    setIsDragging(true);
+    const rect = containerRef.current?.getBoundingClientRect();
+    dragOffsetRef.current = { x: t.clientX - (rect?.left ?? 0), y: t.clientY - (rect?.top ?? 0) };
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const move = (clientX: number, clientY: number) => {
+      const width = containerRef.current?.offsetWidth ?? 320;
+      const height = containerRef.current?.offsetHeight ?? 400;
+      const nextX = Math.min(Math.max(clientX - dragOffsetRef.current.x, 8), window.innerWidth - width - 8);
+      const nextY = Math.min(Math.max(clientY - dragOffsetRef.current.y, 8), window.innerHeight - height - 8);
+      setPosition({ x: nextX, y: nextY });
+    };
+
+    const onMouseMove = (e: MouseEvent) => move(e.clientX, e.clientY);
+    const onMouseUp = () => {
+      setIsDragging(false);
+      try { localStorage.setItem('liveAlertsPosition', JSON.stringify(position)); } catch {}
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      move(t.clientX, t.clientY);
+    };
+    const onTouchEnd = () => {
+      setIsDragging(false);
+      try { localStorage.setItem('liveAlertsPosition', JSON.stringify(position)); } catch {}
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDragging, position]);
 
   // Fetch recent alerts on component mount
   const fetchRecentAlerts = async () => {
@@ -223,12 +317,20 @@ const RealTimeAlerts: React.FC<RealTimeAlertsProps> = ({
   };
 
   return (
-    <div className="fixed top-4 right-6 z-30 w-80 max-w-sm">
+    <div
+      ref={containerRef}
+      className={`fixed z-30 w-80 max-w-sm ${isDragging ? 'cursor-grabbing' : ''} select-none`}
+      style={{ top: position.y, left: position.x }}
+    >
       {/* Header */}
       <div className={`bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-t-xl shadow-xl transition-all duration-300 ${
         showNewAlertAnimation ? 'animate-pulse shadow-2xl' : ''
       }`}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <div
+          className="flex items-center justify-between p-4 border-b border-gray-100 cursor-move"
+          onMouseDown={onHeaderMouseDown}
+          onTouchStart={onHeaderTouchStart}
+        >
           <div className="flex items-center space-x-3">
             <div className="relative float">
               <div className={`w-3 h-3 rounded-full transition-all duration-300 ${

@@ -30,23 +30,25 @@ worker.conf.update(
     task_soft_time_limit=25 * 60,  # 25 minutes
 )
 
-# Auto-discover tasks from all app.tasks modules
-worker.autodiscover_tasks([
-    'app.tasks.anomaly_detection',
-    'app.tasks.signal_generation', 
-    'app.tasks.feature_calculation',
-    'app.tasks.data_ingestion',
-    'app.tasks.earnings_calendar',
-    'app.tasks.post_ingest_hooks',
-    'app.tasks.price_ingestion',
-    'app.tasks.reddit_wsb_ingestion',
-    'app.tasks.sec_edgar_ingestion',
-    'app.tasks.sec_edgar_enhanced',
-    'app.tasks.reddit_wsb_enhanced'
-])
+# Import tasks directly to ensure they are registered
+# This is more reliable than autodiscover_tasks for our use case
+import app.tasks.anomaly_detection
+import app.tasks.signal_generation
+import app.tasks.feature_calculation
+import app.tasks.data_ingestion
+import app.tasks.earnings_calendar
+import app.tasks.post_ingest_hooks
+import app.tasks.price_ingestion
+import app.tasks.reddit_wsb_ingestion
+import app.tasks.sec_edgar_ingestion
+import app.tasks.sec_edgar_enhanced
+import app.tasks.reddit_wsb_enhanced
 
-
-
+# Verify task registration
+print("🔧 Celery worker initialized with tasks:")
+for task_name in worker.tasks.keys():
+    if task_name.startswith('app.'):
+        print(f"  ✅ {task_name}")
 
 @worker.task
 def test_task():
