@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../hooks/useToast';
+import ToastManager from './ToastManager';
 
 interface StockActivity {
   signals_7d: number;
@@ -65,6 +67,7 @@ const EnhancedStocksList: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newStock, setNewStock] = useState({ symbol: '', name: '', sector: '', priority: 'normal' });
+  const { toasts, showSuccess, showError, removeToast } = useToast();
 
   useEffect(() => {
     fetchStocksData();
@@ -78,7 +81,7 @@ const EnhancedStocksList: React.FC = () => {
       const baseUrl = 'http://localhost:8080';
       const params = new URLSearchParams({
         sort_by: sortBy,
-        limit: '50'
+        page_size: '100'
       });
       
       if (filterPriority) {
@@ -86,31 +89,39 @@ const EnhancedStocksList: React.FC = () => {
       }
 
       const [stocksRes, suggestionsRes, statsRes] = await Promise.all([
-        fetch(`${baseUrl}/api/v1/stocks/?${params}`),
+        fetch(`${baseUrl}/api/v1/stocks-enhanced/comprehensive?${params}`),
         fetch(`${baseUrl}/api/v1/stocks-enhanced/discovery-suggestions?limit=5`).catch(() => null),
         fetch(`${baseUrl}/api/v1/stocks-enhanced/stats`).catch(() => null)
       ]);
 
       if (stocksRes.ok) {
         const stocksData = await stocksRes.json();
-        // Convert basic stock data to enhanced format
-        const enhancedStocks = (stocksData.items || []).map((stock: any) => ({
-          symbol: stock.symbol,
-          name: stock.name || stock.symbol,
-          sector: stock.sector || null,
-          priority_level: 'normal',
-          is_active: stock.is_active !== false,
-          added_by: 'system',
-          created_at: stock.created_at || null,
-          recent_activity: {
-            signals_7d: 0,
-            alerts_7d: 0,
-            has_recent_features: false,
-            last_feature_date: null
-          },
-          latest_features: null
-        }));
-        setStocks(enhancedStocks);
+        if (stocksData.success && stocksData.stocks) {
+          setStocks(stocksData.stocks);
+        } else {
+          // Fallback to basic endpoint if enhanced fails
+          const basicRes = await fetch(`${baseUrl}/api/v1/stocks/?${params}`);
+          if (basicRes.ok) {
+            const basicData = await basicRes.json();
+            const enhancedStocks = (basicData.items || []).map((stock: any) => ({
+              symbol: stock.symbol,
+              name: stock.company_name || stock.symbol,
+              sector: stock.sector || null,
+              priority_level: 'normal',
+              is_active: stock.is_active !== false,
+              added_by: 'system',
+              created_at: stock.created_at || null,
+              recent_activity: {
+                signals_7d: 0,
+                alerts_7d: 0,
+                has_recent_features: false,
+                last_feature_date: null
+              },
+              latest_features: null
+            }));
+            setStocks(enhancedStocks);
+          }
+        }
       }
 
       if (suggestionsRes && suggestionsRes.ok) {
@@ -149,6 +160,49 @@ const EnhancedStocksList: React.FC = () => {
     }
   };
 
+  const removeStock = async (symbol: string) => {
+    try {
+      const baseUrl = 'http://localhost:8080';
+      const response = await fetch(`${baseUrl}/api/v1/stocks-enhanced/remove/${symbol}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Show success notification
+          showSuccess(
+            'Stock Removed Successfully!',
+            `${symbol} has been removed from your tracking list.`
+          );
+          
+          // Refresh the list
+          fetchStocksData();
+        } else {
+          showError(
+            'Failed to Remove Stock',
+            `Could not remove ${symbol}: ${result.message || 'Unknown error'}`
+          );
+        }
+      } else {
+        const errorData = await response.json();
+        showError(
+          'Failed to Remove Stock',
+          `Could not remove ${symbol}: ${errorData.detail || 'Unknown error'}`
+        );
+      }
+    } catch (err) {
+      console.error('Error removing stock:', err);
+      showError(
+        'Failed to Remove Stock',
+        `Could not remove ${symbol}: Network or system error`
+      );
+    }
+  };
+
   const addStock = async (symbol: string, name?: string, priority: string = 'normal') => {
     try {
       const baseUrl = 'http://localhost:8080';
@@ -168,13 +222,49 @@ const EnhancedStocksList: React.FC = () => {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          fetchStocksData(); // Refresh the list
+          // Show success notification
+          showSuccess(
+            'Stock Added Successfully!',
+            `${symbol.toUpperCase()} has been added to your tracking list.`
+          );
+          
+          // Refresh the list
+          fetchStocksData();
           setShowAddForm(false);
           setNewStock({ symbol: '', name: '', sector: '', priority: 'normal' });
+        } else {
+          // Handle specific error cases
+          if (result.message && result.message.includes('already being tracked')) {
+            showInfo(
+              'Stock Already Tracked',
+              `${symbol.toUpperCase()} is already in your tracking list. You can modify its priority or remove it if needed.`
+            );
+          } else {
+            // Show error notification for API-level failure
+            showError(
+              'Failed to Add Stock',
+              `Could not add ${symbol.toUpperCase()}: ${result.message || 'Unknown error'}`
+            );
+          }
         }
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to add stock:', errorData);
+        
+        // Show error notification
+        showError(
+          'Failed to Add Stock',
+          `Could not add ${symbol.toUpperCase()}: ${errorData.detail || 'Unknown error'}`
+        );
       }
     } catch (err) {
       console.error('Error adding stock:', err);
+      
+      // Show error notification for network/other errors
+      showError(
+        'Failed to Add Stock',
+        `Could not add ${symbol.toUpperCase()}: Network or system error`
+      );
     }
   };
 
@@ -414,6 +504,15 @@ const EnhancedStocksList: React.FC = () => {
                           {stock.priority_level}
                         </span>
                         <span className="text-xs text-gray-500">by {stock.added_by}</span>
+                        {stock.added_by === 'user' && (
+                          <button
+                            onClick={() => removeStock(stock.symbol)}
+                            className="ml-2 text-xs text-red-600 hover:text-red-800 hover:underline"
+                            title="Remove stock"
+                          >
+                            Remove
+                          </button>
+                        )}
                       </div>
                       <div className="text-sm text-gray-600">{stock.name}</div>
                       {stock.sector && <div className="text-xs text-gray-500">{stock.sector}</div>}
@@ -484,6 +583,9 @@ const EnhancedStocksList: React.FC = () => {
           <span>Refresh Data</span>
         </button>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastManager toasts={toasts} onDismiss={removeToast} />
     </div>
   );
 };

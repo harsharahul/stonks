@@ -13,3 +13,5 @@ class Stock(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     sector: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     exchange: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    priority_level: Mapped[Optional[str]] = mapped_column(String, default="normal", nullable=True)
+    added_by: Mapped[Optional[str]] = mapped_column(String, default="system", nullable=True)

@@ -90,7 +90,7 @@ async def get_comprehensive_stocks(
             
             enhanced_stock = {
                 'symbol': stock.symbol,
-                'name': stock.name,
+                'name': stock.company_name,
                 'sector': stock.sector,
                 'priority_level': getattr(stock, 'priority_level', 'normal'),
                 'is_active': stock.is_active,
@@ -164,7 +164,7 @@ async def add_stock_to_tracking(
                     'message': f'Stock {stock_request.symbol} is already being tracked',
                     'stock': {
                         'symbol': existing_stock.symbol,
-                        'name': existing_stock.name,
+                        'name': existing_stock.company_name,
                         'is_active': existing_stock.is_active
                     }
                 }
@@ -181,7 +181,7 @@ async def add_stock_to_tracking(
                     'message': f'Stock {stock_request.symbol} reactivated',
                     'stock': {
                         'symbol': existing_stock.symbol,
-                        'name': existing_stock.name,
+                        'name': existing_stock.company_name,
                         'is_active': existing_stock.is_active,
                         'priority_level': getattr(existing_stock, 'priority_level', 'normal')
                     }
@@ -190,7 +190,7 @@ async def add_stock_to_tracking(
         # Create new stock
         new_stock = Stock(
             symbol=stock_request.symbol.upper(),
-            name=stock_request.name or stock_request.symbol.upper(),
+            company_name=stock_request.name or stock_request.symbol.upper(),
             sector=stock_request.sector,
             is_active=True
         )
@@ -214,7 +214,7 @@ async def add_stock_to_tracking(
             'message': f'Stock {stock_request.symbol} added to tracking',
             'stock': {
                 'symbol': new_stock.symbol,
-                'name': new_stock.name,
+                'name': new_stock.company_name,
                 'sector': new_stock.sector,
                 'is_active': new_stock.is_active,
                 'priority_level': getattr(new_stock, 'priority_level', 'normal'),
@@ -225,6 +225,50 @@ async def add_stock_to_tracking(
     except Exception as e:
         logger.error(f"Error adding stock {stock_request.symbol}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to add stock: {str(e)}")
+
+
+@router.delete("/remove/{symbol}")
+async def remove_stock_from_tracking(
+    symbol: str,
+    db: Session = Depends(get_db)
+):
+    """Remove a stock from tracking system (only user-added stocks)"""
+    try:
+        stock = db.query(Stock).filter(Stock.symbol == symbol.upper()).first()
+        
+        if not stock:
+            return {
+                'success': False,
+                'message': f'Stock {symbol} not found'
+            }
+        
+        # Only allow removal of user-added stocks
+        if stock.added_by != 'user':
+            return {
+                'success': False,
+                'message': f'Cannot remove system-tracked stock {symbol}. Only user-added stocks can be removed.'
+            }
+        
+        # Soft delete by setting as inactive
+        stock.is_active = False
+        db.commit()
+        
+        return {
+            'success': True,
+            'message': f'Stock {symbol} removed from tracking',
+            'stock': {
+                'symbol': stock.symbol,
+                'name': stock.company_name,
+                'sector': stock.sector,
+                'is_active': stock.is_active,
+                'priority_level': getattr(stock, 'priority_level', 'normal'),
+                'added_by': stock.added_by
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error removing stock {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove stock: {str(e)}")
 
 
 @router.put("/{symbol}")
@@ -242,7 +286,7 @@ async def update_stock(
         
         # Update fields
         if stock_update.name is not None:
-            stock.name = stock_update.name
+            stock.company_name = stock_update.name
         if stock_update.sector is not None:
             stock.sector = stock_update.sector
         if stock_update.is_active is not None:
