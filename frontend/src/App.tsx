@@ -7,6 +7,7 @@ import MarketIntelligence from './components/MarketIntelligence';
 import EnhancedStocksList from './components/EnhancedStocksList';
 import WSBTrendingDashboard from './components/WSBTrendingDashboard';
 import DataIngestionStatus from './components/DataIngestionStatus';
+import LatestAlertsPanel from './components/LatestAlertsPanel';
 import { useFeaturesSummary, useFeatureStats } from './hooks/useFeatures';
 import { cn } from './utils/format';
 
@@ -352,7 +353,10 @@ const Dashboard: React.FC = () => {
       {/* New Features */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <WSBTrendingDashboard />
-        <DataIngestionStatus />
+        <div className="space-y-8">
+          <LatestAlertsPanel />
+          <DataIngestionStatus />
+        </div>
       </div>
     </div>
   );

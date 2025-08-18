@@ -15,6 +15,7 @@ from app.models.alert import Alert
 from app.services.signal_generator import SignalGenerator
 from app.services.alert_engine import AlertEngine
 from app.tasks.signal_generation import generate_signals_task, generate_alerts_task
+from app.services.websocket_manager import event_broadcaster
 from app.api.dependencies import verify_api_key
 
 router = APIRouter()
@@ -180,6 +181,39 @@ async def trigger_alert_generation(
         "task_id": task.id,
         "hours": hours
     }
+
+
+@router.post("/alerts/generate/sync", dependencies=[Depends(verify_api_key)])
+async def generate_and_broadcast_alerts_sync(
+    hours: int = Query(1, ge=1, le=24, description="Process signals from last N hours"),
+    db: Session = Depends(get_db)
+):
+    """Synchronously generate alerts from recent signals and broadcast them to WebSocket clients.
+
+    This runs inside the API process so broadcasts reach connected clients immediately.
+    """
+    try:
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        recent_signals = db.query(Signal).filter(
+            Signal.generated_at > cutoff_time
+        ).all()
+
+        alert_engine = AlertEngine(db)
+        alerts = alert_engine.process_signals(recent_signals)
+        saved = alert_engine.save_alerts(alerts)
+
+        # Broadcast alerts to global channel
+        for alert in alerts:
+            await event_broadcaster.broadcast_alert(alert.to_dict())
+
+        return {
+            "status": "success",
+            "signals_processed": len(recent_signals),
+            "alerts_generated": saved,
+            "broadcasted": saved
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate alerts: {str(e)}")
 
 
 @router.get("/{signal_id}")
