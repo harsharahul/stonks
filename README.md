@@ -1,52 +1,130 @@
-🚀 Stonks – AI-Powered Market Intelligence Platform
+# 🚀 Stonks - Stock Analytics Platform
 
-Stonks has evolved into a **next-generation AI-powered market intelligence system** that combines traditional market data with advanced alternative data sources through an expandable, LLM-driven architecture. The platform features politician stock trades monitoring, intelligent signal processing with LangGraph agents, self-correcting data writes, and comprehensive real-time analytics.
+> **AI-Powered Stock Discovery with Real-Time Analytics, Signals, and Alerts**
 
-## 🏆 Features
+## 📍 **🚨 IMPORTANT: START HERE FOR PROJECT INFORMATION**
 
-- **AI-Powered Signal Processing**: LangGraph-based intelligent agents with multi-step workflows
-- **Politician Stock Trades Monitoring**: Real-time Congressional and Senate stock disclosure tracking
-- **Self-Correcting Data System**: LLM-powered validation and automatic error correction
-- **Intelligent Signal Routing**: Smart prioritization and multi-channel distribution
-- **Real-Time Alert System**: 8 alert types with smart cooldown management
-- **WebSocket Infrastructure**: 4 broadcasting channels with 100% stability
-- **Expandable Signal Architecture**: Modular framework supporting unlimited data sources
+**This project uses a consolidated documentation system. For complete project information, always start with:**
 
-## 📚 Key Documentation
+### **📋 [MASTER_DOCUMENTATION.md](./MASTER_DOCUMENTATION.md) ← CLICK HERE FIRST**
 
-### **Quick Start & Resume**
-- **RESUMPTION_GUIDE.md** – Instant resume instructions for any session
-- **MASTER_CHECKPOINT.md** – Complete current status and architecture overview
-- **KNOWN_ISSUES.md** – All issues documented with solutions
+This master document contains:
+- **Complete project overview and current status**
+- **Navigation to all other documentation**
+- **Current issues and next steps**
+- **Quick start commands**
+- **Project health status**
 
-### **Technical Architecture**
-- **docs/architecture.md** – AI-powered system architecture  
-- **docs/expandable-signal-architecture.md** – signal processing framework
-- **REAL_DATA_TESTING_GUIDE_UPDATED.md** – Comprehensive testing procedures
-- **ARCHITECTURE_REVIEW.md** – Design cohesion analysis and readiness assessment
+---
 
-### **Historical Reference**
-- **PROJECT_STATUS_SUMMARY.md** – Detailed progress tracking
-- **docs/platform-overview.md** – Platform vision and capabilities
+## 🎯 **Quick Project Overview**
 
-## 🛠️ Technology Stack
+Stonks is a comprehensive stock analytics platform that combines:
+- **Real-time data ingestion** from multiple sources (SEC EDGAR, Reddit WSB, News RSS)
+- **AI-powered analytics** with sentiment analysis and feature calculation
+- **Automated signal generation** and real-time alerts
+- **Interactive dashboard** with stock management and tracking
+- **WebSocket real-time updates** for live market intelligence
 
-- **Backend**: Python 3.11 + FastAPI + LangGraph + Celery + Redis
-- **AI/LLM**: LangGraph workflows + OpenAI + Ollama fallback
-- **Database**: PostgreSQL 16 with 15+ specialized tables
-- **Frontend**: React + Vite + Tailwind CSS with real-time WebSocket integration
-- **Data Sources**: Yahoo Finance, RSS feeds, Reddit WSB, SEC filings, Political trades
+## 🚀 **Quick Start**
 
-## 🚀 Current Status
+```bash
+# Clone and setup
+git clone <repository>
+cd Stonks
 
-**Status**: ✅ **AI-POWERED PLATFORM - OPERATIONAL & PRODUCTION READY**  
-**Phase**: Next-Generation Market Intelligence System - 100% Complete  
-**Assessment**: 🏆 **BREAKTHROUGH SUCCESS**
+# Backend
+source .venv/bin/activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 
-Dev → Prod
+# Frontend
+cd frontend
+npm run dev
 
-- Local dev: docker-compose for DB, Redis, and optional Ollama; create a `.env` using keys in `docs/configuration.md`
-- Prod: k3s manifests with Kustomize overlays; images built via Gitea Actions
-- Optional analytics enrichment via OpenAI or Ollama; disabled by default
+# Celery Worker
+celery -A app.worker worker --loglevel=info
+```
+
+## 📊 **Current Status**
+
+- **Phase**: End-to-End Feature Hardening
+- **Progress**: 86% Complete
+- **Status**: Frontend sorting/filtering needs UI verification
+- **Health**: 🟢 Backend APIs, 🟡 Frontend UI, 🟢 Database, 🟢 Real-time Features
+
+## 🔗 **Essential Documentation Links**
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **[MASTER_DOCUMENTATION.md](./MASTER_DOCUMENTATION.md)** | **Complete project overview** | **ALWAYS START HERE** |
+| [PROJECT_CHECKPOINT.md](./PROJECT_CHECKPOINT.md) | Current status & next steps | Check current progress |
+| [USER_STORIES_AND_FLOWS.md](./USER_STORIES_AND_FLOWS.md) | User experience & requirements | Understand user needs |
+| [docs/architecture.md](./docs/architecture.md) | System architecture | Understand system design |
+| [docs/implementation-notes.md](./docs/implementation-notes.md) | Technical details | Implementation guidance |
+
+## 🛠️ **Tech Stack**
+
+- **Backend**: FastAPI + PostgreSQL + Redis + Celery
+- **Frontend**: React + TypeScript + Tailwind CSS + Vite
+- **AI/ML**: OpenAI GPT-4 + LangGraph + Custom Analytics
+- **Real-time**: WebSocket + Redis Pub/Sub
+- **Data**: SEC EDGAR, Reddit WSB, News RSS, Earnings Calendar
+
+## 🎯 **Key Features**
+
+- ✅ **Stock Management**: Add/remove/track stocks with priority levels
+- ✅ **Real-time Alerts**: WebSocket-powered live market alerts
+- ✅ **AI Insights**: LLM-powered stock analysis and recommendations
+- ✅ **Data Pipeline**: Automated ingestion from multiple financial sources
+- ✅ **Feature Store**: Daily aggregated analytics with versioning
+- ✅ **Toast Notifications**: User-friendly feedback system
+
+## 🚨 **Known Issues**
+
+- Frontend sorting/filtering UI updates need verification
+- Real-time state management optimization needed
+
+## 🔮 **Roadmap**
+
+- **Phase 1**: Auto-removal for non-trending stocks
+- **Phase 2**: Enhanced signal generation for user stocks
+- **Phase 3**: Production hardening and deployment
+
+---
+
+## 📝 **For Developers**
+
+### **Documentation Workflow**
+1. **Always start with** [MASTER_DOCUMENTATION.md](./MASTER_DOCUMENTATION.md)
+2. **Check current status** in [PROJECT_CHECKPOINT.md](./PROJECT_CHECKPOINT.md)
+3. **Update checkpoint** when making changes
+4. **Follow the documentation update workflow**
+
+### **Code Standards**
+- Python: Black formatting, type hints, docstrings
+- Frontend: ESLint, Prettier, TypeScript strict mode
+- Database: Alembic migrations, SQLAlchemy models
+- Testing: pytest, Playwright for E2E
+
+---
+
+## 🤝 **Contributing**
+
+1. Read [MASTER_DOCUMENTATION.md](./MASTER_DOCUMENTATION.md) first
+2. Check [PROJECT_CHECKPOINT.md](./PROJECT_CHECKPOINT.md) for current status
+3. Follow the established patterns and architecture
+4. Update documentation as you progress
+
+---
+
+## 📞 **Support**
+
+- **Project Status**: [PROJECT_CHECKPOINT.md](./PROJECT_CHECKPOINT.md)
+- **Known Issues**: [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)
+- **User Stories**: [USER_STORIES_AND_FLOWS.md](./USER_STORIES_AND_FLOWS.md)
+
+---
+
+*This README provides a quick overview. For complete project information, documentation, and current status, always start with [MASTER_DOCUMENTATION.md](./MASTER_DOCUMENTATION.md).*
 
 
