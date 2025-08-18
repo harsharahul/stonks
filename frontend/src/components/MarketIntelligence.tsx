@@ -99,17 +99,26 @@ const MarketIntelligence: React.FC = () => {
 
       if (overviewRes.ok) {
         const overviewData = await overviewRes.json();
+        console.log('📊 Market overview data received:', overviewData);
         setMarketOverview(overviewData);
+      } else {
+        console.error('❌ Overview response not ok:', overviewRes.status, overviewRes.statusText);
       }
 
       if (sentimentRes.ok) {
         const sentimentData = await sentimentRes.json();
+        console.log('🎭 Sentiment data received:', sentimentData);
         setSentimentAnalysis(sentimentData);
+      } else {
+        console.error('❌ Sentiment response not ok:', sentimentRes.status, sentimentRes.statusText);
       }
 
       if (pressureRes.ok) {
         const pressureData = await pressureRes.json();
+        console.log('🤖 Pressure test data received:', pressureData);
         setPressureTest(pressureData);
+      } else {
+        console.error('❌ Pressure test response not ok:', pressureRes.status, pressureRes.statusText);
       }
 
     } catch (err) {
@@ -244,6 +253,7 @@ const MarketIntelligence: React.FC = () => {
       )}
 
       {/* Market Sentiment Analysis */}
+      {console.log('🎭 Rendering sentiment analysis with:', sentimentAnalysis)}
       {sentimentAnalysis && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center">

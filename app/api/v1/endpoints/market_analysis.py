@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 from app.core.database import get_db
 from app.models.ticker_features_daily import TickerFeaturesDaily
@@ -54,9 +54,12 @@ async def get_market_overview(
             TickerFeaturesDaily.date == date_obj
         ).count()
         
-        # Get recent stocks with data
+        # Get recent stocks with data (only those with valid sentiment)
         recent_stocks = db.query(TickerFeaturesDaily).filter(
-            TickerFeaturesDaily.date >= yesterday
+            and_(
+                TickerFeaturesDaily.date >= yesterday,
+                TickerFeaturesDaily.sent_mean_7d.isnot(None)
+            )
         ).limit(10).all()
         
         stocks_data = []
