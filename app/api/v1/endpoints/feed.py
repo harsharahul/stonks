@@ -6,7 +6,7 @@ from typing import Optional, List
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, String
 
 from app.core.database import get_db
 from app.worker import worker
@@ -283,6 +283,36 @@ async def ingest_rss_automated(
         raise HTTPException(status_code=500, detail=f"Failed to trigger automated RSS ingestion: {e}")
 
 
+@router.get("/debug/articles")
+async def debug_articles(
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1, le=100, description="Number of articles to return")
+):
+    """Debug endpoint to check articles in database"""
+    try:
+        articles = db.query(Article).order_by(Article.created_at.desc()).limit(limit).all()
+        
+        debug_data = []
+        for article in articles:
+            debug_data.append({
+                "id": str(article.id),
+                "title": article.title,
+                "url": article.url,
+                "source_id": article.source_id,
+                "article_metadata": article.article_metadata,
+                "created_at": article.created_at.isoformat() if article.created_at else None,
+                "tickers": article.tickers
+            })
+        
+        return {
+            "total_articles": len(debug_data),
+            "articles": debug_data
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get debug articles: {str(e)}")
+
+
 @router.get("/ingest/status")
 async def get_ingestion_status(
     db: Session = Depends(get_db)
@@ -300,9 +330,10 @@ async def get_ingestion_status(
         ).order_by(ETLJobRun.started_at.desc()).first()
         
         if wsb_job:
-            wsb_status = "operational" if wsb_job.status == "completed" else "degraded"
+            wsb_status = "operational" if wsb_job.status in ["completed", "success"] else "degraded"
+            # Use simpler JSONB query for compatibility
             wsb_articles = db.query(Article).filter(
-                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb_enhanced'
+                Article.article_metadata.cast(String).like('%"source": "reddit_wsb_enhanced"%')
             ).count()
             wsb_freshness = (datetime.utcnow() - wsb_job.started_at.replace(tzinfo=None)).total_seconds() / 60  # minutes ago
         else:
@@ -325,9 +356,9 @@ async def get_ingestion_status(
         ).order_by(ETLJobRun.started_at.desc()).first()
         
         if sec_job:
-            sec_status = "operational" if sec_job.status == "completed" else "degraded"
+            sec_status = "operational" if sec_job.status in ["completed", "success"] else "degraded"
             sec_articles = db.query(Article).filter(
-                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'sec_edgar_enhanced'
+                Article.article_metadata.cast(String).like('%"source": "sec_edgar_enhanced"%')
             ).count()
             sec_freshness = (datetime.utcnow() - sec_job.started_at.replace(tzinfo=None)).total_seconds() / 60
         else:
@@ -350,9 +381,9 @@ async def get_ingestion_status(
         ).order_by(ETLJobRun.started_at.desc()).first()
         
         if earnings_job:
-            earnings_status = "operational" if earnings_job.status == "completed" else "degraded"
+            earnings_status = "operational" if earnings_job.status in ["completed", "success"] else "degraded"
             earnings_articles = db.query(Article).filter(
-                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'earnings_calendar'
+                Article.article_metadata.cast(String).like('%"source": "earnings_calendar"%')
             ).count()
             earnings_freshness = (datetime.utcnow() - earnings_job.started_at.replace(tzinfo=None)).total_seconds() / 60
         else:
@@ -375,9 +406,10 @@ async def get_ingestion_status(
         ).order_by(ETLJobRun.started_at.desc()).first()
         
         if news_job:
-            news_status = "operational" if news_job.status == "completed" else "degraded"
+            # Check for both "completed" and "success" statuses
+            news_status = "operational" if news_job.status in ["completed", "success"] else "degraded"
             news_articles = db.query(Article).filter(
-                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'google_news'
+                Article.article_metadata.cast(String).like('%"source": "google_news"%')
             ).count()
             news_freshness = (datetime.utcnow() - news_job.started_at.replace(tzinfo=None)).total_seconds() / 60
         else:

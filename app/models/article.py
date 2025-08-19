@@ -3,10 +3,10 @@ from sqlalchemy import Text, ForeignKey, DateTime, Numeric, JSON
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, UUIDPrimaryKeyMixin
+from app.models.base import Base, UUIDPrimaryKeyMixin, TimestampMixin
 
 
-class Article(UUIDPrimaryKeyMixin, Base):
+class Article(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "articles"
 
     source_id: Mapped[Optional[str]] = mapped_column(ForeignKey("data_sources.id"), nullable=True)

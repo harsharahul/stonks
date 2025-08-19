@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 from statistics import mean, stdev
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_, func, String
 
 from app.models.article import Article
 
@@ -97,8 +97,8 @@ class RetailSentimentFeatures:
                 func.date(Article.published_at) >= start_date,
                 func.date(Article.published_at) <= end_date,
                 or_(
-                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb',
-                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb_enhanced'
+                    Article.article_metadata.cast(String).like('%"source": "reddit_wsb"%'),
+                    Article.article_metadata.cast(String).like('%"source": "reddit_wsb_enhanced"%')
                 )
             )
         ).all()
@@ -131,7 +131,7 @@ class RetailSentimentFeatures:
                 Article.tickers.contains([ticker]),
                 func.date(Article.published_at) >= start_date,
                 func.date(Article.published_at) <= end_date,
-                func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb'
+                Article.article_metadata.cast(String).like('%"source": "reddit_wsb"%')
             )
         ).all()
         
@@ -216,8 +216,8 @@ class RetailSentimentFeatures:
                 func.date(Article.published_at) >= start_date,
                 func.date(Article.published_at) <= end_date,
                 or_(
-                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb',
-                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb_enhanced'
+                    Article.article_metadata.cast(String).like('%"source": "reddit_wsb"%'),
+                    Article.article_metadata.cast(String).like('%"source": "reddit_wsb_enhanced"%')
                 )
             )
         ).all()
@@ -290,8 +290,8 @@ class RetailSentimentFeatures:
                 func.date(Article.published_at) >= start_date,
                 func.date(Article.published_at) <= end_date,
                 or_(
-                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb',
-                    func.jsonb_extract_path_text(Article.article_metadata, 'source') == 'reddit_wsb_enhanced'
+                    Article.article_metadata.cast(String).like('%"source": "reddit_wsb"%'),
+                    Article.article_metadata.cast(String).like('%"source": "reddit_wsb_enhanced"%')
                 ),
                 Article.tickers.isnot(None),
                 func.array_length(Article.tickers, 1) > 0

@@ -12,68 +12,142 @@ interface IngestionSource {
   description: string;
 }
 
-const DataIngestionStatus: React.FC = () => {
-  const [sources, setSources] = useState<IngestionSource[]>([
-    {
-      name: 'WSB Reddit',
-      type: 'wsb',
-      status: 'operational',
-      lastUpdate: '2 min ago',
-      articleCount: 7,
-      icon: <MessageCircle className="w-5 h-5" />,
-      color: 'text-red-600',
-      description: 'Enhanced Reddit parser with sentiment analysis'
-    },
-    {
-      name: 'SEC EDGAR',
-      type: 'sec_edgar',
-      status: 'operational',
-      lastUpdate: '5 min ago',
-      articleCount: 4,
-      icon: <FileText className="w-5 h-5" />,
-      color: 'text-blue-600',
-      description: '8-K, 10-K, 10-Q filings with sec-parser'
-    },
-    {
-      name: 'Earnings Calendar',
-      type: 'earnings',
-      status: 'operational',
-      lastUpdate: '1 hour ago',
-      articleCount: 9190,
-      icon: <TrendingUp className="w-5 h-5" />,
-      color: 'text-green-600',
-      description: 'Alpha Vantage earnings data'
-    },
-    {
-      name: 'News RSS',
-      type: 'news',
-      status: 'degraded',
-      lastUpdate: '3 hours ago',
-      articleCount: 0,
-      icon: <Database className="w-5 h-5" />,
-      color: 'text-yellow-600',
-      description: 'Google News and RSS feeds'
-    }
-  ]);
+interface APISource {
+  name: string;
+  status: string;
+  last_update: string;
+  article_count: number;
+  source_type: string;
+}
 
+const DataIngestionStatus: React.FC = () => {
+  const [sources, setSources] = useState<IngestionSource[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/feed/ingest/status');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      
+      // Map API data to frontend format
+      const mappedSources: IngestionSource[] = data.sources.map((apiSource: APISource) => {
+        let type: 'wsb' | 'sec_edgar' | 'earnings' | 'news' = 'news';
+        let icon: React.ReactNode = <Database className="w-5 h-5" />;
+        let color = 'text-gray-600';
+        let description = 'Data ingestion source';
+
+        // Determine type and styling based on source name
+        if (apiSource.name.includes('WSB')) {
+          type = 'wsb';
+          icon = <MessageCircle className="w-5 h-5" />;
+          color = 'text-red-600';
+          description = 'Enhanced Reddit parser with sentiment analysis';
+        } else if (apiSource.name.includes('SEC')) {
+          type = 'sec_edgar';
+          icon = <FileText className="w-5 h-5" />;
+          color = 'text-blue-600';
+          description = '8-K, 10-K, 10-Q filings with sec-parser';
+        } else if (apiSource.name.includes('Earnings')) {
+          type = 'earnings';
+          icon = <TrendingUp className="w-5 h-5" />;
+          color = 'text-green-600';
+          description = 'Alpha Vantage earnings data';
+        } else if (apiSource.name.includes('News')) {
+          type = 'news';
+          icon = <Database className="w-5 h-5" />;
+          color = 'text-yellow-600';
+          description = 'Google News and RSS feeds';
+        }
+
+        // Calculate time ago
+        const lastUpdate = apiSource.last_update ? 
+          new Date(apiSource.last_update).toLocaleString() : 'Unknown';
+
+        return {
+          name: apiSource.name,
+          type,
+          status: apiSource.status as 'operational' | 'degraded' | 'down',
+          lastUpdate,
+          articleCount: apiSource.article_count,
+          icon,
+          color,
+          description
+        };
+      });
+
+      setSources(mappedSources);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch ingestion status:', err);
+      setError('Failed to fetch status');
+      // Fallback to default sources if API fails
+      setSources([
+        {
+          name: 'WSB Reddit',
+          type: 'wsb',
+          status: 'operational',
+          lastUpdate: '2 min ago',
+          articleCount: 7,
+          icon: <MessageCircle className="w-5 h-5" />,
+          color: 'text-red-600',
+          description: 'Enhanced Reddit parser with sentiment analysis'
+        },
+        {
+          name: 'SEC EDGAR',
+          type: 'sec_edgar',
+          status: 'operational',
+          lastUpdate: '5 min ago',
+          articleCount: 4,
+          icon: <FileText className="w-5 h-5" />,
+          color: 'text-blue-600',
+          description: '8-K, 10-K, 10-Q filings with sec-parser'
+        },
+        {
+          name: 'Earnings Calendar',
+          type: 'earnings',
+          status: 'operational',
+          lastUpdate: '1 hour ago',
+          articleCount: 9190,
+          icon: <TrendingUp className="w-5 h-5" />,
+          color: 'text-green-600',
+          description: 'Alpha Vantage earnings data'
+        },
+        {
+          name: 'News RSS',
+          type: 'news',
+          status: 'degraded',
+          lastUpdate: '3 hours ago',
+          articleCount: 0,
+          icon: <Database className="w-5 h-5" />,
+          color: 'text-yellow-600',
+          description: 'Google News and RSS feeds'
+        }
+      ]);
+    }
+  };
 
   const refreshStatus = async () => {
     setIsRefreshing(true);
-    // Simulate API calls to check status
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Update with real data if available
-    setSources(prev => prev.map(source => ({
-      ...source,
-      lastUpdate: 'Just now',
-      articleCount: source.type === 'wsb' ? Math.floor(Math.random() * 10) + 5 : source.articleCount
-    })));
-    
+    await fetchStatus();
     setLastRefresh(new Date());
     setIsRefreshing(false);
   };
+
+  // Fetch status on component mount
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  // Auto-refresh every 2 minutes
+  useEffect(() => {
+    const interval = setInterval(refreshStatus, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -102,21 +176,16 @@ const DataIngestionStatus: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    // Auto-refresh every 2 minutes
-    const interval = setInterval(refreshStatus, 2 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   const totalArticles = sources.reduce((sum, source) => sum + source.articleCount, 0);
   const operationalSources = sources.filter(s => s.status === 'operational').length;
 
   return (
     <div className="card">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-neutral-900">📊 Data Ingestion Status</h2>
-          <p className="text-sm text-neutral-600">Real-time monitoring of all data sources</p>
+          <h2 className="text-xl font-bold text-neutral-900">Data Ingestion Status</h2>
+          <p className="text-sm text-neutral-600">Real-time monitoring of data pipeline health</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="text-right">
@@ -128,7 +197,7 @@ const DataIngestionStatus: React.FC = () => {
           <button
             onClick={refreshStatus}
             disabled={isRefreshing}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`px-3 py-2 rounded-lg font-medium transition-colors duration-200 ${
               isRefreshing 
                 ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' 
                 : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
@@ -139,6 +208,16 @@ const DataIngestionStatus: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-red-600" />
+            <span className="text-sm text-red-700">{error}</span>
+          </div>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

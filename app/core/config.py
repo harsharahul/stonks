@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     
     # External API Keys
     ALPHA_VANTAGE_API_KEY: Optional[str] = os.getenv("ALPHA_VANTAGE_API_KEY")
+    POLYGON_API_KEY: Optional[str] = os.getenv("POLYGON_API_KEY")
 
     # Security / Auth
     API_KEY: Optional[str] = os.getenv("API_KEY")

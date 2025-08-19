@@ -319,11 +319,11 @@ def map_cik_to_tickers(self, limit: int = 100) -> Dict:
             return {"status": "error", "error": str(e)}
         
         # Find articles with CIK but no tickers
-        from sqlalchemy import and_, or_, func
+        from sqlalchemy import and_, or_, func, String
         
         articles = db.query(Article).filter(
             and_(
-                func.jsonb_extract_path_text(Article.metadata, 'cik').isnot(None),
+                Article.article_metadata.cast(String).like('%"cik":%'),
                 or_(
                     Article.tickers == None,
                     Article.tickers == []
@@ -335,7 +335,7 @@ def map_cik_to_tickers(self, limit: int = 100) -> Dict:
         unmapped_count = 0
         
         for article in articles:
-            cik = article.metadata.get('cik')
+            cik = (article.article_metadata or {}).get('cik')
             if cik and cik in cik_ticker_map:
                 ticker = cik_ticker_map[cik]
                 article.tickers = [ticker]

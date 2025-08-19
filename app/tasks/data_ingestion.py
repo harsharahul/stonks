@@ -140,11 +140,14 @@ def _persist_article(
     tickers: List[str],
 ) -> Tuple[bool, Optional[str]]:
     """Persist one article if new. Returns (is_new, article_id)."""
+    print(f"🔍 DEBUG: _persist_article called with source_name: {source_name}")
+    
     # Compute URL hash for idempotency
     url_hash = hashlib.sha256(item_link.encode("utf-8")).hexdigest()
 
     existing = db.query(Article).filter(Article.url_hash == url_hash).first()
     if existing:
+        print(f"🔍 DEBUG: Article already exists with hash: {url_hash}")
         return False, str(existing.id)
 
     # Ensure data source exists
@@ -158,6 +161,7 @@ def _persist_article(
         )
         db.add(data_source)
         db.flush()
+        print(f"🔍 DEBUG: Created new data source: {data_source.id}")
 
     # Parse published date
     published_at = None
@@ -170,6 +174,17 @@ def _persist_article(
             except Exception:
                 published_at = None
 
+    # Determine source identifier for metadata
+    source_identifier = None
+    if "google" in source_name.lower():
+        source_identifier = "google_news"
+    elif "rss" in source_name.lower():
+        source_identifier = "rss_feed"
+    else:
+        source_identifier = source_name.lower().replace(" ", "_")
+    
+    print(f"🔍 DEBUG: Setting source_identifier: {source_identifier}")
+
     article = Article(
         source_id=str(data_source.id),
         url=item_link,
@@ -180,9 +195,18 @@ def _persist_article(
         tickers=tickers,
         sentiment=None,
         entities=None,
+        article_metadata={
+            "source": source_identifier,
+            "source_name": source_name,
+            "ingested_at": datetime.utcnow().isoformat()
+        }
     )
+    print(f"🔍 DEBUG: Created article with metadata: {article.article_metadata}")
+    
     db.add(article)
     db.flush()
+    print(f"🔍 DEBUG: Article saved with ID: {article.id}")
+    
     return True, str(article.id)
 
 
@@ -196,7 +220,7 @@ def fetch_google_news_by_ticker(self, ticker: str, days: int = 7) -> Dict:
     task_id = self.request.id
     
     try:
-        source_name = "Google News"
+        source_name = "Google News RSS"
         query = ticker
         rss_url = GOOGLE_NEWS_URL_TEMPLATE.format(query=query, days=days)
 
