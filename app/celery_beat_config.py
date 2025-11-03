@@ -66,19 +66,40 @@ beat_schedule = {
     
     # Price data ingestion - every hour during market hours
     'price-ingestion': {
-        'task': 'app.tasks.price_ingestion.ingest_price_data_task',
+        'task': 'app.tasks.price_ingestion.fetch_prices_for_all_stocks',
         'schedule': crontab(minute=0),  # Every hour
         'options': {
             'expires': 3000,  # Task expires after 50 minutes
         }
     },
     
-    # WSB Reddit ingestion - every 30 minutes
-    'wsb-ingestion': {
-        'task': 'app.tasks.reddit_wsb_ingestion.ingest_wsb_posts_task',
+    # WSB Enhanced ingestion - every 30 minutes
+    'wsb-enhanced-ingestion': {
+        'task': 'app.tasks.reddit_wsb_enhanced.fetch_wsb_enhanced',
         'schedule': 1800.0,  # 30 minutes in seconds
+        'args': (100, 'hot'),  # limit, sort
         'options': {
             'expires': 1500,  # Task expires after 25 minutes
+        }
+    },
+
+    # SEC EDGAR Enhanced ingestion - every 2 hours
+    'sec-edgar-enhanced-ingestion': {
+        'task': 'app.tasks.sec_edgar_enhanced.fetch_sec_edgar_enhanced',
+        'schedule': 7200.0,  # 2 hours in seconds
+        'args': (1, ['8-K', '10-K', '10-Q'], None),  # days_back, filing_types, tickers
+        'options': {
+            'expires': 6000,  # Task expires after 100 minutes
+        }
+    },
+
+    # Earnings Calendar ingestion - daily at 7 AM UTC
+    'earnings-calendar-ingestion': {
+        'task': 'app.tasks.earnings_calendar.fetch_nasdaq_earnings_calendar',
+        'schedule': crontab(hour=7, minute=0),  # Daily at 7 AM UTC
+        'args': (7, 3),  # days_ahead, days_back
+        'options': {
+            'expires': 3600,  # Task expires after 1 hour
         }
     }
 }
@@ -94,4 +115,8 @@ task_routes = {
     'app.tasks.data_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.price_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.reddit_wsb_ingestion.*': {'queue': 'ingestion'},
+    'app.tasks.sec_edgar_enhanced.*': {'queue': 'ingestion'},
+    'app.tasks.reddit_wsb_enhanced.*': {'queue': 'ingestion'},
+    'app.tasks.sec_edgar_ingestion.*': {'queue': 'ingestion'},
+    'app.tasks.earnings_calendar.*': {'queue': 'ingestion'},
 }
