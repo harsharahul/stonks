@@ -90,11 +90,11 @@ const MarketIntelligence: React.FC = () => {
       setError(null);
 
       // Fetch all market data
-      const baseUrl = 'http://localhost:8080';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       const [overviewRes, sentimentRes, pressureRes] = await Promise.all([
-        fetch(`${baseUrl}/api/v1/market-analysis/market-overview`),
-        fetch(`${baseUrl}/api/v1/market-analysis/sentiment-analysis`),
-        fetch(`${baseUrl}/api/v1/market-analysis/pressure-test-summary`)
+        fetch(`${baseUrl}/market-analysis/market-overview`),
+        fetch(`${baseUrl}/market-analysis/sentiment-analysis`),
+        fetch(`${baseUrl}/market-analysis/pressure-test-summary`)
       ]);
 
       if (overviewRes.ok) {

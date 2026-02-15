@@ -249,12 +249,6 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
 
 // Get WebSocket base URL based on environment
 const getWebSocketBaseUrl = () => {
-  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  
-  if (isDevelopment) {
-    return 'ws://localhost:8080';
-  }
-  
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}`;
 };

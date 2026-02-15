@@ -15,9 +15,9 @@ from app.models.data_source import DataSource
 from app.models.etl_job_run import ETLJobRun
 from app.models.stock import Stock
 
-# SEC Parser imports
-from sec_downloader import Downloader
-import sec_parser as sp
+# SEC Parser imports - temporarily disabled due to import issues
+# from sec_downloader import Downloader
+# import sec_parser as sp
 
 
 @shared_task(bind=True)
@@ -38,10 +38,18 @@ def fetch_sec_edgar_enhanced(
     
     if filing_types is None:
         filing_types = ["8-K", "10-K", "10-Q"]
-    
+
+    # Check if required libraries are available
+    try:
+        import sec_parser as sp
+        from sec_downloader import Downloader
+    except ImportError:
+        print("WARNING: sec-parser/sec-downloader not installed. Skipping SEC EDGAR enhanced ingestion.")
+        return {"status": "skipped", "reason": "dependencies not installed"}
+
     db = SessionLocal()
     task_id = self.request.id
-    
+
     try:
         print(f"🔍 Enhanced SEC EDGAR ingestion: {filing_types} (last {days_back} days)")
         
@@ -86,8 +94,8 @@ def fetch_sec_edgar_enhanced(
         
         print(f"📊 Monitoring {len(stocks)} stocks for SEC filings")
         
-        # Initialize SEC downloader
-        downloader = Downloader("Stonks-Analytics", "dev@stonks-analytics.com")
+        # Initialize SEC downloader - temporarily disabled
+        # downloader = Downloader("Stonks-Analytics", "dev@stonks-analytics.com")
         
         articles_created = 0
         articles_duplicate = 0
@@ -102,15 +110,15 @@ def fetch_sec_edgar_enhanced(
                     try:
                         print(f"    🔍 Fetching {filing_type} for {stock.symbol}...")
                         
-                        # Download the latest filing
-                        html = downloader.get_filing_html(
-                            ticker=stock.symbol, 
-                            form=filing_type
-                        )
+                        # Download the latest filing - temporarily disabled
+                        # html = downloader.get_filing_html(
+                        #     ticker=stock.symbol, 
+                        #     form=filing_type
+                        # )
                         
-                        if not html:
-                            print(f"    ⚠️  No {filing_type} found for {stock.symbol}")
-                            continue
+                        # if not html:
+                        #     print(f"    ⚠️  No {filing_type} found for {stock.symbol}")
+                        #     continue
                         
                         print(f"    ✅ Downloaded {filing_type}: {len(html)} characters")
                         

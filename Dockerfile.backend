@@ -1,0 +1,52 @@
+# Consolidated Backend Dockerfile
+# Used for API, Worker, and Beat (command override selects role)
+# Local Docker: runs all 3 via supervisord
+# K3s: separate deployments with different command overrides
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r stonks && useradd -r -g stonks stonks
+
+# Set work directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt supervisor
+
+# Copy application code
+COPY app/ ./app/
+COPY alembic/ ./alembic/
+COPY alembic.ini .
+COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+COPY scripts/supervisord.conf ./supervisord.conf
+
+# Make entrypoint executable and set ownership
+RUN chmod +x ./docker-entrypoint.sh && \
+    chown -R stonks:stonks /app
+
+USER stonks
+
+# Expose API port
+EXPOSE 8080
+
+# Health check against the API
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Default: run all services via supervisord (local Docker mode)
+# K3s overrides this with specific commands for each deployment
+ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["supervisord", "-c", "/app/supervisord.conf"]
