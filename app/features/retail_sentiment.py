@@ -105,9 +105,10 @@ class RetailSentimentFeatures:
         
         if not wsb_articles:
             return {"avg_sentiment": None, "mention_count": 0}
-        
-        sentiments = [article.sentiment for article in wsb_articles if article.sentiment is not None]
-        
+
+        # Convert Decimal to float for calculations
+        sentiments = [float(article.sentiment) for article in wsb_articles if article.sentiment is not None]
+
         return {
             "avg_sentiment": mean(sentiments) if sentiments else None,
             "mention_count": len(wsb_articles),

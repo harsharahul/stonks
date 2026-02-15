@@ -101,9 +101,9 @@ class FeatureAggregator:
         
         # Calculate conflict score (variance in sentiment across recent articles)
         conflict_score = self._calculate_conflict_score(ticker, target_date)
-        
-        # TODO: Calculate earnings days (integrate with earnings calendar)
-        earnings_d = None
+
+        # Calculate earnings days (days until/since nearest earnings event)
+        earnings_d = self._calculate_earnings_days(ticker, target_date)
         
         # Get top document IDs for traceability
         top_doc_ids = self._get_top_documents(ticker, target_date)
@@ -224,7 +224,15 @@ class FeatureAggregator:
         record.earnings_d = features.earnings_d
         record.conflict_score = features.conflict_score
         record.novelty_mean_3d = features.novelty_mean_3d
-        
+
+        # Retail sentiment features (WSB, Reddit)
+        record.wsb_sentiment_3d = features.wsb_sentiment_3d
+        record.wsb_sentiment_7d = features.wsb_sentiment_7d
+        record.wsb_mention_count_7d = features.wsb_mention_count_7d
+        record.wsb_engagement_score = features.wsb_engagement_score
+        record.retail_buzz_score = features.retail_buzz_score
+        record.meme_stock_indicator = features.meme_stock_indicator
+
         record.article_count_7d = features.article_count_7d
         record.top_doc_ids = features.top_doc_ids
         record.model_version = f"deterministic_{features.feature_version}"
@@ -318,7 +326,56 @@ class FeatureAggregator:
             return stdev(source_averages)
         
         return 0.0  # No conflict if only one source
-    
+
+    def _calculate_earnings_days(self, ticker: str, target_date: date) -> Optional[int]:
+        """Calculate days until/since nearest earnings event"""
+        from app.models.article import Article
+
+        # Query for all articles for this ticker
+        # Earnings are stored as Articles with metadata.event_type="earnings"
+        articles = self.db.query(Article).filter(
+            Article.tickers.contains([ticker])
+        ).all()
+
+        if not articles:
+            return None
+
+        # Filter for earnings events and find the nearest earnings date
+        nearest_earnings = None
+        min_distance = None
+
+        for article in articles:
+            # Check if this is an earnings event
+            if not article.article_metadata:
+                continue
+
+            if article.article_metadata.get('event_type') != 'earnings':
+                continue
+
+            earnings_date_str = article.article_metadata.get('earnings_date')
+            if not earnings_date_str:
+                continue
+
+            try:
+                # Parse the ISO format date string
+                earnings_date = datetime.fromisoformat(earnings_date_str).date()
+
+                # Calculate absolute distance from target_date
+                distance = abs((earnings_date - target_date).days)
+
+                if min_distance is None or distance < min_distance:
+                    min_distance = distance
+                    nearest_earnings = earnings_date
+            except (ValueError, AttributeError):
+                # Skip malformed dates
+                continue
+
+        if nearest_earnings is None:
+            return None
+
+        # Return signed days difference (positive = future, negative = past)
+        return (nearest_earnings - target_date).days
+
     def _get_top_documents(self, ticker: str, target_date: date, limit: int = 5) -> List[str]:
         """Get top document IDs for traceability"""
         from datetime import timedelta
