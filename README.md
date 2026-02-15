@@ -14,6 +14,7 @@ This master document contains:
 - **Current issues and next steps**
 - **Quick start commands**
 - **Project health status**
+- **Deployment 
 
 ---
 
