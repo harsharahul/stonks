@@ -12,7 +12,7 @@ const useWSBTrendingData = (ticker: string) => {
   return useQuery({
     queryKey: ['wsb-trending', ticker],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:8080/api/v1/feed/wsb/trending?days=7&limit=50`);
+      const response = await fetch(`/api/v1/feed/wsb/trending?days=7&limit=50`);
       const data = await response.json();
       return data.trending_tickers?.find((t: any) => t.ticker === ticker) || null;
     },
@@ -346,24 +346,24 @@ const StockDetail: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-3 bg-neutral-50 rounded border border-neutral-200">
                 <div className="text-xs text-neutral-500">Risk Level</div>
-                <div className="text-lg font-semibold capitalize">{enhanced.llm_enhancement.summary.risk_level}</div>
+                <div className="text-lg font-semibold capitalize">{enhanced?.llm_enhancement?.summary?.risk_level || 'N/A'}</div>
               </div>
               <div className="p-3 bg-neutral-50 rounded border border-neutral-200">
                 <div className="text-xs text-neutral-500">Confidence</div>
-                <div className="text-lg font-semibold capitalize">{enhanced.llm_enhancement.summary.recommendation_confidence}</div>
+                <div className="text-lg font-semibold capitalize">{enhanced?.llm_enhancement?.summary?.recommendation_confidence || 'N/A'}</div>
               </div>
               <div className="p-3 bg-neutral-50 rounded border border-neutral-200">
                 <div className="text-xs text-neutral-500">Article Coverage</div>
-                <div className="text-lg font-semibold">{enhanced.llm_enhancement.analysis.article_coverage}</div>
+                <div className="text-lg font-semibold">{enhanced?.llm_enhancement?.analysis?.article_coverage || 'N/A'}</div>
               </div>
             </div>
-            {enhanced.llm_enhancement.llm_enhancements.article_synthesis && (
+            {enhanced?.llm_enhancement?.llm_enhancements?.article_synthesis && (
               <div>
                 <h3 className="text-lg font-medium text-neutral-900 mb-2">Article Synthesis</h3>
                 <p className="text-sm text-neutral-700 whitespace-pre-line">{enhanced.llm_enhancement.llm_enhancements.article_synthesis}</p>
               </div>
             )}
-            {enhanced.llm_enhancement.llm_enhancements.recommendations && (
+            {enhanced?.llm_enhancement?.llm_enhancements?.recommendations && (
               <div>
                 <h3 className="text-lg font-medium text-neutral-900 mb-2">Recommendations</h3>
                 <p className="text-sm text-neutral-700 whitespace-pre-line">{enhanced.llm_enhancement.llm_enhancements.recommendations}</p>

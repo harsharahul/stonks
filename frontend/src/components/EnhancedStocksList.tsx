@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 import ToastManager from './ToastManager';
 
@@ -78,7 +79,7 @@ const EnhancedStocksList: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const baseUrl = 'http://localhost:8080';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       const params = new URLSearchParams({
         sort_by: sortBy,
         page_size: '100'
@@ -91,9 +92,9 @@ const EnhancedStocksList: React.FC = () => {
       console.log('🔍 Fetching stocks with params:', params.toString());
       
       const [stocksRes, suggestionsRes, statsRes] = await Promise.all([
-        fetch(`${baseUrl}/api/v1/stocks-enhanced/comprehensive?${params}`),
-        fetch(`${baseUrl}/api/v1/stocks-enhanced/discovery-suggestions?limit=5`).catch(() => null),
-        fetch(`${baseUrl}/api/v1/stocks-enhanced/stats`).catch(() => null)
+        fetch(`${baseUrl}/stocks-enhanced/comprehensive?${params}`),
+        fetch(`${baseUrl}/stocks-enhanced/discovery-suggestions?limit=5`).catch(() => null),
+        fetch(`${baseUrl}/stocks-enhanced/stats`).catch(() => null)
       ]);
 
       if (stocksRes.ok) {
@@ -109,7 +110,7 @@ const EnhancedStocksList: React.FC = () => {
           setStocks(stocksData.stocks);
         } else {
           // Fallback to basic endpoint if enhanced fails
-          const basicRes = await fetch(`${baseUrl}/api/v1/stocks/?${params}`);
+          const basicRes = await fetch(`${baseUrl}/stocks/?${params}`);
           if (basicRes.ok) {
             const basicData = await basicRes.json();
             const enhancedStocks = (basicData.items || []).map((stock: any) => ({
@@ -171,8 +172,8 @@ const EnhancedStocksList: React.FC = () => {
 
   const removeStock = async (symbol: string) => {
     try {
-      const baseUrl = 'http://localhost:8080';
-      const response = await fetch(`${baseUrl}/api/v1/stocks-enhanced/remove/${symbol}`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const response = await fetch(`${baseUrl}/stocks-enhanced/remove/${symbol}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -214,8 +215,8 @@ const EnhancedStocksList: React.FC = () => {
 
   const addStock = async (symbol: string, name?: string, priority: string = 'normal') => {
     try {
-      const baseUrl = 'http://localhost:8080';
-      const response = await fetch(`${baseUrl}/api/v1/stocks-enhanced/add`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const response = await fetch(`${baseUrl}/stocks-enhanced/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -503,7 +504,11 @@ const EnhancedStocksList: React.FC = () => {
             const activity = getActivityLevel(stock.recent_activity.signals_7d, stock.recent_activity.alerts_7d);
             
             return (
-              <div key={stock.symbol} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <Link
+                key={stock.symbol}
+                to={`/stocks/${stock.symbol}`}
+                className="block border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div>
@@ -515,7 +520,11 @@ const EnhancedStocksList: React.FC = () => {
                         <span className="text-xs text-gray-500">by {stock.added_by}</span>
                         {stock.added_by === 'user' && (
                           <button
-                            onClick={() => removeStock(stock.symbol)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              removeStock(stock.symbol);
+                            }}
                             className="ml-2 text-xs text-red-600 hover:text-red-800 hover:underline"
                             title="Remove stock"
                           >
@@ -568,7 +577,7 @@ const EnhancedStocksList: React.FC = () => {
                     )}
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
