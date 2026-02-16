@@ -30,28 +30,71 @@ async def get_feed(
     """
     Get mixed feed of articles and signals for homepage
     """
-    # TODO: Implement database query when models are ready
-    return {
-        "items": [
-            {
-                "type": "article",
-                "id": "article-1",
-                "title": "Apple Reports Strong Q4 Earnings",
-                "url": "https://example.com/apple-earnings",
-                "published_at": "2025-08-15T09:00:00Z",
-                "tickers": ["AAPL"],
-                "sentiment": 0.8
-            },
-            {
+    from app.models.signal import Signal
+
+    items = []
+
+    # Build article query
+    article_query = db.query(Article).order_by(Article.created_at.desc())
+
+    if symbols:
+        ticker_list = [s.strip().upper() for s in symbols.split(",")]
+        article_query = article_query.filter(Article.tickers.overlap(ticker_list))
+
+    if since:
+        try:
+            since_dt = datetime.fromisoformat(since.replace("Z", "+00:00"))
+            article_query = article_query.filter(Article.created_at >= since_dt)
+        except ValueError:
+            pass
+
+    if until:
+        try:
+            until_dt = datetime.fromisoformat(until.replace("Z", "+00:00"))
+            article_query = article_query.filter(Article.created_at <= until_dt)
+        except ValueError:
+            pass
+
+    # Get total count for pagination
+    total_articles = article_query.count()
+
+    # Fetch articles for this page
+    offset = (page - 1) * page_size
+    articles = article_query.offset(offset).limit(page_size).all()
+
+    for article in articles:
+        pub_at = article.published_at or article.created_at
+        items.append({
+            "type": "article",
+            "id": str(article.id),
+            "title": article.title or "Untitled",
+            "url": article.url,
+            "published_at": pub_at.isoformat() if pub_at else None,
+            "tickers": article.tickers or [],
+            "sentiment": float(article.sentiment) if article.sentiment else None,
+        })
+
+    # On page 1, also include a few recent signals
+    if page == 1:
+        signal_query = db.query(Signal).order_by(Signal.generated_at.desc()).limit(5)
+        if symbols:
+            ticker_list = [s.strip().upper() for s in symbols.split(",")]
+            signal_query = signal_query.filter(Signal.ticker.in_(ticker_list))
+
+        signals = signal_query.all()
+        for sig in signals:
+            items.append({
                 "type": "signal",
-                "id": "signal-1", 
-                "symbol": "AAPL",
-                "signal_type": "momentum_14d",
-                "value": 0.15,
-                "computed_at": "2025-08-15T10:00:00Z"
-            }
-        ],
-        "total": 2,
+                "id": str(sig.id),
+                "symbol": sig.ticker,
+                "signal_type": sig.signal_type,
+                "value": float(sig.strength),
+                "computed_at": sig.generated_at.isoformat() if sig.generated_at else None,
+            })
+
+    return {
+        "items": items,
+        "total": total_articles,
         "page": page,
         "page_size": page_size
     }
@@ -326,7 +369,7 @@ async def get_ingestion_status(
         
         # WSB Enhanced Source
         wsb_job = db.query(ETLJobRun).filter(
-            ETLJobRun.job_name.like("%wsb%enhanced%")
+            ETLJobRun.job_name.like("%wsb%")
         ).order_by(ETLJobRun.started_at.desc()).first()
         
         if wsb_job:
@@ -352,7 +395,7 @@ async def get_ingestion_status(
         
         # SEC EDGAR Enhanced Source
         sec_job = db.query(ETLJobRun).filter(
-            ETLJobRun.job_name.like("%sec%edgar%enhanced%")
+            ETLJobRun.job_name.like("%sec%edgar%")
         ).order_by(ETLJobRun.started_at.desc()).first()
         
         if sec_job:
@@ -402,7 +445,7 @@ async def get_ingestion_status(
         
         # News RSS Source
         news_job = db.query(ETLJobRun).filter(
-            ETLJobRun.job_name.like("%google%news%")
+            ETLJobRun.job_name.like("%rss%")
         ).order_by(ETLJobRun.started_at.desc()).first()
         
         if news_job:

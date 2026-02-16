@@ -2,7 +2,7 @@
 LangGraph-based Analytics Agent for Stonks
 Enhances deterministic features with LLM-powered insights and synthesis
 """
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TypedDict
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
@@ -122,29 +122,28 @@ class OllamaResponse:
     def content(self, value):
         self._content = value
 
-# Define our state structure
-class AnalyticsState:
-    def __init__(self, ticker: str, features: Dict, articles: List[Dict], **kwargs):
-        self.ticker = ticker
-        self.features = features
-        self.articles = articles
-        self.insights = {}
-        self.recommendations = {}
-        self.risk_assessment = {}
-        self.synthesis = {}
-        self.errors = []
+# Define our state structure as TypedDict for LangGraph
+class AnalyticsState(TypedDict):
+    ticker: str
+    features: Dict
+    articles: List[Dict]
+    insights: Dict
+    recommendations: Dict
+    risk_assessment: Dict
+    synthesis: Dict
+    errors: List[str]
 
 # Node 1: Feature Analysis
-def analyze_features(state: AnalyticsState) -> AnalyticsState:
+def analyze_features(state: AnalyticsState) -> Dict:
     """Analyze deterministic features and identify patterns"""
     try:
-        features = state.features
-        
+        features = state['features']
+
         # Extract key metrics
         sentiment_7d = features.get('sentiment', {}).get('mean_7d')
         ret_5d = features.get('returns', {}).get('ret_5d')
         article_count = features.get('context', {}).get('article_count_7d', 0)
-        
+
         # Basic pattern recognition
         patterns = []
         if sentiment_7d and ret_5d:
@@ -154,213 +153,239 @@ def analyze_features(state: AnalyticsState) -> AnalyticsState:
                 patterns.append("Negative sentiment correlates with poor performance")
             elif abs(sentiment_7d - 0.5) < 0.1 and abs(ret_5d) < 0.02:
                 patterns.append("Neutral sentiment with stable performance")
-        
+
         if article_count < 3:
             patterns.append("Low article coverage - limited information for analysis")
-        
-        state.insights['patterns'] = patterns
-        state.insights['feature_quality'] = 'high' if article_count >= 5 else 'medium'
-        
+
+        insights = state.get('insights', {})
+        insights['patterns'] = patterns
+        insights['feature_quality'] = 'high' if article_count >= 5 else 'medium'
+
+        return {'insights': insights}
+
     except Exception as e:
-        state.errors.append(f"Feature analysis error: {str(e)}")
-    
-    return state
+        errors = state.get('errors', [])
+        errors.append(f"Feature analysis error: {str(e)}")
+        return {'errors': errors}
 
 # Node 2: Article Sentiment Synthesis
-def synthesize_article_sentiment(state: AnalyticsState) -> AnalyticsState:
+def synthesize_article_sentiment(state: AnalyticsState) -> Dict:
     """Synthesize article content and sentiment for deeper insights"""
+    insights = state.get('insights', {})
+    errors = state.get('errors', [])
+
     try:
-        if not state.articles:
-            state.insights['article_analysis'] = "No recent articles available"
-            return state
-        
+        if not state['articles']:
+            insights['article_analysis'] = "No recent articles available"
+            return {'insights': insights}
+
         # Prepare article summary for LLM
         article_summary = []
-        for article in state.articles[:5]:  # Top 5 articles
+        for article in state['articles'][:5]:  # Top 5 articles
             title = article.get('title', 'No title')
             sentiment = article.get('sentiment')
             sentiment_label = "positive" if sentiment and sentiment > 0.6 else "negative" if sentiment and sentiment < 0.4 else "neutral"
             article_summary.append(f"Title: {title} | Sentiment: {sentiment_label}")
-        
+
         # LLM analysis prompt
         prompt = ChatPromptTemplate.from_template("""
         Analyze these recent articles about {ticker} stock:
-        
+
         {articles}
-        
+
         Provide:
         1. Key themes or topics mentioned
         2. Overall sentiment trend
         3. Any notable events or news
         4. Potential market impact
-        
+
         Be concise and financial-focused.
         """)
-        
+
         messages = prompt.format_messages(
-            ticker=state.ticker,
+            ticker=state['ticker'],
             articles="\n".join(article_summary)
         )
-        
+
         llm_instance = get_llm()
         if llm_instance:
             response = llm_instance.invoke(messages)
-            state.insights['article_analysis'] = response.content
+            insights['article_analysis'] = response.content
         else:
-            state.insights['article_analysis'] = "LLM not available - using fallback analysis"
+            insights['article_analysis'] = "LLM not available - using fallback analysis"
             # Fallback analysis
-            positive_count = sum(1 for a in state.articles if a.get('sentiment', 0) > 0.6)
-            total_count = len(state.articles)
+            positive_count = sum(1 for a in state['articles'] if a.get('sentiment', 0) > 0.6)
+            total_count = len(state['articles'])
             if total_count > 0:
                 sentiment_trend = "positive" if positive_count > total_count/2 else "neutral" if positive_count == total_count/2 else "negative"
-                state.insights['article_analysis'] = f"Fallback analysis: {positive_count}/{total_count} articles show positive sentiment. Overall trend: {sentiment_trend}"
-        
+                insights['article_analysis'] = f"Fallback analysis: {positive_count}/{total_count} articles show positive sentiment. Overall trend: {sentiment_trend}"
+
+        return {'insights': insights}
+
     except Exception as e:
-        state.errors.append(f"Article synthesis error: {str(e)}")
-    
-    return state
+        errors.append(f"Article synthesis error: {str(e)}")
+        return {'errors': errors, 'insights': insights}
 
 # Node 3: Risk Assessment
-def assess_risk(state: AnalyticsState) -> AnalyticsState:
+def assess_risk(state: AnalyticsState) -> Dict:
     """Assess risk based on features and market conditions"""
+    errors = state.get('errors', [])
+
     try:
-        features = state.features
-        
+        features = state['features']
+
         # Extract risk indicators
         vol_z = features.get('context', {}).get('vol_z')
         sent_shock = features.get('sentiment', {}).get('sent_shock')
         ret_5d = features.get('returns', {}).get('ret_5d')
         article_count = features.get('context', {}).get('article_count_7d', 0)
-        
+
         risk_factors = []
         risk_score = 0
-        
+
         # Volume volatility risk
         if vol_z and abs(vol_z) > 2:
             risk_factors.append(f"High volume volatility (Z-score: {vol_z:.2f})")
             risk_score += 0.3
-        
+
         # Sentiment shock risk
         if sent_shock and abs(sent_shock) > 1:
             risk_factors.append(f"Significant sentiment shock ({sent_shock:.2f})")
             risk_score += 0.25
-        
+
         # Information uncertainty risk
         if article_count < 3:
             risk_factors.append("Low information coverage increases uncertainty")
             risk_score += 0.2
-        
+
         # Performance risk
         if ret_5d and ret_5d < -0.1:
             risk_factors.append("Significant negative performance trend")
             risk_score += 0.25
-        
+
         risk_score = min(risk_score, 1.0)
-        
-        state.risk_assessment = {
+
+        risk_assessment = {
             'risk_score': risk_score,
             'risk_factors': risk_factors,
             'risk_level': 'high' if risk_score > 0.7 else 'medium' if risk_score > 0.4 else 'low'
         }
-        
+
+        return {'risk_assessment': risk_assessment}
+
     except Exception as e:
-        state.errors.append(f"Risk assessment error: {str(e)}")
-    
-    return state
+        errors.append(f"Risk assessment error: {str(e)}")
+        return {'errors': errors}
 
 # Node 4: Generate Recommendations
-def generate_recommendations(state: AnalyticsState) -> AnalyticsState:
+def generate_recommendations(state: AnalyticsState) -> Dict:
     """Generate actionable recommendations based on analysis"""
+    errors = state.get('errors', [])
+
     try:
         # Prepare context for LLM
+        insights = state.get('insights', {})
+        risk_assessment = state.get('risk_assessment', {})
+        features = state['features']
+
+        raw_ret = features.get('returns', {}).get('ret_5d')
+        raw_sent = features.get('sentiment', {}).get('mean_7d')
+
         context = {
-            'ticker': state.ticker,
-            'patterns': state.insights.get('patterns', []),
-            'article_analysis': state.insights.get('article_analysis', ''),
-            'risk_assessment': state.risk_assessment,
-            'features': state.features
+            'ticker': state['ticker'],
+            'patterns': insights.get('patterns', []),
+            'article_analysis': insights.get('article_analysis', ''),
+            'risk_level': risk_assessment.get('risk_level', 'unknown'),
+            'ret_5d': raw_ret if raw_ret is not None else 0.0,
+            'sent_mean_7d': raw_sent if raw_sent is not None else 0.5
         }
-        
+
         prompt = ChatPromptTemplate.from_template("""
         Based on this stock analysis for {ticker}, provide 2-3 actionable recommendations:
-        
+
         Context:
         - Patterns: {patterns}
         - Article Analysis: {article_analysis}
-        - Risk Level: {risk_assessment[risk_level]}
-        - Key Metrics: 5d Return: {features[returns][ret_5d]:.2%}, Sentiment: {features[sentiment][mean_7d]:.2f}
-        
+        - Risk Level: {risk_level}
+        - Key Metrics: 5d Return: {ret_5d:.2%}, Sentiment: {sent_mean_7d:.2f}
+
         Provide:
         1. Short-term action (next 1-3 days)
         2. Medium-term strategy (next 1-2 weeks)
         3. Risk management advice
-        
+
         Be specific, actionable, and financial-focused.
         """)
-        
+
         messages = prompt.format_messages(**context)
         llm_instance = get_llm()
-        
+
         if llm_instance:
             response = llm_instance.invoke(messages)
-            state.recommendations = {
+            recommendations = {
                 'llm_insights': response.content,
-                'confidence': 'high' if len(state.errors) == 0 else 'medium'
+                'confidence': 'high' if len(errors) == 0 else 'medium'
             }
         else:
             # Fallback recommendations based on deterministic features
-            features = state.features
-            ret_5d = features.get('returns', {}).get('ret_5d', 0)
-            sent_7d = features.get('sentiment', {}).get('mean_7d', 0.5)
-            
+            ret_5d = context['ret_5d']
+            sent_7d = context['sent_mean_7d']
+
             if ret_5d > 0.05 and sent_7d > 0.6:
                 recommendation = "Strong positive momentum with positive sentiment. Consider holding or adding to position."
             elif ret_5d < -0.05 and sent_7d < 0.4:
                 recommendation = "Negative performance with poor sentiment. Monitor closely and consider risk management."
             else:
                 recommendation = "Mixed signals. Monitor for clearer trend development before making significant changes."
-            
-            state.recommendations = {
+
+            recommendations = {
                 'llm_insights': f"Fallback recommendation: {recommendation}",
                 'confidence': 'medium'  # Lower confidence for fallback
             }
-        
+
+        return {'recommendations': recommendations}
+
     except Exception as e:
-        state.errors.append(f"Recommendation generation error: {str(e)}")
-    
-    return state
+        errors.append(f"Recommendation generation error: {str(e)}")
+        return {'errors': errors}
 
 # Node 5: Final Synthesis
-def final_synthesis(state: AnalyticsState) -> AnalyticsState:
+def final_synthesis(state: AnalyticsState) -> Dict:
     """Create final synthesis combining all insights"""
+    errors = state.get('errors', [])
+
     try:
+        insights = state.get('insights', {})
+        risk_assessment = state.get('risk_assessment', {})
+        recommendations = state.get('recommendations', {})
+        features = state['features']
+
         synthesis = {
-            'ticker': state.ticker,
-            'timestamp': state.features.get('metadata', {}).get('created_at'),
+            'ticker': state['ticker'],
+            'timestamp': features.get('metadata', {}).get('created_at'),
             'summary': {
-                'key_insights': state.insights.get('patterns', []),
-                'risk_level': state.risk_assessment.get('risk_level', 'unknown'),
-                'recommendation_confidence': state.recommendations.get('confidence', 'unknown')
+                'key_insights': insights.get('patterns', []),
+                'risk_level': risk_assessment.get('risk_level', 'unknown'),
+                'recommendation_confidence': recommendations.get('confidence', 'unknown')
             },
             'analysis': {
-                'feature_quality': state.insights.get('feature_quality', 'unknown'),
-                'article_coverage': state.features.get('context', {}).get('article_count_7d', 0),
-                'sentiment_trend': state.features.get('sentiment', {}).get('mean_7d'),
-                'performance_trend': state.features.get('returns', {}).get('ret_5d')
+                'feature_quality': insights.get('feature_quality', 'unknown'),
+                'article_coverage': features.get('context', {}).get('article_count_7d', 0),
+                'sentiment_trend': features.get('sentiment', {}).get('mean_7d'),
+                'performance_trend': features.get('returns', {}).get('ret_5d')
             },
             'llm_enhancements': {
-                'article_synthesis': state.insights.get('article_analysis', ''),
-                'recommendations': state.recommendations.get('llm_insights', ''),
-                'risk_factors': state.risk_assessment.get('risk_factors', [])
+                'article_synthesis': insights.get('article_analysis', ''),
+                'recommendations': recommendations.get('llm_insights', ''),
+                'risk_factors': risk_assessment.get('risk_factors', [])
             }
         }
-        
-        state.synthesis = synthesis
-        
+
+        return {'synthesis': synthesis}
+
     except Exception as e:
-        state.errors.append(f"Final synthesis error: {str(e)}")
-    
-    return state
+        errors.append(f"Final synthesis error: {str(e)}")
+        return {'errors': errors}
 
 # Create the LangGraph workflow
 def create_analytics_workflow():
@@ -406,21 +431,26 @@ async def enhance_analytics_with_llm(
     try:
         # Create workflow
         workflow = create_analytics_workflow()
-        
-        # Initialize state
-        initial_state = AnalyticsState(
-            ticker=ticker,
-            features=features,
-            articles=articles
-        )
-        
+
+        # Initialize state as dict
+        initial_state: AnalyticsState = {
+            'ticker': ticker,
+            'features': features,
+            'articles': articles,
+            'insights': {},
+            'recommendations': {},
+            'risk_assessment': {},
+            'synthesis': {},
+            'errors': []
+        }
+
         # Run workflow
         result = await workflow.ainvoke(initial_state)
-        
+
         return {
             'success': True,
-            'enhanced_analytics': result.synthesis,
-            'errors': result.errors
+            'enhanced_analytics': result.get('synthesis'),
+            'errors': result.get('errors', [])
         }
         
     except Exception as e:
@@ -432,19 +462,19 @@ async def enhance_analytics_with_llm(
 
 # Synchronous wrapper for compatibility
 def enhance_analytics_with_llm_sync(
-    ticker: str, 
-    features: Dict, 
+    ticker: str,
+    features: Dict,
     articles: List[Dict]
 ) -> Dict[str, Any]:
-    """Synchronous wrapper for the LLM enhancement"""
+    """Synchronous wrapper for the LLM enhancement - runs in thread pool"""
     import asyncio
-    
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
-    return loop.run_until_complete(
-        enhance_analytics_with_llm(ticker, features, articles)
-    )
+    import concurrent.futures
+
+    # Run async function in a new thread with its own event loop
+    # This avoids "event loop already running" errors in FastAPI
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(
+            asyncio.run,
+            enhance_analytics_with_llm(ticker, features, articles)
+        )
+        return future.result()

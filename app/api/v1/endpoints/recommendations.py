@@ -1,68 +1,85 @@
 """
 Recommendations API endpoints
-Handles daily stock recommendations
+Serves daily stock recommendations generated from signals + feature store
 """
+from datetime import date, datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.core.database import get_db
+from app.models.recommendation import Recommendation
+from app.models.stock import Stock
 
 router = APIRouter()
 
 
 @router.get("/daily")
 async def get_daily_recommendations(
-    date: Optional[str] = Query(None, description="Date (YYYY-MM-DD), defaults to today"),
+    date_str: Optional[str] = Query(None, alias="date", description="Date (YYYY-MM-DD), defaults to most recent"),
     limit: int = Query(20, ge=1, le=100, description="Maximum recommendations to return"),
     db: Session = Depends(get_db)
 ):
     """
-    Get top daily recommendations for a specific date
+    Get top daily recommendations for a specific date.
+    Falls back to the most recent date with data if no date specified or no data for requested date.
     """
-    # TODO: Implement database query when models are ready
-    return {
-        "date": date or "2025-08-15",
-        "recommendations": [
-            {
-                "symbol": "AAPL",
-                "score": 0.85,
-                "action": "buy",
-                "rationale": {
-                    "top_signals": [
-                        {"signal": "momentum_14d", "contribution": 0.45},
-                        {"signal": "sentiment_7d", "contribution": 0.35},
-                        {"signal": "volume_ratio_3d", "contribution": 0.20}
-                    ],
-                    "evidence": {
-                        "articles_7d": 15,
-                        "price_trend_days_up": 8,
-                        "volume_spike_ratio": 1.45
-                    },
-                    "notes": "Strong momentum with positive sentiment trend"
-                },
-                "model_version": "v1.0.0"
-            },
-            {
-                "symbol": "MSFT",
-                "score": 0.72,
-                "action": "buy", 
-                "rationale": {
-                    "top_signals": [
-                        {"signal": "momentum_14d", "contribution": 0.35},
-                        {"signal": "sentiment_7d", "contribution": 0.45},
-                        {"signal": "volume_ratio_3d", "contribution": 0.15}
-                    ],
-                    "evidence": {
-                        "articles_7d": 12,
-                        "price_trend_days_up": 6,
-                        "volume_spike_ratio": 1.15
-                    },
-                    "notes": "Positive sentiment with moderate momentum"
-                },
+    target_date = None
+    if date_str:
+        try:
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            target_date = None
+
+    # If no date specified or invalid, find the most recent date with recommendations
+    if target_date is None:
+        latest = db.query(func.max(Recommendation.date)).scalar()
+        if latest is None:
+            return {
+                "date": date.today().isoformat(),
+                "recommendations": [],
+                "total": 0,
                 "model_version": "v1.0.0"
             }
-        ],
-        "total": 2,
+        target_date = latest
+    else:
+        # Check if data exists for requested date; fall back to most recent
+        count = db.query(Recommendation).filter(Recommendation.date == target_date).count()
+        if count == 0:
+            latest = db.query(func.max(Recommendation.date)).scalar()
+            if latest is None:
+                return {
+                    "date": target_date.isoformat(),
+                    "recommendations": [],
+                    "total": 0,
+                    "model_version": "v1.0.0"
+                }
+            target_date = latest
+
+    # Query recommendations joined with stocks for symbol
+    rows = (
+        db.query(Recommendation, Stock.symbol)
+        .join(Stock, Recommendation.stock_id == Stock.id)
+        .filter(Recommendation.date == target_date)
+        .order_by(Recommendation.score.desc())
+        .limit(limit)
+        .all()
+    )
+
+    recommendations = []
+    for rec, symbol in rows:
+        recommendations.append({
+            "symbol": symbol,
+            "score": float(rec.score),
+            "action": rec.action.lower(),
+            "rationale": rec.rationale or {},
+            "model_version": rec.model_version,
+        })
+
+    return {
+        "date": target_date.isoformat(),
+        "recommendations": recommendations,
+        "total": len(recommendations),
         "model_version": "v1.0.0"
     }

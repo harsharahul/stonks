@@ -1,11 +1,16 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { feedApi } from '../api/client';
 import { useParams } from 'react-router-dom';
+import { BarChart3, Zap, RefreshCw, Star } from 'lucide-react';
 import { useDailyFeatures, useFeatureHistory, useCalculateFeatures, useEnhancedAnalytics } from '../hooks/useFeatures';
 import FeatureCard from './FeatureCard';
 import FeatureChart from './FeatureChart';
+import PriceChart from './PriceChart';
+import PatternSummaryPanel from './PatternSummaryPanel';
+import LatestCandleInsight from './LatestCandleInsight';
 import { cn, formatDate, formatRelativeTime, prepareChartData } from '../utils/format';
+import type { DetectedPattern, LatestCandleData } from '../utils/candlestickPatterns';
 
 // Hook to fetch WSB trending data for a specific ticker
 const useWSBTrendingData = (ticker: string) => {
@@ -24,15 +29,62 @@ const useWSBTrendingData = (ticker: string) => {
 const StockDetail: React.FC = () => {
   const { symbol } = useParams<{ symbol: string }>();
   const ticker = symbol?.toUpperCase() || '';
+  const queryClient = useQueryClient();
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
   // Fetch current features and history
   const { data: features, isLoading: featuresLoading, error: featuresError } = useDailyFeatures(ticker);
   const { data: history, isLoading: historyLoading } = useFeatureHistory(ticker, 30);
   const calculateFeatures = useCalculateFeatures();
   const { data: enhanced, isLoading: enhancedLoading } = useEnhancedAnalytics(ticker);
-  
+
   // Fetch WSB trending data as fallback
   const { data: wsbTrending, isLoading: wsbLoading } = useWSBTrendingData(ticker);
+
+  // Track whether this stock is in the watchlist
+  const trackedStocks = useQuery({
+    queryKey: ['tracked-stocks'],
+    queryFn: async () => {
+      const res = await fetch(`${baseUrl}/stocks-enhanced/comprehensive?page_size=100`);
+      const data = await res.json();
+      return (data.stocks?.map((s: any) => s.symbol) as string[]) || [];
+    },
+    staleTime: 60_000,
+  });
+  const isTracked = trackedStocks.data?.includes(ticker) ?? false;
+  const [starLoading, setStarLoading] = useState(false);
+
+  const toggleTracked = async () => {
+    setStarLoading(true);
+    try {
+      if (isTracked) {
+        await fetch(`${baseUrl}/stocks-enhanced/remove/${ticker}`, { method: 'DELETE' });
+      } else {
+        await fetch(`${baseUrl}/stocks-enhanced/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol: ticker, name: ticker, priority_level: 'normal', added_by: 'user' }),
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['tracked-stocks'] });
+    } catch (err) {
+      console.error('Failed to toggle tracking:', err);
+    } finally {
+      setStarLoading(false);
+    }
+  };
+
+  // Candlestick pattern detection results from PriceChart
+  const [detectedPatterns, setDetectedPatterns] = useState<DetectedPattern[]>([]);
+  const handlePatternsDetected = useCallback((patterns: DetectedPattern[]) => {
+    setDetectedPatterns(patterns);
+  }, []);
+
+  // Latest candle enriched data from PriceChart
+  const [latestCandleData, setLatestCandleData] = useState<LatestCandleData | null>(null);
+  const handleLatestCandleData = useCallback((data: LatestCandleData | null) => {
+    setLatestCandleData(data);
+  }, []);
 
   // Prepare chart data
   const sentimentData = history?.features ? prepareChartData(
@@ -84,22 +136,50 @@ const StockDetail: React.FC = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="text-center">
-          <div className="text-red-500 text-xl mb-4">⚠️ Error Loading Stock Data</div>
-          <p className="text-neutral-600 mb-4">
-            Could not load features for {ticker}. This might be because:
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+            <BarChart3 className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-semibold text-neutral-900 mb-2">No Data Available Yet</h2>
+          <p className="text-neutral-600 mb-6 max-w-md mx-auto">
+            Features haven't been calculated for <span className="font-semibold text-neutral-900">{ticker}</span> yet.
+            This data is calculated daily, or you can generate it now.
           </p>
-          <ul className="text-left text-sm text-neutral-500 max-w-md mx-auto mb-6">
-            <li>• Stock symbol not found in our database</li>
-            <li>• No recent data available for this ticker</li>
-            <li>• Network connectivity issues</li>
-          </ul>
-          <button
-            onClick={handleRefreshFeatures}
-            disabled={calculateFeatures.isLoading}
-            className="btn-primary"
-          >
-            {calculateFeatures.isLoading ? 'Calculating...' : 'Try Calculate Features'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-8">
+            <button
+              onClick={handleRefreshFeatures}
+              disabled={calculateFeatures.isLoading}
+              className="btn-primary inline-flex items-center px-6 py-3"
+            >
+              {calculateFeatures.isLoading ? (
+                <>
+                  <RefreshCw className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
+                  Calculating...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-5 h-5 mr-2" />
+                  Calculate Now
+                </>
+              )}
+            </button>
+            <a
+              href="/stocks"
+              className="text-neutral-600 hover:text-neutral-900 underline"
+            >
+              ← Back to Stocks
+            </a>
+          </div>
+          {calculateFeatures.isError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-sm text-red-800">
+                <span className="font-semibold">Unable to calculate features.</span> This might require admin access or the calculation service may be unavailable.
+              </p>
+            </div>
+          )}
+          <div className="mt-8 pt-8 border-t border-neutral-200">
+            <p className="text-sm text-neutral-500 mb-2">Automatic calculation schedule:</p>
+            <p className="text-sm font-medium text-neutral-700">Daily at 05:00 UTC</p>
+          </div>
         </div>
       </div>
     );
@@ -109,9 +189,22 @@ const StockDetail: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-neutral-900">{ticker}</h1>
-          <p className="text-neutral-600 mt-1">Stock Analytics Dashboard</p>
+          <button
+            onClick={toggleTracked}
+            disabled={starLoading || trackedStocks.isLoading}
+            className="p-1 rounded-lg hover:bg-neutral-100 transition-colors disabled:opacity-50"
+            title={isTracked ? 'Remove from watchlist' : 'Add to watchlist'}
+          >
+            <Star
+              className={cn(
+                'w-6 h-6 transition-colors',
+                isTracked ? 'text-yellow-500 fill-yellow-400' : 'text-neutral-300 hover:text-yellow-400'
+              )}
+            />
+          </button>
+          <p className="text-neutral-600 hidden sm:block">Stock Analytics Dashboard</p>
         </div>
         <div className="flex items-center space-x-4">
           {features && (
@@ -152,6 +245,25 @@ const StockDetail: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Price Chart */}
+      <div className="mb-8">
+        <PriceChart
+          ticker={ticker}
+          onPatternsDetected={handlePatternsDetected}
+          onLatestCandleData={handleLatestCandleData}
+        />
+      </div>
+
+      {/* Latest Candle Insight */}
+      {latestCandleData && (
+        <LatestCandleInsight data={latestCandleData} ticker={ticker} className="mb-8" />
+      )}
+
+      {/* Pattern Summary Panel */}
+      {detectedPatterns.length > 0 && (
+        <PatternSummaryPanel patterns={detectedPatterns} className="mb-8" />
       )}
 
       {/* WSB Sentiment Section */}

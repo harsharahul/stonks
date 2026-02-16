@@ -39,6 +39,7 @@ import app.tasks.data_ingestion
 import app.tasks.earnings_calendar
 import app.tasks.post_ingest_hooks
 import app.tasks.price_ingestion
+import app.tasks.recommendation_generation
 import app.tasks.reddit_wsb_ingestion
 import app.tasks.sec_edgar_ingestion
 import app.tasks.sec_edgar_enhanced

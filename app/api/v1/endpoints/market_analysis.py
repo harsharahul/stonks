@@ -222,25 +222,36 @@ async def get_ai_insights_for_stock(
         if not stock_features:
             raise HTTPException(status_code=404, detail=f"No recent data found for {ticker}")
         
-        # Prepare features for AI analysis
+        # Prepare features for AI analysis (structured to match LLM agent expectations)
         features = {
-            'sentiment_mean_7d': float(stock_features.sent_mean_7d) if stock_features.sent_mean_7d else 0.5,
-            'returns_5d': float(stock_features.ret_5d) if stock_features.ret_5d else 0.0,
-            'article_count_7d': stock_features.article_count_7d or 0,
-            'volume_z_score': float(stock_features.vol_z) if stock_features.vol_z else 0.0,
-            'novelty_mean_3d': float(stock_features.novelty_mean_3d) if stock_features.novelty_mean_3d else 0.5
+            'sentiment': {
+                'mean_7d': float(stock_features.sent_mean_7d) if stock_features.sent_mean_7d else 0.5,
+                'sent_shock': float(stock_features.sent_shock) if stock_features.sent_shock else 0.0
+            },
+            'returns': {
+                'ret_5d': float(stock_features.ret_5d) if stock_features.ret_5d else 0.0,
+                'ret_1d': float(stock_features.ret_1d) if stock_features.ret_1d else 0.0
+            },
+            'context': {
+                'article_count_7d': stock_features.article_count_7d or 0,
+                'vol_z': float(stock_features.vol_z) if stock_features.vol_z else 0.0,
+                'novelty_mean_3d': float(stock_features.novelty_mean_3d) if stock_features.novelty_mean_3d else 0.5
+            },
+            'metadata': {
+                'created_at': stock_features.created_at.isoformat() if stock_features.created_at else None
+            }
         }
         
         # Sample articles (in production, would come from real sources)
         sample_articles = [
             {
                 'title': f'{ticker} market analysis and performance review',
-                'sentiment': features['sentiment_mean_7d'],
+                'sentiment': features['sentiment']['mean_7d'],
                 'url': f'https://example.com/{ticker.lower()}-analysis'
             },
             {
                 'title': f'Investment outlook for {ticker}',
-                'sentiment': min(features['sentiment_mean_7d'] + 0.1, 1.0),
+                'sentiment': min(features['sentiment']['mean_7d'] + 0.1, 1.0),
                 'url': f'https://example.com/{ticker.lower()}-outlook'
             }
         ]
@@ -294,9 +305,9 @@ async def get_tomorrow_market_outlook(
         
         # Get active alerts
         recent_alerts = db.query(Alert).filter(
-            Alert.created_at >= datetime.now() - timedelta(days=1)
+            Alert.triggered_at >= datetime.now() - timedelta(days=1)
         ).limit(10).all()
-        
+
         formatted_alerts = []
         for alert in recent_alerts:
             formatted_alerts.append({
@@ -304,8 +315,7 @@ async def get_tomorrow_market_outlook(
                 'type': alert.alert_type,
                 'severity': alert.severity,
                 'message': alert.message,
-                'confidence': float(alert.confidence_score),
-                'created_at': alert.created_at.isoformat()
+                'triggered_at': alert.triggered_at.isoformat() if alert.triggered_at else None
             })
         
         # Get sentiment overview

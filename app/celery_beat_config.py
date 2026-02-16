@@ -26,6 +26,15 @@ beat_schedule = {
         }
     },
     
+    # Daily recommendation generation - every day at 6:30 AM UTC (after signals at 6 AM)
+    'daily-recommendation-generation': {
+        'task': 'app.tasks.recommendation_generation.generate_daily_recommendations_task',
+        'schedule': crontab(hour=6, minute=30),
+        'options': {
+            'expires': 3600,
+        }
+    },
+
     # Alert generation from recent signals - every 5 minutes
     'alert-generation': {
         'task': 'app.tasks.signal_generation.generate_alerts_task',
@@ -63,6 +72,16 @@ beat_schedule = {
             'expires': 480,  # Task expires after 8 minutes
         }
     },
+
+    # Post-ingestion processing - every 15 minutes (after RSS ingestion)
+    'post-ingest-processing': {
+        'task': 'app.tasks.post_ingest_hooks.process_new_articles',
+        'schedule': 900.0,  # 15 minutes
+        'args': (1, 100),  # hours_back=1, batch_size=100
+        'options': {
+            'expires': 600,
+        }
+    },
     
     # Price data ingestion - every hour during market hours
     'price-ingestion': {
@@ -83,15 +102,16 @@ beat_schedule = {
         }
     },
 
-    # SEC EDGAR Enhanced ingestion - every 2 hours
-    'sec-edgar-enhanced-ingestion': {
-        'task': 'app.tasks.sec_edgar_enhanced.fetch_sec_edgar_enhanced',
-        'schedule': 7200.0,  # 2 hours in seconds
-        'args': (1, ['8-K', '10-K', '10-Q'], None),  # days_back, filing_types, tickers
-        'options': {
-            'expires': 6000,  # Task expires after 100 minutes
-        }
-    },
+    # SEC EDGAR Enhanced - DISABLED: sec-downloader/sec-parser dependencies
+    # are commented out in requirements.txt. Re-enable when restored.
+    # 'sec-edgar-enhanced-ingestion': {
+    #     'task': 'app.tasks.sec_edgar_enhanced.fetch_sec_edgar_enhanced',
+    #     'schedule': 7200.0,
+    #     'args': (1, ['8-K', '10-K', '10-Q'], None),
+    #     'options': {
+    #         'expires': 6000,
+    #     }
+    # },
 
     # Earnings Calendar ingestion - daily at 7 AM UTC
     'earnings-calendar-ingestion': {
@@ -111,6 +131,7 @@ timezone = 'UTC'
 task_routes = {
     'app.tasks.anomaly_detection.*': {'queue': 'analytics'},
     'app.tasks.signal_generation.*': {'queue': 'analytics'},
+    'app.tasks.recommendation_generation.*': {'queue': 'analytics'},
     'app.tasks.feature_calculation.*': {'queue': 'compute'},
     'app.tasks.data_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.price_ingestion.*': {'queue': 'ingestion'},
@@ -119,4 +140,5 @@ task_routes = {
     'app.tasks.reddit_wsb_enhanced.*': {'queue': 'ingestion'},
     'app.tasks.sec_edgar_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.earnings_calendar.*': {'queue': 'ingestion'},
+    'app.tasks.post_ingest_hooks.*': {'queue': 'compute'},
 }

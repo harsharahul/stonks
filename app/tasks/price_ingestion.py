@@ -124,22 +124,27 @@ def fetch_yahoo_finance_prices(
                 
                 if existing:
                     # Update existing record
-                    existing.open = Decimal(str(open_price))
+                    existing.open_price = Decimal(str(open_price))
                     existing.high = Decimal(str(high_price))
                     existing.low = Decimal(str(low_price))
                     existing.close = Decimal(str(close_price))
                     existing.volume = volume
+                    existing.price = Decimal(str(close_price))
                     prices_updated += 1
                 else:
                     # Create new price record
                     price_record = Price(
                         stock_id=stock.id,
                         ts=ts_datetime,
-                        open=Decimal(str(open_price)),
+                        symbol=symbol,
+                        timestamp=ts_datetime,
+                        price=Decimal(str(close_price)),
+                        source="yfinance",
+                        open_price=Decimal(str(open_price)),
                         high=Decimal(str(high_price)),
                         low=Decimal(str(low_price)),
                         close=Decimal(str(close_price)),
-                        volume=volume
+                        volume=volume,
                     )
                     db.add(price_record)
                     prices_new += 1

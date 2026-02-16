@@ -132,6 +132,23 @@ export const prepareChartData = (data: any[], xKey: string, yKey: string) => {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
 
+// Signal & strength utilities
+export const getStrengthColor = (strength: number): string => {
+  const abs = Math.abs(strength);
+  if (abs >= 0.7) return strength >= 0 ? 'text-green-600' : 'text-red-600';
+  if (abs >= 0.4) return strength >= 0 ? 'text-green-500' : 'text-red-500';
+  return 'text-neutral-600';
+};
+
+export const getDirectionColor = (direction: string): string => {
+  if (direction === 'bullish') return 'bg-green-100 text-green-700 border-green-200';
+  if (direction === 'bearish') return 'bg-red-100 text-red-700 border-red-200';
+  return 'bg-neutral-100 text-neutral-700 border-neutral-200';
+};
+
+export const getSignalTypeLabel = (type: string): string =>
+  type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
 // Text utilities
 export const truncateText = (text: string | null, maxLength: number = 100): string => {
   if (!text) return '';

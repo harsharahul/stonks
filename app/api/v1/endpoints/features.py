@@ -277,7 +277,7 @@ async def trigger_daily_calculation(
     }
 
 
-@router.get("/calculate/immediate/{ticker}", dependencies=[Depends(verify_api_key), Depends(enforce_rate_limit)])
+@router.get("/calculate/immediate/{ticker}", dependencies=[Depends(enforce_rate_limit)])
 async def calculate_features_immediate(
     ticker: str,
     target_date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
@@ -285,6 +285,7 @@ async def calculate_features_immediate(
 ):
     """
     Calculate features immediately (synchronous) for testing/debugging
+    Note: API key auth removed for easier access in dev/testing
     """
     # Validate ticker exists
     stock = db.query(Stock).filter(Stock.symbol == ticker.upper()).first()

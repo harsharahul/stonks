@@ -6,13 +6,14 @@ Background tasks for running anomaly detection algorithms and generating alerts.
 
 import logging
 from typing import List, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 from celery import shared_task
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.models.etl_job_run import ETLJobRun
 from app.models.stock import Stock
+from app.models.price import Price
 from app.services.anomaly_detector import AnomalyDetectionOrchestrator
 from app.services.alert_engine import AlertEngine
 from app.services.signal_generator import SignalGenerator

@@ -164,7 +164,7 @@ async def detect_market_anomalies(
         )
         
         # Detect market-wide sentiment anomalies
-        market_anomalies = statistical_detector.detect_market_wide_anomalies(lookback_days)
+        market_anomalies = cross_asset_detector.detect_market_wide_anomalies(lookback_days)
         
         # Combine results
         all_anomalies = correlation_anomalies + market_anomalies

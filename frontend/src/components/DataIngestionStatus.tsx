@@ -28,7 +28,7 @@ const DataIngestionStatus: React.FC = () => {
 
   const fetchStatus = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/feed/ingest/status');
+      const response = await fetch('/api/v1/feed/ingest/status');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

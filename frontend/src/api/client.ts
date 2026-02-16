@@ -1,16 +1,37 @@
 import axios, { AxiosResponse } from 'axios';
-import { 
-  Stock, 
-  Article, 
-  DailyFeatures, 
-  FeaturesSummary, 
+import {
+  Stock,
+  Article,
+  DailyFeatures,
+  FeaturesSummary,
   FeatureStats,
-  PaginatedResponse 
+  PaginatedResponse,
+  WSBTrendingResponse,
+  AlertsResponse,
+  MarketAnomaliesResponse,
+  AllAnomaliesResponse,
+  TickerAnomaliesResponse,
+  PriceAnomaliesResponse,
+  SentimentAnomaliesResponse,
+  PatternAnomaliesResponse,
+  IngestionStatusResponse,
+  SentimentAnalysisResponse,
+  MarketOverviewAnalysis,
+  MarketSignalsOverview,
+  TomorrowOutlookResponse,
+  DailyRecommendationsResponse,
+  PressureTestSummary,
+  PriceHistoryResponse,
+  PricePeriod,
+  SignalsResponse,
+  TickerSignalsResponse,
+  SignalTypesResponse,
+  AlertStatsResponse,
 } from '../types/api';
 import type { EnhancedFeaturesResponse } from '../types/api';
 
 // API Client Configuration
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -58,6 +79,17 @@ export const stocksApi = {
     const response: AxiosResponse<Stock> = await apiClient.get(`/stocks/${symbol}`);
     return response.data;
   }
+};
+
+// Prices API
+export const pricesApi = {
+  async getPriceHistory(ticker: string, period: PricePeriod = '1M'): Promise<PriceHistoryResponse> {
+    const response: AxiosResponse<PriceHistoryResponse> = await apiClient.get(
+      `/prices/${ticker}/history`,
+      { params: { period } }
+    );
+    return response.data;
+  },
 };
 
 // Features API
@@ -124,7 +156,17 @@ export const feedApi = {
   }): Promise<PaginatedResponse<Article>> {
     const response: AxiosResponse<PaginatedResponse<Article>> = await apiClient.get('/feed/', { params });
     return response.data;
-  }
+  },
+
+  async getWSBTrending(params?: { days?: number; limit?: number }): Promise<WSBTrendingResponse> {
+    const response: AxiosResponse<WSBTrendingResponse> = await apiClient.get('/feed/wsb/trending', { params });
+    return response.data;
+  },
+
+  async getIngestionStatus(): Promise<IngestionStatusResponse> {
+    const response: AxiosResponse<IngestionStatusResponse> = await apiClient.get('/feed/ingest/status');
+    return response.data;
+  },
 };
 
 // Signals & Alerts API
@@ -136,14 +178,139 @@ export const signalsApi = {
     hours?: number;
     acknowledged?: boolean;
     limit?: number;
-  }): Promise<{
-    alerts: any[];
-    count: number;
-    filters: any;
-  }> {
-    const response = await apiClient.get('/signals/alerts', { params });
+  }): Promise<AlertsResponse> {
+    const response: AxiosResponse<AlertsResponse> = await apiClient.get('/signals/alerts', { params });
     return response.data;
-  }
+  },
+
+  async getMarketOverview(params?: { limit?: number }): Promise<MarketSignalsOverview> {
+    const response: AxiosResponse<MarketSignalsOverview> = await apiClient.get('/signals/market/overview', { params });
+    return response.data;
+  },
+
+  async getSignals(params?: {
+    ticker?: string;
+    signal_type?: string;
+    direction?: string;
+    min_strength?: number;
+    min_confidence?: number;
+    active_only?: boolean;
+    limit?: number;
+  }): Promise<SignalsResponse> {
+    const response: AxiosResponse<SignalsResponse> = await apiClient.get('/signals/', { params });
+    return response.data;
+  },
+
+  async getTickerSignals(ticker: string, params?: {
+    active_only?: boolean;
+    limit?: number;
+  }): Promise<TickerSignalsResponse> {
+    const response: AxiosResponse<TickerSignalsResponse> = await apiClient.get(`/signals/ticker/${ticker}`, { params });
+    return response.data;
+  },
+
+  async getSignalTypes(): Promise<SignalTypesResponse> {
+    const response: AxiosResponse<SignalTypesResponse> = await apiClient.get('/signals/types');
+    return response.data;
+  },
+
+  async getAlertStats(days?: number): Promise<AlertStatsResponse> {
+    const response: AxiosResponse<AlertStatsResponse> = await apiClient.get('/signals/alerts/stats', {
+      params: days ? { days } : undefined,
+    });
+    return response.data;
+  },
+
+  async acknowledgeAlert(alertId: string): Promise<{ message: string; alert_id: string; acknowledged_at: string }> {
+    const response = await apiClient.post(`/signals/alerts/${alertId}/acknowledge`);
+    return response.data;
+  },
+};
+
+// Anomalies API
+export const anomaliesApi = {
+  async getMarketAnomalies(params?: {
+    lookback_days?: number;
+    correlation_threshold?: number;
+  }): Promise<MarketAnomaliesResponse> {
+    const response: AxiosResponse<MarketAnomaliesResponse> = await apiClient.get('/anomalies/market', { params });
+    return response.data;
+  },
+
+  async getAllAnomalies(params?: {
+    ticker?: string;
+    include_market_wide?: boolean;
+    min_severity?: number;
+    limit?: number;
+  }): Promise<AllAnomaliesResponse> {
+    const response: AxiosResponse<AllAnomaliesResponse> = await apiClient.get('/anomalies/', { params });
+    return response.data;
+  },
+
+  async getTickerAnomalies(ticker: string, params?: {
+    lookback_days?: number;
+    z_threshold?: number;
+  }): Promise<TickerAnomaliesResponse> {
+    const response: AxiosResponse<TickerAnomaliesResponse> = await apiClient.get(`/anomalies/ticker/${ticker}`, { params });
+    return response.data;
+  },
+
+  async getPriceAnomalies(ticker: string, params?: {
+    lookback_days?: number;
+    z_threshold?: number;
+  }): Promise<PriceAnomaliesResponse> {
+    const response: AxiosResponse<PriceAnomaliesResponse> = await apiClient.get(`/anomalies/price/${ticker}`, { params });
+    return response.data;
+  },
+
+  async getSentimentAnomalies(ticker: string, params?: {
+    lookback_days?: number;
+    z_threshold?: number;
+  }): Promise<SentimentAnomaliesResponse> {
+    const response: AxiosResponse<SentimentAnomaliesResponse> = await apiClient.get(`/anomalies/sentiment/${ticker}`, { params });
+    return response.data;
+  },
+
+  async getPatternAnomalies(ticker: string, params?: {
+    lookback_days?: number;
+  }): Promise<PatternAnomaliesResponse> {
+    const response: AxiosResponse<PatternAnomaliesResponse> = await apiClient.get(`/anomalies/patterns/${ticker}`, { params });
+    return response.data;
+  },
+};
+
+// Market Analysis API
+export const marketAnalysisApi = {
+  async getMarketOverview(): Promise<MarketOverviewAnalysis> {
+    const response: AxiosResponse<MarketOverviewAnalysis> = await apiClient.get('/market-analysis/market-overview');
+    return response.data;
+  },
+
+  async getSentimentAnalysis(): Promise<SentimentAnalysisResponse> {
+    const response: AxiosResponse<SentimentAnalysisResponse> = await apiClient.get('/market-analysis/sentiment-analysis');
+    return response.data;
+  },
+
+  async getTomorrowOutlook(): Promise<TomorrowOutlookResponse> {
+    const response: AxiosResponse<TomorrowOutlookResponse> = await apiClient.get('/market-analysis/tomorrow-outlook');
+    return response.data;
+  },
+
+  async getPressureTestSummary(): Promise<PressureTestSummary> {
+    const response: AxiosResponse<PressureTestSummary> = await apiClient.get('/market-analysis/pressure-test-summary');
+    return response.data;
+  },
+};
+
+// Recommendations API
+export const recommendationsApi = {
+  async getDailyRecommendations(params?: {
+    date?: string;
+    limit?: number;
+  }): Promise<DailyRecommendationsResponse> {
+    const response: AxiosResponse<DailyRecommendationsResponse> = await apiClient.get('/recommendations/daily', { params });
+    return response.data;
+  },
 };
 
 // Utility functions

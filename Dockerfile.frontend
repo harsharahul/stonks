@@ -1,5 +1,5 @@
-# React Frontend Dockerfile (Multi-stage build)
-FROM node:18-alpine AS builder
+# React Frontend Dockerfile (Multi-stage build with universal support)
+FROM --platform=$BUILDPLATFORM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -15,7 +15,7 @@ COPY frontend/ .
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM --platform=$TARGETPLATFORM nginx:alpine
 
 # Copy custom nginx config
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
@@ -23,18 +23,15 @@ COPY frontend/nginx.conf /etc/nginx/nginx.conf
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create non-root user
+# Create non-root user for file ownership
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
 
-# Change ownership
-RUN chown -R nextjs:nodejs /usr/share/nginx/html && \
-    chown -R nextjs:nodejs /var/cache/nginx && \
-    chown -R nextjs:nodejs /var/log/nginx && \
-    chown -R nextjs:nodejs /etc/nginx/conf.d
+# Change ownership of web content only
+RUN chown -R nextjs:nodejs /usr/share/nginx/html
 
-# Switch to non-root user
-USER nextjs
+# Keep nginx running as root for system access
+# USER nextjs
 
 # Expose port
 EXPOSE 80

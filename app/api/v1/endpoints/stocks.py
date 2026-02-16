@@ -10,6 +10,7 @@ from math import ceil
 
 from app.core.database import get_db
 from app.models.stock import Stock
+from app.models.price import Price
 
 router = APIRouter()
 
@@ -91,7 +92,23 @@ async def get_stock(
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
     
-    # TODO: Implement real price data and aggregates from database
+    # Fetch latest price from database
+    latest_price_row = db.query(Price).filter(
+        Price.stock_id == stock.id
+    ).order_by(Price.ts.desc()).first()
+
+    latest_price = None
+    if latest_price_row:
+        ts = latest_price_row.ts or latest_price_row.timestamp
+        latest_price = {
+            "ts": ts.isoformat() if ts else None,
+            "open": float(latest_price_row.open_price) if latest_price_row.open_price else None,
+            "high": float(latest_price_row.high) if latest_price_row.high else None,
+            "low": float(latest_price_row.low) if latest_price_row.low else None,
+            "close": float(latest_price_row.close) if latest_price_row.close else float(latest_price_row.price),
+            "volume": latest_price_row.volume or 0,
+        }
+
     return {
         "id": stock.id,
         "symbol": stock.symbol,
@@ -99,17 +116,5 @@ async def get_stock(
         "sector": stock.sector,
         "exchange": stock.exchange,
         "is_active": stock.is_active,
-        "latest_price": {
-            "ts": "2025-08-15T10:30:00Z",
-            "open": 185.50,
-            "high": 187.20,
-            "low": 184.80,
-            "close": 186.75,
-            "volume": 52483729
-        },
-        "aggregates": {
-            "sentiment_7d": 0.65,
-            "momentum_14d": 0.15,
-            "vol_ratio_3d": 1.25
-        }
+        "latest_price": latest_price,
     }

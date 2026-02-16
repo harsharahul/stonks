@@ -1,7 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { TrendingUp, Plus, RefreshCw, AlertCircle, Brain, Search, X, Star, ChevronUp, ChevronDown, BarChart3 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import ToastManager from './ToastManager';
+import ScreenerFiltersPanel from './ScreenerFilters';
+import StockComparisonDrawer, { ComparisonStock } from './StockComparisonDrawer';
+import { stocksApi } from '../api/client';
+import { useSentimentAnalysis } from '../hooks/useWSBDashboard';
+import { ScreenerFilters, DEFAULT_SCREENER_FILTERS, passesScreenerFilters, isScreenerActive } from '../hooks/useStockScreener';
+import { cn, formatNumber, formatPercent, getSentimentColor, getReturnColor } from '../utils/format';
 
 interface StockActivity {
   signals_7d: number;
@@ -58,79 +65,112 @@ interface StockStats {
   };
 }
 
+// Search result from stocksApi
+interface SearchResult {
+  symbol: string;
+  company_name?: string;
+}
+
+type SortColumn = 'symbol' | 'name' | 'priority' | 'sentiment' | 'returns_5d' | 'volume_z' | 'articles' | 'activity';
+type SortDirection = 'asc' | 'desc';
+
+const ThSortable: React.FC<{
+  col: SortColumn;
+  label: string;
+  sortColumn: SortColumn;
+  sortDirection: SortDirection;
+  onSort: (col: SortColumn) => void;
+  className?: string;
+}> = ({ col, label, sortColumn, sortDirection, onSort, className }) => (
+  <th
+    className={cn(
+      'px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider cursor-pointer select-none hover:text-neutral-200 transition-colors',
+      className
+    )}
+    onClick={() => onSort(col)}
+  >
+    <span className="inline-flex items-center gap-1">
+      {label}
+      {sortColumn === col && (
+        sortDirection === 'asc'
+          ? <ChevronUp className="w-3 h-3" />
+          : <ChevronDown className="w-3 h-3" />
+      )}
+    </span>
+  </th>
+);
+
 const EnhancedStocksList: React.FC = () => {
   const [stocks, setStocks] = useState<EnhancedStock[]>([]);
   const [suggestions, setSuggestions] = useState<StockSuggestion[]>([]);
   const [stats, setStats] = useState<StockStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState('priority');
+  const [sortColumn, setSortColumn] = useState<SortColumn>('symbol');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newStock, setNewStock] = useState({ symbol: '', name: '', sector: '', priority: 'normal' });
-  const { toasts, showSuccess, showError, removeToast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Screener & comparison state
+  const [screenerFilters, setScreenerFilters] = useState<ScreenerFilters>({ ...DEFAULT_SCREENER_FILTERS });
+  const [selectedSymbols, setSelectedSymbols] = useState<Set<string>>(new Set());
+  const { data: sentimentData, isLoading: sentimentLoading } = useSentimentAnalysis();
+
+  // Quick Add state
+  const [quickAddQuery, setQuickAddQuery] = useState('');
+  const [quickAddResults, setQuickAddResults] = useState<SearchResult[]>([]);
+  const [quickAddLoading, setQuickAddLoading] = useState(false);
+
+  const { toasts, showSuccess, showError: showErrorToast, showInfo, removeToast } = useToast();
+
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
   useEffect(() => {
     fetchStocksData();
-  }, [sortBy, filterPriority]);
+  }, []);
+
+  // Quick Add search with debounce
+  useEffect(() => {
+    if (!quickAddQuery || quickAddQuery.length < 1) {
+      setQuickAddResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        setQuickAddLoading(true);
+        const data = await stocksApi.getStocks({ q: quickAddQuery.toUpperCase(), page_size: 8 });
+        setQuickAddResults(
+          (data.items || []).map((s: any) => ({
+            symbol: s.symbol,
+            company_name: s.company_name || s.name || s.symbol,
+          }))
+        );
+      } catch {
+        setQuickAddResults([]);
+      } finally {
+        setQuickAddLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [quickAddQuery]);
 
   const fetchStocksData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-      const params = new URLSearchParams({
-        sort_by: sortBy,
-        page_size: '100'
-      });
-      
-      if (filterPriority) {
-        params.append('priority_filter', filterPriority);
-      }
+      const params = new URLSearchParams({ sort_by: 'priority', page_size: '100' });
 
-      console.log('🔍 Fetching stocks with params:', params.toString());
-      
       const [stocksRes, suggestionsRes, statsRes] = await Promise.all([
         fetch(`${baseUrl}/stocks-enhanced/comprehensive?${params}`),
         fetch(`${baseUrl}/stocks-enhanced/discovery-suggestions?limit=5`).catch(() => null),
-        fetch(`${baseUrl}/stocks-enhanced/stats`).catch(() => null)
+        fetch(`${baseUrl}/stocks-enhanced/stats`).catch(() => null),
       ]);
 
       if (stocksRes.ok) {
         const stocksData = await stocksRes.json();
-        console.log('📊 Stocks response:', {
-          success: stocksData.success,
-          total: stocksData.total,
-          filters: stocksData.filters_applied,
-          sampleStocks: stocksData.stocks?.slice(0, 3)?.map(s => ({ symbol: s.symbol, priority: s.priority_level }))
-        });
-        
         if (stocksData.success && stocksData.stocks) {
           setStocks(stocksData.stocks);
-        } else {
-          // Fallback to basic endpoint if enhanced fails
-          const basicRes = await fetch(`${baseUrl}/stocks/?${params}`);
-          if (basicRes.ok) {
-            const basicData = await basicRes.json();
-            const enhancedStocks = (basicData.items || []).map((stock: any) => ({
-              symbol: stock.symbol,
-              name: stock.company_name || stock.symbol,
-              sector: stock.sector || null,
-              priority_level: 'normal',
-              is_active: stock.is_active !== false,
-              added_by: 'system',
-              created_at: stock.created_at || null,
-              recent_activity: {
-                signals_7d: 0,
-                alerts_7d: 0,
-                has_recent_features: false,
-                last_feature_date: null
-              },
-              latest_features: null
-            }));
-            setStocks(enhancedStocks);
-          }
         }
       }
 
@@ -142,26 +182,7 @@ const EnhancedStocksList: React.FC = () => {
       if (statsRes && statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
-      } else {
-        // Create mock stats for now
-        setStats({
-          tracking_stats: {
-            total_stocks: 35,
-            active_stocks: 35,
-            inactive_stocks: 0,
-            priority_distribution: { normal: 35 },
-            recent_activity: {
-              signals_7d: 155,
-              alerts_7d: 23,
-              stocks_with_features_7d: 2
-            },
-            coverage: {
-              feature_coverage: "6%"
-            }
-          }
-        });
       }
-
     } catch (err) {
       console.error('Error fetching stocks data:', err);
       setError('Failed to load stocks data');
@@ -172,437 +193,643 @@ const EnhancedStocksList: React.FC = () => {
 
   const removeStock = async (symbol: string) => {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       const response = await fetch(`${baseUrl}/stocks-enhanced/remove/${symbol}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
-
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // Show success notification
-          showSuccess(
-            'Stock Removed Successfully!',
-            `${symbol} has been removed from your tracking list.`
-          );
-          
-          // Refresh the list
+          showSuccess('Stock Removed', `${symbol} removed from tracking.`);
           fetchStocksData();
         } else {
-          showError(
-            'Failed to Remove Stock',
-            `Could not remove ${symbol}: ${result.message || 'Unknown error'}`
-          );
+          showErrorToast('Remove Failed', result.message || 'Unknown error');
         }
       } else {
         const errorData = await response.json();
-        showError(
-          'Failed to Remove Stock',
-          `Could not remove ${symbol}: ${errorData.detail || 'Unknown error'}`
-        );
+        showErrorToast('Remove Failed', errorData.detail || 'Unknown error');
       }
-    } catch (err) {
-      console.error('Error removing stock:', err);
-      showError(
-        'Failed to Remove Stock',
-        `Could not remove ${symbol}: Network or system error`
-      );
+    } catch {
+      showErrorToast('Remove Failed', `Could not remove ${symbol}`);
     }
   };
 
   const addStock = async (symbol: string, name?: string, priority: string = 'normal') => {
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       const response = await fetch(`${baseUrl}/stocks-enhanced/add`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           symbol: symbol.toUpperCase(),
           name: name || symbol.toUpperCase(),
           priority_level: priority,
-          added_by: 'user'
+          added_by: 'user',
         }),
       });
-
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // Show success notification
-          showSuccess(
-            'Stock Added Successfully!',
-            `${symbol.toUpperCase()} has been added to your tracking list.`
-          );
-          
-          // Refresh the list
+          showSuccess('Stock Added', `${symbol.toUpperCase()} added to tracking.`);
           fetchStocksData();
-          setShowAddForm(false);
-          setNewStock({ symbol: '', name: '', sector: '', priority: 'normal' });
+          setQuickAddQuery('');
+          setQuickAddResults([]);
+        } else if (result.message?.includes('already being tracked')) {
+          showInfo('Already Tracked', `${symbol.toUpperCase()} is already in your list.`);
         } else {
-          // Handle specific error cases
-          if (result.message && result.message.includes('already being tracked')) {
-            showInfo(
-              'Stock Already Tracked',
-              `${symbol.toUpperCase()} is already in your tracking list. You can modify its priority or remove it if needed.`
-            );
-          } else {
-            // Show error notification for API-level failure
-            showError(
-              'Failed to Add Stock',
-              `Could not add ${symbol.toUpperCase()}: ${result.message || 'Unknown error'}`
-            );
-          }
+          showErrorToast('Add Failed', result.message || 'Unknown error');
         }
       } else {
         const errorData = await response.json();
-        console.error('Failed to add stock:', errorData);
-        
-        // Show error notification
-        showError(
-          'Failed to Add Stock',
-          `Could not add ${symbol.toUpperCase()}: ${errorData.detail || 'Unknown error'}`
-        );
+        showErrorToast('Add Failed', errorData.detail || 'Unknown error');
       }
-    } catch (err) {
-      console.error('Error adding stock:', err);
-      
-      // Show error notification for network/other errors
-      showError(
-        'Failed to Add Stock',
-        `Could not add ${symbol.toUpperCase()}: Network or system error`
-      );
+    } catch {
+      showErrorToast('Add Failed', `Could not add ${symbol.toUpperCase()}`);
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'normal': return 'bg-blue-100 text-blue-800';
-      case 'low': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleSort = (col: SortColumn) => {
+    if (sortColumn === col) {
+      setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(col);
+      setSortDirection('asc');
     }
-  };
-
-  const getSentimentColor = (sentiment: number | null) => {
-    if (sentiment === null) return 'text-gray-500';
-    if (sentiment > 0.6) return 'text-green-600';
-    if (sentiment > 0.4) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getReturnColor = (returns: number | null) => {
-    if (returns === null) return 'text-gray-500';
-    if (returns > 0.02) return 'text-green-600';
-    if (returns < -0.02) return 'text-red-600';
-    return 'text-gray-600';
   };
 
   const getActivityLevel = (signals: number, alerts: number) => {
     const total = signals + alerts;
-    if (total >= 5) return { level: 'High', color: 'text-red-600' };
-    if (total >= 2) return { level: 'Medium', color: 'text-yellow-600' };
-    if (total > 0) return { level: 'Low', color: 'text-blue-600' };
-    return { level: 'None', color: 'text-gray-500' };
+    if (total >= 5) return { level: 'High', color: 'text-red-700 bg-red-50' };
+    if (total >= 2) return { level: 'Med', color: 'text-amber-700 bg-amber-50' };
+    if (total > 0) return { level: 'Low', color: 'text-blue-700 bg-blue-50' };
+    return { level: '—', color: 'text-neutral-500 bg-neutral-100' };
   };
+
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'text-red-700 bg-red-50 border-red-200';
+      case 'normal': return 'text-neutral-600 bg-neutral-100 border-neutral-200';
+      case 'low': return 'text-neutral-500 bg-neutral-50 border-neutral-200';
+      default: return 'text-neutral-500 bg-neutral-50 border-neutral-200';
+    }
+  };
+
+  // Compute average sentiment from stocks
+  const avgSentiment = useMemo(() => {
+    const vals = stocks
+      .map(s => s.latest_features?.sentiment)
+      .filter((v): v is number => v !== null && v !== undefined);
+    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  }, [stocks]);
+
+  // Filter and sort stocks
+  const filteredStocks = useMemo(() => {
+    let result = [...stocks];
+
+    // Priority filter
+    if (filterPriority) {
+      result = result.filter(s => s.priority_level === filterPriority);
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.toUpperCase();
+      result = result.filter(
+        s => s.symbol.includes(q) || s.name.toUpperCase().includes(q)
+      );
+    }
+
+    // Screener filters
+    if (isScreenerActive(screenerFilters)) {
+      result = result.filter(s => {
+        const act = getActivityLevel(s.recent_activity.signals_7d, s.recent_activity.alerts_7d);
+        return passesScreenerFilters(s, screenerFilters, act.level);
+      });
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      switch (sortColumn) {
+        case 'symbol': return dir * a.symbol.localeCompare(b.symbol);
+        case 'name': return dir * a.name.localeCompare(b.name);
+        case 'priority': {
+          const order: Record<string, number> = { high: 0, normal: 1, low: 2 };
+          return dir * ((order[a.priority_level] ?? 3) - (order[b.priority_level] ?? 3));
+        }
+        case 'sentiment': {
+          const aVal = a.latest_features?.sentiment ?? -999;
+          const bVal = b.latest_features?.sentiment ?? -999;
+          return dir * (aVal - bVal);
+        }
+        case 'returns_5d': {
+          const aVal = a.latest_features?.returns_5d ?? -999;
+          const bVal = b.latest_features?.returns_5d ?? -999;
+          return dir * (aVal - bVal);
+        }
+        case 'volume_z': {
+          const aVal = a.latest_features?.volume_z ?? -999;
+          const bVal = b.latest_features?.volume_z ?? -999;
+          return dir * (aVal - bVal);
+        }
+        case 'articles': {
+          const aVal = a.latest_features?.article_count ?? 0;
+          const bVal = b.latest_features?.article_count ?? 0;
+          return dir * (aVal - bVal);
+        }
+        case 'activity': {
+          const aVal = (a.recent_activity.signals_7d + a.recent_activity.alerts_7d);
+          const bVal = (b.recent_activity.signals_7d + b.recent_activity.alerts_7d);
+          return dir * (aVal - bVal);
+        }
+        default: return 0;
+      }
+    });
+
+    return result;
+  }, [stocks, filterPriority, searchQuery, sortColumn, sortDirection, screenerFilters]);
+
+  // Track which symbols are already tracked (for Quick Add)
+  const trackedSymbols = useMemo(() => new Set(stocks.map(s => s.symbol)), [stocks]);
+
+  // Comparison helpers
+  const toggleSelection = (symbol: string) => {
+    setSelectedSymbols(prev => {
+      const next = new Set(prev);
+      if (next.has(symbol)) next.delete(symbol);
+      else next.add(symbol);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedSymbols(new Set());
+
+  const allFilteredSelected = filteredStocks.length > 0 && filteredStocks.every(s => selectedSymbols.has(s.symbol));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      clearSelection();
+    } else {
+      setSelectedSymbols(new Set(filteredStocks.map(s => s.symbol)));
+    }
+  };
+
+  const comparisonStocks: ComparisonStock[] = useMemo(
+    () => stocks
+      .filter(s => selectedSymbols.has(s.symbol))
+      .map(s => ({
+        symbol: s.symbol,
+        name: s.name,
+        sentiment: s.latest_features?.sentiment ?? null,
+        returns_5d: s.latest_features?.returns_5d ?? null,
+        volume_z: s.latest_features?.volume_z ?? null,
+        article_count: s.latest_features?.article_count ?? 0,
+        signals_7d: s.recent_activity.signals_7d,
+        alerts_7d: s.recent_activity.alerts_7d,
+      })),
+    [stocks, selectedSymbols],
+  );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600">Loading enhanced stocks data...</span>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <span className="ml-3 text-neutral-400">Loading watchlist...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
+      <div className="max-w-3xl mx-auto mt-12 bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+          <div>
             <h3 className="text-sm font-medium text-red-800">Error Loading Data</h3>
-            <p className="mt-1 text-sm text-red-700">{error}</p>
+            <p className="mt-1 text-sm text-red-600">{error}</p>
           </div>
         </div>
-        <div className="mt-4">
-          <button
-            onClick={fetchStocksData}
-            className="bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700"
-          >
-            Retry
-          </button>
-        </div>
+        <button
+          onClick={fetchStocksData}
+          className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Stats */}
-      <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">📊 Enhanced Stock Tracking</h2>
-        <p className="text-green-100">AI-powered stock discovery with comprehensive tracking and analytics</p>
-        
-        {stats && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <div className="text-2xl font-bold">{stats.tracking_stats.active_stocks}</div>
-              <div>Active Stocks</div>
+    <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
+      {/* Dark Header with KPI Strip */}
+      <div className="bg-neutral-900 rounded-xl p-6 border border-neutral-800">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-500/20 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold">{stats.tracking_stats.recent_activity.signals_7d}</div>
-              <div>Signals (7d)</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{stats.tracking_stats.recent_activity.alerts_7d}</div>
-              <div>Alerts (7d)</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{stats.tracking_stats.coverage.feature_coverage}</div>
-              <div>Feature Coverage</div>
+              <h1 className="text-xl font-bold text-white">Stock Watchlist</h1>
+              <p className="text-sm text-neutral-400">
+                {stocks.length} tracked stocks
+              </p>
             </div>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchStocksData}
+              className="px-3 py-2 text-sm bg-neutral-800 text-neutral-300 rounded-lg hover:bg-neutral-700 border border-neutral-700 transition-colors inline-flex items-center gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-neutral-800/60 rounded-lg p-3 border border-neutral-700/50">
+            <div className="text-xs text-neutral-400 mb-1">Tracked</div>
+            <div className="text-2xl font-bold text-white">
+              {stats?.tracking_stats.active_stocks ?? stocks.length}
+            </div>
+          </div>
+          <div className="bg-neutral-800/60 rounded-lg p-3 border border-neutral-700/50">
+            <div className="text-xs text-neutral-400 mb-1">Avg Sentiment</div>
+            <div className={cn('text-2xl font-bold', avgSentiment !== null ? getSentimentColor(avgSentiment) : 'text-neutral-500')}>
+              {avgSentiment !== null ? formatNumber(avgSentiment, 3) : '—'}
+            </div>
+          </div>
+          <div className="bg-neutral-800/60 rounded-lg p-3 border border-neutral-700/50">
+            <div className="text-xs text-neutral-400 mb-1">Signals (7d)</div>
+            <div className="text-2xl font-bold text-white">
+              {stats?.tracking_stats.recent_activity.signals_7d ?? 0}
+            </div>
+          </div>
+          <div className="bg-neutral-800/60 rounded-lg p-3 border border-neutral-700/50">
+            <div className="text-xs text-neutral-400 mb-1">Coverage</div>
+            <div className="text-2xl font-bold text-white">
+              {stats?.tracking_stats.coverage.feature_coverage ?? '—'}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* AI Suggestions */}
-      {suggestions.length > 0 && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            🤖 AI Discovery Suggestions
-            <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-              {suggestions.length} Found
-            </span>
-          </h3>
-          
-          <div className="space-y-3">
-            {suggestions.map((suggestion) => (
-              <div key={suggestion.ticker} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <span className="font-semibold text-lg">{suggestion.ticker}</span>
-                  <div className="text-sm">
-                    <div className="text-gray-600">{suggestion.reason}</div>
-                    <div className="text-xs text-gray-500">
-                      {suggestion.recent_signals} signals • Confidence: {(suggestion.confidence * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(suggestion.suggested_priority)}`}>
-                    {suggestion.suggested_priority}
-                  </span>
-                  <button
-                    onClick={() => addStock(suggestion.ticker, undefined, suggestion.suggested_priority)}
-                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-                  >
-                    Add to Tracking
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Market Sentiment Strip */}
+      {(sentimentLoading || sentimentData) && (
+        <div className={cn(
+          'rounded-xl px-4 py-3 border',
+          sentimentLoading ? 'bg-neutral-50 border-neutral-200' :
+          sentimentData?.overall_sentiment.label === 'BULLISH' ? 'bg-emerald-50 border-emerald-200' :
+          sentimentData?.overall_sentiment.label === 'BEARISH' ? 'bg-red-50 border-red-200' :
+          'bg-amber-50 border-amber-200'
+        )}>
+          {sentimentLoading ? (
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-20 bg-neutral-200 rounded animate-pulse" />
+              <div className="h-3 w-32 bg-neutral-200 rounded animate-pulse" />
+            </div>
+          ) : sentimentData ? (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span className={cn(
+                'font-bold text-sm',
+                sentimentData.overall_sentiment.label === 'BULLISH' ? 'text-emerald-700' :
+                sentimentData.overall_sentiment.label === 'BEARISH' ? 'text-red-700' :
+                'text-amber-700'
+              )}>
+                {sentimentData.overall_sentiment.label}
+              </span>
+              <span className="text-neutral-600">
+                Score: <span className="font-mono font-medium">{formatNumber(sentimentData.overall_sentiment.score, 3)}</span>
+              </span>
+              <span className="text-neutral-500">
+                {sentimentData.overall_sentiment.confidence} confidence
+              </span>
+              <span className="text-neutral-400 hidden sm:inline">|</span>
+              <span className="text-neutral-500">
+                {sentimentData.statistics.stocks_analyzed} stocks analyzed
+              </span>
+              <span className="text-neutral-500">
+                {sentimentData.statistics.total_articles} articles
+              </span>
+            </div>
+          ) : null}
         </div>
       )}
 
-      {/* Controls */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <div className="flex items-center space-x-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-              >
-                <option value="priority">Priority</option>
-                <option value="activity">Recent Activity</option>
-                <option value="name">Name</option>
-                <option value="recent_signals">Recent Signals</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority Filter</label>
-              <select
-                value={filterPriority}
-                onChange={(e) => setFilterPriority(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-              >
-                <option value="">All Priorities</option>
-                <option value="high">High Priority</option>
-                <option value="normal">Normal Priority</option>
-                <option value="low">Low Priority</option>
-              </select>
-            </div>
-          </div>
-          
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Add Stock</span>
-          </button>
-        </div>
+      {/* Screener Filters */}
+      <ScreenerFiltersPanel
+        filters={screenerFilters}
+        onChange={setScreenerFilters}
+        filteredCount={filteredStocks.length}
+        totalCount={stocks.length}
+      />
 
-        {/* Add Stock Form */}
-        {showAddForm && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <input
-                type="text"
-                placeholder="Symbol (e.g., AAPL)"
-                value={newStock.symbol}
-                onChange={(e) => setNewStock({...newStock, symbol: e.target.value.toUpperCase()})}
-                className="border border-gray-300 rounded-md px-3 py-2"
-              />
-              <input
-                type="text"
-                placeholder="Company Name (optional)"
-                value={newStock.name}
-                onChange={(e) => setNewStock({...newStock, name: e.target.value})}
-                className="border border-gray-300 rounded-md px-3 py-2"
-              />
-              <select
-                value={newStock.priority}
-                onChange={(e) => setNewStock({...newStock, priority: e.target.value})}
-                className="border border-gray-300 rounded-md px-3 py-2"
-              >
-                <option value="normal">Normal Priority</option>
-                <option value="high">High Priority</option>
-                <option value="low">Low Priority</option>
-              </select>
-              <button
-                onClick={() => addStock(newStock.symbol, newStock.name, newStock.priority)}
-                disabled={!newStock.symbol}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-              >
-                Add Stock
-              </button>
-            </div>
-          </div>
+      {/* Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">All Priorities</option>
+            <option value="high">High</option>
+            <option value="normal">Normal</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search ticker or name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-700 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="text-sm text-neutral-500">
+          {filteredStocks.length} of {stocks.length} stocks
+        </div>
+        {selectedSymbols.size >= 2 && (
+          <button
+            onClick={() => {
+              const el = document.getElementById('comparison-drawer');
+              el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            Compare ({selectedSymbols.size})
+          </button>
+        )}
+        {selectedSymbols.size > 0 && (
+          <button
+            onClick={clearSelection}
+            className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
+          >
+            Clear selection
+          </button>
         )}
       </div>
 
-      {/* Stocks List */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">📈 Tracked Stocks ({stocks.length})</h3>
-        
-        <div className="space-y-3">
-          {stocks.map((stock) => {
-            const activity = getActivityLevel(stock.recent_activity.signals_7d, stock.recent_activity.alerts_7d);
-            
-            return (
-              <Link
-                key={stock.symbol}
-                to={`/stocks/${stock.symbol}`}
-                className="block border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xl font-bold">{stock.symbol}</span>
-                        <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(stock.priority_level)}`}>
+      {/* Main Content: Table + Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Stock Table */}
+        <div className="lg:col-span-8 bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" style={{ minWidth: '700px' }}>
+              <thead>
+                <tr className="bg-neutral-900 text-left">
+                  <th className="px-2 py-2 w-8">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected && filteredStocks.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-3.5 h-3.5 rounded border-neutral-500 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </th>
+                  <ThSortable col="symbol" label="Ticker" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                  <ThSortable col="name" label="Company" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} className="hidden md:table-cell" />
+                  <ThSortable col="priority" label="Priority" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                  <ThSortable col="sentiment" label="Sentiment" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                  <ThSortable col="returns_5d" label="5d Ret" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                  <ThSortable col="volume_z" label="Vol Z" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} className="hidden sm:table-cell" />
+                  <ThSortable col="articles" label="Articles" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} className="hidden sm:table-cell" />
+                  <ThSortable col="activity" label="Activity" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} className="hidden md:table-cell" />
+                  <th className="px-3 py-2 w-10"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {filteredStocks.map((stock) => {
+                  const activity = getActivityLevel(stock.recent_activity.signals_7d, stock.recent_activity.alerts_7d);
+                  const sentiment = stock.latest_features?.sentiment ?? null;
+                  const ret5d = stock.latest_features?.returns_5d ?? null;
+                  const volZ = stock.latest_features?.volume_z ?? null;
+                  const articles = stock.latest_features?.article_count ?? 0;
+
+                  const isSelected = selectedSymbols.has(stock.symbol);
+
+                  return (
+                    <tr key={stock.symbol} className={cn('hover:bg-neutral-50 transition-colors group', isSelected && 'bg-blue-50/50')}>
+                      <td className="px-2 py-2.5">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelection(stock.symbol)}
+                          className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <Link
+                          to={`/stocks/${stock.symbol}`}
+                          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {stock.symbol}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-600 hidden md:table-cell">
+                        <span className="truncate block max-w-[180px]">{stock.name}</span>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className={cn(
+                          'px-2 py-0.5 rounded text-xs font-medium border',
+                          getPriorityBadge(stock.priority_level)
+                        )}>
                           {stock.priority_level}
                         </span>
-                        <span className="text-xs text-gray-500">by {stock.added_by}</span>
-                        {stock.added_by === 'user' && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              removeStock(stock.symbol);
-                            }}
-                            className="ml-2 text-xs text-red-600 hover:text-red-800 hover:underline"
-                            title="Remove stock"
-                          >
-                            Remove
-                          </button>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {sentiment !== null ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-12 bg-neutral-200 rounded-full h-1.5">
+                              <div
+                                className={cn(
+                                  'h-1.5 rounded-full',
+                                  sentiment > 0.6 ? 'bg-emerald-500' : sentiment > 0.4 ? 'bg-yellow-500' : 'bg-red-500'
+                                )}
+                                style={{ width: `${Math.min(sentiment * 100, 100)}%` }}
+                              />
+                            </div>
+                            <span className={cn('text-xs font-medium', getSentimentColor(sentiment))}>
+                              {formatNumber(sentiment, 3)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-neutral-400 text-xs">—</span>
                         )}
-                      </div>
-                      <div className="text-sm text-gray-600">{stock.name}</div>
-                      {stock.sector && <div className="text-xs text-gray-500">{stock.sector}</div>}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-6 text-sm">
-                    {/* Recent Activity */}
-                    <div className="text-center">
-                      <div className={`font-medium ${activity.color}`}>{activity.level}</div>
-                      <div className="text-xs text-gray-500">
-                        {stock.recent_activity.signals_7d}S / {stock.recent_activity.alerts_7d}A
-                      </div>
-                    </div>
-                    
-                    {/* Latest Features */}
-                    {stock.latest_features ? (
-                      <div className="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                          <div className={`font-medium ${getSentimentColor(stock.latest_features.sentiment)}`}>
-                            {stock.latest_features.sentiment ? stock.latest_features.sentiment.toFixed(3) : '—'}
-                          </div>
-                          <div className="text-xs text-gray-500">Sentiment</div>
-                        </div>
-                        <div>
-                          <div className={`font-medium ${getReturnColor(stock.latest_features.returns_5d)}`}>
-                            {stock.latest_features.returns_5d ? 
-                              `${(stock.latest_features.returns_5d * 100).toFixed(1)}%` : '—'}
-                          </div>
-                          <div className="text-xs text-gray-500">Returns 5d</div>
-                        </div>
-                        <div>
-                          <div className="font-medium">{stock.latest_features.article_count}</div>
-                          <div className="text-xs text-gray-500">Articles</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center text-gray-500">
-                        <div className="text-sm">No recent features</div>
-                        <div className="text-xs">
-                          Last: {stock.recent_activity.last_feature_date || 'Never'}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-        
-        {stocks.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-gray-500">No stocks match your current filters</p>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className={cn('text-xs font-medium', getReturnColor(ret5d))}>
+                          {ret5d !== null ? formatPercent(ret5d, 1) : '—'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-700 text-xs hidden sm:table-cell">
+                        {volZ !== null ? formatNumber(volZ, 2) : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-neutral-700 text-xs hidden sm:table-cell">
+                        {articles}
+                      </td>
+                      <td className="px-3 py-2.5 hidden md:table-cell">
+                        <span className={cn('px-2 py-0.5 rounded text-xs font-medium', activity.color)}>
+                          {activity.level}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <button
+                          onClick={() => removeStock(stock.symbol)}
+                          className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-500 transition-all"
+                          title={`Remove ${stock.symbol}`}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
+
+          {/* Empty state */}
+          {filteredStocks.length === 0 && (
+            <div className="text-center py-12 px-6">
+              <Star className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
+              <h3 className="text-sm font-medium text-neutral-900 mb-1">
+                {searchQuery || filterPriority ? 'No stocks match your filters' : 'Start building your watchlist'}
+              </h3>
+              <p className="text-xs text-neutral-500">
+                {searchQuery || filterPriority
+                  ? 'Try adjusting your search or filter.'
+                  : 'Use Quick Add to search and add stocks to track.'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Quick Add Panel */}
+          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
+            <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-600" />
+              Quick Add
+            </h3>
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search by ticker..."
+                value={quickAddQuery}
+                onChange={(e) => setQuickAddQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {quickAddLoading && (
+              <div className="text-xs text-neutral-400 py-2">Searching...</div>
+            )}
+
+            {quickAddResults.length > 0 && (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {quickAddResults.map((r) => {
+                  const isTracked = trackedSymbols.has(r.symbol);
+                  return (
+                    <div
+                      key={r.symbol}
+                      className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-neutral-50 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <span className="font-semibold text-sm text-neutral-900">{r.symbol}</span>
+                        <span className="text-xs text-neutral-500 ml-2 truncate">
+                          {r.company_name}
+                        </span>
+                      </div>
+                      {isTracked ? (
+                        <span className="text-xs text-emerald-600 font-medium shrink-0">Tracked</span>
+                      ) : (
+                        <button
+                          onClick={() => addStock(r.symbol, r.company_name)}
+                          className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded hover:bg-blue-700 transition-colors shrink-0"
+                        >
+                          + Add
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {quickAddQuery && !quickAddLoading && quickAddResults.length === 0 && (
+              <div className="text-xs text-neutral-400 py-2">
+                No results for "{quickAddQuery}". You can add it manually:
+                <button
+                  onClick={() => addStock(quickAddQuery)}
+                  className="ml-1 text-blue-600 hover:underline font-medium"
+                >
+                  Add {quickAddQuery.toUpperCase()}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* AI Suggestions Panel */}
+          {suggestions.length > 0 && (
+            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
+              <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+                <Brain className="w-4 h-4 text-purple-600" />
+                AI Suggestions
+                <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                  {suggestions.length}
+                </span>
+              </h3>
+              <div className="space-y-2">
+                {suggestions.map((s) => (
+                  <div
+                    key={s.ticker}
+                    className="flex items-center justify-between py-2 px-2 bg-neutral-50 rounded-lg"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm text-neutral-900">{s.ticker}</div>
+                      <div className="text-xs text-neutral-500 truncate">{s.reason}</div>
+                      <div className="text-xs text-neutral-400">
+                        {s.recent_signals} signals &middot; {(s.confidence * 100).toFixed(0)}% conf
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => addStock(s.ticker, undefined, s.suggested_priority)}
+                      className="text-xs bg-purple-600 text-white px-2.5 py-1 rounded hover:bg-purple-700 transition-colors shrink-0 ml-2"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Refresh Button */}
-      <div className="flex justify-center">
-        <button
-          onClick={fetchStocksData}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span>Refresh Data</span>
-        </button>
-      </div>
+      {/* Stock Comparison Drawer */}
+      {comparisonStocks.length >= 2 && (
+        <div id="comparison-drawer">
+          <StockComparisonDrawer
+            stocks={comparisonStocks}
+            onRemove={(symbol) => toggleSelection(symbol)}
+            onClose={clearSelection}
+          />
+        </div>
+      )}
 
-      {/* Toast Notifications */}
       <ToastManager toasts={toasts} onDismiss={removeToast} />
     </div>
   );
