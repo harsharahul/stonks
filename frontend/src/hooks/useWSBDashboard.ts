@@ -44,6 +44,7 @@ export const useMarketSignalsOverview = () => {
     queryKey: wsbDashboardKeys.marketOverview(),
     queryFn: () => signalsApi.getMarketOverview({ limit: 20 }),
     staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
     retry: 2,
     onError: (error: any) => {
       console.error('Error fetching market overview:', formatApiError(error));
@@ -56,6 +57,7 @@ export const useMarketAnomalies = () => {
     queryKey: wsbDashboardKeys.anomalies(),
     queryFn: () => anomaliesApi.getMarketAnomalies(),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
     retry: 1,
     onError: (error: any) => {
       console.error('Error fetching market anomalies:', formatApiError(error));
@@ -81,6 +83,7 @@ export const useSentimentAnalysis = () => {
     queryKey: wsbDashboardKeys.sentimentAnalysis(),
     queryFn: () => marketAnalysisApi.getSentimentAnalysis(),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
     retry: 1,
     onError: (error: any) => {
       console.error('Error fetching sentiment analysis:', formatApiError(error));
@@ -93,6 +96,7 @@ export const useMarketAnalysis = () => {
     queryKey: wsbDashboardKeys.marketAnalysis(),
     queryFn: () => marketAnalysisApi.getMarketOverview(),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
     retry: 1,
     onError: (error: any) => {
       console.error('Error fetching market analysis:', formatApiError(error));

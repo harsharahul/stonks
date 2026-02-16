@@ -10,6 +10,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAllSignals, useTickerSignals, useSignalTypes, useAlertStats } from '../hooks/useSignals';
 import { useLatestAlerts } from '../hooks/useWSBDashboard';
 import { signalsApi } from '../api/client';
+import { useToast } from '../hooks/useToast';
+import ToastManager from './ToastManager';
 import {
   cn, formatNumber, formatPercent, formatRelativeTime,
   getStrengthColor, getDirectionColor, getSignalTypeLabel,
@@ -191,6 +193,7 @@ const TickerDrilldown: React.FC<{ ticker: string; onClose: () => void }> = ({ ti
 
 const SignalsExplorer: React.FC = () => {
   const queryClient = useQueryClient();
+  const { toasts, showError: showErrorToast, removeToast } = useToast();
 
   // Filters
   const [directionFilter, setDirectionFilter] = useState<'all' | 'bullish' | 'bearish' | 'neutral'>('all');
@@ -240,7 +243,7 @@ const SignalsExplorer: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['wsb-dashboard', 'alerts'] });
       queryClient.invalidateQueries({ queryKey: ['signals', 'alert-stats'] });
     } catch (err) {
-      console.error('Failed to acknowledge alert:', err);
+      showErrorToast('Acknowledge Failed', 'Could not acknowledge alert.');
     } finally {
       setAckLoading(null);
     }
@@ -519,7 +522,7 @@ const SignalsExplorer: React.FC = () => {
               </div>
             ) : (
               <div className="overflow-x-auto -mx-6">
-                <table className="w-full text-sm" style={{ minWidth: '640px' }}>
+                <table className="w-full text-sm" style={{ minWidth: '420px' }}>
                   <thead>
                     <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500 uppercase tracking-wider">
                       <ThSortable col="ticker" label="Ticker" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} className="px-6" />
@@ -776,6 +779,7 @@ const SignalsExplorer: React.FC = () => {
           <span> · Updated {formatRelativeTime(new Date(allSignals.dataUpdatedAt).toISOString())}</span>
         )}
       </div>
+      <ToastManager toasts={toasts} onDismiss={removeToast} />
     </div>
   );
 };

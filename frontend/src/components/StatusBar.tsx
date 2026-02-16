@@ -21,7 +21,7 @@ const StatusBar: React.FC = () => (
       </span>
       <span className="w-px h-3.5 bg-neutral-700" />
       <span className="flex items-center gap-1.5">
-        <Kbd>Ctrl+1-6</Kbd>
+        <Kbd>Ctrl+1-7</Kbd>
         <span>Navigate</span>
       </span>
     </div>

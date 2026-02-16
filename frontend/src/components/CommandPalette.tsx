@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Keyboard,
   ArrowRight,
+  Monitor,
 } from 'lucide-react';
 import { stocksApi } from '../api/client';
 
@@ -29,6 +30,7 @@ const allPages = [
   { to: '/signals', label: 'Signals', shortcut: 'Ctrl+4', icon: Zap, keywords: ['trading', 'alerts', 'momentum'] },
   { to: '/anomalies', label: 'Anomalies', shortcut: 'Ctrl+5', icon: AlertTriangle, keywords: ['outliers', 'unusual', 'detection'] },
   { to: '/wsb-trending', label: 'WSB Trending', shortcut: 'Ctrl+6', icon: TrendingUp, keywords: ['reddit', 'wallstreetbets', 'meme'] },
+  { to: '/system', label: 'System Status', shortcut: 'Ctrl+7', icon: Monitor, keywords: ['health', 'pipeline', 'celery', 'ingestion', 'status'] },
 ];
 
 const allActions = [

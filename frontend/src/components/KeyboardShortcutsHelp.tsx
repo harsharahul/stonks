@@ -42,6 +42,7 @@ const sections = [
       { keys: <><Kbd>Ctrl</Kbd><span className="text-neutral-400">+</span><Kbd>4</Kbd></>, label: 'Signals' },
       { keys: <><Kbd>Ctrl</Kbd><span className="text-neutral-400">+</span><Kbd>5</Kbd></>, label: 'Anomalies' },
       { keys: <><Kbd>Ctrl</Kbd><span className="text-neutral-400">+</span><Kbd>6</Kbd></>, label: 'WSB Trending' },
+      { keys: <><Kbd>Ctrl</Kbd><span className="text-neutral-400">+</span><Kbd>7</Kbd></>, label: 'System Status' },
       { keys: <Kbd>Esc</Kbd>, label: 'Close modal' },
     ],
   },

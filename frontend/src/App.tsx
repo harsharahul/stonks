@@ -13,7 +13,8 @@ import CommandPalette from './components/CommandPalette';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import StatusBar from './components/StatusBar';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { TrendingUp, Brain, AlertTriangle, Zap, Menu, X, Search } from 'lucide-react';
+import SystemStatus from './components/SystemStatus';
+import { TrendingUp, Brain, AlertTriangle, Zap, Menu, X, Search, Monitor } from 'lucide-react';
 import { cn } from './utils/format';
 
 // Create a client
@@ -34,6 +35,7 @@ const navLinks = [
   { to: '/signals', label: 'Signals', icon: <Zap className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/signals', activeClass: 'bg-purple-100 text-purple-700' },
   { to: '/anomalies', label: 'Anomalies', icon: <AlertTriangle className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/anomalies', activeClass: 'bg-orange-100 text-orange-700' },
   { to: '/wsb-trending', label: '\u{1F412} WSB Trending', match: (p: string) => p === '/wsb-trending', activeClass: 'bg-red-100 text-red-700' },
+  { to: '/system', label: 'System', icon: <Monitor className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/system', activeClass: 'bg-neutral-200 text-neutral-800' },
 ];
 
 const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) => {
@@ -144,6 +146,7 @@ const AppContent: React.FC = () => {
     { key: '4', ctrl: true, handler: () => navigate('/signals'), description: 'Signals', category: 'Navigation' },
     { key: '5', ctrl: true, handler: () => navigate('/anomalies'), description: 'Anomalies', category: 'Navigation' },
     { key: '6', ctrl: true, handler: () => navigate('/wsb-trending'), description: 'WSB Trending', category: 'Navigation' },
+    { key: '7', ctrl: true, handler: () => navigate('/system'), description: 'System Status', category: 'Navigation' },
   ]);
 
   return (
@@ -157,6 +160,7 @@ const AppContent: React.FC = () => {
         <Route path="/signals" element={<SignalsExplorer />} />
         <Route path="/anomalies" element={<AnomalyExplorer />} />
         <Route path="/wsb-trending" element={<WSBTrendingDashboard />} />
+        <Route path="/system" element={<SystemStatus />} />
       </Routes>
 
       {/* Real-time alerts overlay */}

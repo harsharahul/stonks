@@ -459,7 +459,7 @@ const AnomalyExplorer: React.FC = () => {
               </div>
             ) : (
               <div className="overflow-x-auto -mx-6">
-                <table className="w-full text-sm" style={{ minWidth: '600px' }}>
+                <table className="w-full text-sm" style={{ minWidth: '400px' }}>
                   <thead>
                     <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500 uppercase tracking-wider">
                       <th className="px-6 py-2 cursor-pointer hover:text-neutral-700" onClick={() => handleSort('ticker')}>
@@ -472,7 +472,7 @@ const AnomalyExplorer: React.FC = () => {
                       <th className="px-3 py-2 cursor-pointer hover:text-neutral-700" onClick={() => handleSort('z_score')}>
                         Z-Score <SortIcon field="z_score" />
                       </th>
-                      <th className="px-3 py-2 cursor-pointer hover:text-neutral-700" onClick={() => handleSort('confidence')}>
+                      <th className="px-3 py-2 cursor-pointer hover:text-neutral-700 hidden sm:table-cell" onClick={() => handleSort('confidence')}>
                         Confidence <SortIcon field="confidence" />
                       </th>
                       <th className="px-3 py-2 hidden sm:table-cell">Time</th>
@@ -513,7 +513,7 @@ const AnomalyExplorer: React.FC = () => {
                             {formatNumber(a.z_score, 2)}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-xs text-neutral-600">{formatNumber(a.confidence, 2)}</td>
+                        <td className="px-3 py-2.5 text-xs text-neutral-600 hidden sm:table-cell">{formatNumber(a.confidence, 2)}</td>
                         <td className="px-3 py-2.5 text-xs text-neutral-400 hidden sm:table-cell">{formatRelativeTime(a.detected_at)}</td>
                       </tr>
                     ))}

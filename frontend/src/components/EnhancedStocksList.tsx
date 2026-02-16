@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Plus, RefreshCw, AlertCircle, Brain, Search, X, Star, ChevronUp, ChevronDown, BarChart3 } from 'lucide-react';
+import { TrendingUp, Plus, RefreshCw, AlertCircle, Brain, Search, X, Star, ChevronUp, ChevronDown, BarChart3, Trash2 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import ToastManager from './ToastManager';
 import ScreenerFiltersPanel from './ScreenerFilters';
 import StockComparisonDrawer, { ComparisonStock } from './StockComparisonDrawer';
+import SkeletonTable from './SkeletonTable';
 import { stocksApi } from '../api/client';
 import { useSentimentAnalysis } from '../hooks/useWSBDashboard';
 import { ScreenerFilters, DEFAULT_SCREENER_FILTERS, passesScreenerFilters, isScreenerActive } from '../hooks/useStockScreener';
@@ -389,11 +390,54 @@ const EnhancedStocksList: React.FC = () => {
     [stocks, selectedSymbols],
   );
 
+  const isDummyStock = (symbol: string) => /^(TEST|UI|WS|LIVE|LOW)\d+$/.test(symbol);
+
+  const dummyStockSymbols = useMemo(
+    () => stocks.filter(s => isDummyStock(s.symbol)).map(s => s.symbol),
+    [stocks],
+  );
+
+  const selectDummyStocks = () => setSelectedSymbols(new Set(dummyStockSymbols));
+
+  const handleBulkRemove = async () => {
+    const symbols = [...selectedSymbols];
+    if (symbols.length === 0) return;
+    if (!window.confirm(`Remove ${symbols.length} stock${symbols.length > 1 ? 's' : ''} from tracking?`)) return;
+
+    let removed = 0;
+    let failed = 0;
+    for (const symbol of symbols) {
+      try {
+        const res = await fetch(`${baseUrl}/stocks-enhanced/remove/${symbol}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success) removed++;
+          else failed++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+
+    clearSelection();
+    fetchStocksData();
+
+    if (failed === 0) {
+      showSuccess('Bulk Remove', `Removed ${removed} stock${removed > 1 ? 's' : ''}.`);
+    } else {
+      showErrorToast('Bulk Remove', `Removed ${removed}, failed ${failed}.`);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <span className="ml-3 text-neutral-400">Loading watchlist...</span>
+      <div className="max-w-[1400px] mx-auto px-4 py-6">
+        <SkeletonTable rows={8} columns={7} />
       </div>
     );
   }
@@ -573,10 +617,27 @@ const EnhancedStocksList: React.FC = () => {
         )}
         {selectedSymbols.size > 0 && (
           <button
+            onClick={handleBulkRemove}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Remove ({selectedSymbols.size})
+          </button>
+        )}
+        {selectedSymbols.size > 0 && (
+          <button
             onClick={clearSelection}
             className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
           >
             Clear selection
+          </button>
+        )}
+        {dummyStockSymbols.length > 0 && selectedSymbols.size === 0 && (
+          <button
+            onClick={selectDummyStocks}
+            className="text-xs text-amber-600 hover:text-amber-700 transition-colors"
+          >
+            Select test stocks ({dummyStockSymbols.length})
           </button>
         )}
       </div>
@@ -586,7 +647,7 @@ const EnhancedStocksList: React.FC = () => {
         {/* Stock Table */}
         <div className="lg:col-span-8 bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" style={{ minWidth: '700px' }}>
+            <table className="w-full text-sm" style={{ minWidth: '500px' }}>
               <thead>
                 <tr className="bg-neutral-900 text-left">
                   <th className="px-2 py-2 w-8">

@@ -1,9 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { feedApi } from '../api/client';
 import { useParams } from 'react-router-dom';
 import { BarChart3, Zap, RefreshCw, Star } from 'lucide-react';
 import { useDailyFeatures, useFeatureHistory, useCalculateFeatures, useEnhancedAnalytics } from '../hooks/useFeatures';
+import { useWSBTrending } from '../hooks/useWSBDashboard';
+import { useToast } from '../hooks/useToast';
+import ToastManager from './ToastManager';
 import FeatureCard from './FeatureCard';
 import FeatureChart from './FeatureChart';
 import PriceChart from './PriceChart';
@@ -11,20 +14,6 @@ import PatternSummaryPanel from './PatternSummaryPanel';
 import LatestCandleInsight from './LatestCandleInsight';
 import { cn, formatDate, formatRelativeTime, prepareChartData } from '../utils/format';
 import type { DetectedPattern, LatestCandleData } from '../utils/candlestickPatterns';
-
-// Hook to fetch WSB trending data for a specific ticker
-const useWSBTrendingData = (ticker: string) => {
-  return useQuery({
-    queryKey: ['wsb-trending', ticker],
-    queryFn: async () => {
-      const response = await fetch(`/api/v1/feed/wsb/trending?days=7&limit=50`);
-      const data = await response.json();
-      return data.trending_tickers?.find((t: any) => t.ticker === ticker) || null;
-    },
-    enabled: !!ticker,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-};
 
 const StockDetail: React.FC = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -38,8 +27,13 @@ const StockDetail: React.FC = () => {
   const calculateFeatures = useCalculateFeatures();
   const { data: enhanced, isLoading: enhancedLoading } = useEnhancedAnalytics(ticker);
 
-  // Fetch WSB trending data as fallback
-  const { data: wsbTrending, isLoading: wsbLoading } = useWSBTrendingData(ticker);
+  // Fetch WSB trending data as fallback (filter from shared hook)
+  const { data: wsbTrendingAll, isLoading: wsbLoading } = useWSBTrending(7, 50);
+  const wsbTrending = useMemo(
+    () => wsbTrendingAll?.trending_tickers?.find((t: any) => t.ticker === ticker) ?? null,
+    [wsbTrendingAll, ticker],
+  );
+  const { toasts, showSuccess, showError: showErrorToast, removeToast } = useToast();
 
   // Track whether this stock is in the watchlist
   const trackedStocks = useQuery({
@@ -67,8 +61,9 @@ const StockDetail: React.FC = () => {
         });
       }
       queryClient.invalidateQueries({ queryKey: ['tracked-stocks'] });
+      showSuccess(isTracked ? 'Removed' : 'Added', `${ticker} ${isTracked ? 'removed from' : 'added to'} watchlist.`);
     } catch (err) {
-      console.error('Failed to toggle tracking:', err);
+      showErrorToast('Watchlist Error', `Failed to update ${ticker}.`);
     } finally {
       setStarLoading(false);
     }
@@ -540,6 +535,7 @@ const StockDetail: React.FC = () => {
           </div>
         </div>
       )}
+      <ToastManager toasts={toasts} onDismiss={removeToast} />
     </div>
   );
 };

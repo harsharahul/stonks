@@ -40,6 +40,7 @@ export const usePressureTest = () => {
     queryKey: intelligenceKeys.pressureTest(),
     queryFn: () => marketAnalysisApi.getPressureTestSummary(),
     staleTime: 10 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
     retry: 1,
     onError: (error: any) => {
       console.error('Error fetching pressure test:', formatApiError(error));
@@ -52,6 +53,7 @@ export const useDailyRecommendations = () => {
     queryKey: intelligenceKeys.recommendations(),
     queryFn: () => recommendationsApi.getDailyRecommendations(),
     staleTime: 10 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
     retry: 1,
     onError: (error: any) => {
       console.error('Error fetching recommendations:', formatApiError(error));

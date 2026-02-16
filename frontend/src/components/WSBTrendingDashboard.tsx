@@ -321,7 +321,7 @@ const WSBTrendingDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="overflow-x-auto -mx-6">
-                <table className="w-full text-sm" style={{ minWidth: '640px' }}>
+                <table className="w-full text-sm" style={{ minWidth: '400px' }}>
                   <thead>
                     <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500 uppercase tracking-wider">
                       <th className="px-6 py-2 w-10">#</th>

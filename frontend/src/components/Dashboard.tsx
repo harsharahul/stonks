@@ -5,6 +5,7 @@ import {
   AlertTriangle, Calendar, ChevronRight, Shield, Newspaper,
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
+import FreshnessIndicator from './FreshnessIndicator';
 import {
   cn, formatNumber, formatPercent, formatRelativeTime, getSentimentColor,
 } from '../utils/format';
@@ -96,11 +97,12 @@ const Dashboard: React.FC = () => {
             Market Pulse
           </h1>
           <div className="flex items-center gap-3">
-            {outlook.dataUpdatedAt && (
-              <span className="text-xs text-neutral-400">
-                Updated {new Date(outlook.dataUpdatedAt).toLocaleTimeString()}
-              </span>
-            )}
+            <FreshnessIndicator
+              dataUpdatedAt={outlook.dataUpdatedAt}
+              expectedIntervalMinutes={5}
+              label="Data"
+              className="text-neutral-400"
+            />
             <button
               onClick={refreshAll}
               className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors"

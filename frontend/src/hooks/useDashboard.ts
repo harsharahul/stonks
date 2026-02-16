@@ -23,6 +23,7 @@ export const useDashboard = () => {
     queryKey: ['dashboard-articles'],
     queryFn: () => feedApi.getArticles({ page_size: 8 }),
     staleTime: 2 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
     retry: 1,
   });
 
