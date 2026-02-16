@@ -26,8 +26,16 @@ coverage.xml
 
 # Logs
 .uvicorn.log
+frontend.log
 
 # Runtime
 .uvicorn.pid
 
+# Screenshots & temp artifacts
+*.png
 
+# Playwright MCP logs
+.playwright-mcp/
+
+# Misc
+typescript
