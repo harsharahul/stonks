@@ -287,10 +287,18 @@ async def calculate_features_immediate(
     Calculate features immediately (synchronous) for testing/debugging
     Note: API key auth removed for easier access in dev/testing
     """
-    # Validate ticker exists
+    # Auto-create stock if it doesn't exist (e.g. discovered via WSB trending)
     stock = db.query(Stock).filter(Stock.symbol == ticker.upper()).first()
     if not stock:
-        raise HTTPException(status_code=404, detail=f"Stock {ticker} not found")
+        stock = Stock(
+            symbol=ticker.upper(),
+            company_name=ticker.upper(),
+            is_active=True,
+            priority_level='normal',
+            added_by='auto_calculate',
+        )
+        db.add(stock)
+        db.flush()
     
     # Parse date
     if target_date:
