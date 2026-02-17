@@ -27,6 +27,9 @@ import {
   TickerSignalsResponse,
   SignalTypesResponse,
   AlertStatsResponse,
+  TaskCatalogResponse,
+  JobHistoryResponse,
+  TriggerTaskResponse,
 } from '../types/api';
 import type { EnhancedFeaturesResponse } from '../types/api';
 
@@ -309,6 +312,30 @@ export const recommendationsApi = {
     limit?: number;
   }): Promise<DailyRecommendationsResponse> {
     const response: AxiosResponse<DailyRecommendationsResponse> = await apiClient.get('/recommendations/daily', { params });
+    return response.data;
+  },
+};
+
+// Admin API
+export const adminApi = {
+  async getTaskCatalog(): Promise<TaskCatalogResponse> {
+    const response: AxiosResponse<TaskCatalogResponse> = await apiClient.get('/admin/task-catalog');
+    return response.data;
+  },
+
+  async triggerTask(jobName: string): Promise<TriggerTaskResponse> {
+    const response: AxiosResponse<TriggerTaskResponse> = await apiClient.post('/admin/reindex', {
+      job_name: jobName,
+    });
+    return response.data;
+  },
+
+  async getJobHistory(params?: {
+    job_name?: string;
+    status?: string;
+    limit?: number;
+  }): Promise<JobHistoryResponse> {
+    const response: AxiosResponse<JobHistoryResponse> = await apiClient.get('/admin/jobs', { params });
     return response.data;
   },
 };

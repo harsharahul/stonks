@@ -32,10 +32,10 @@ const PatternSummaryPanel: React.FC<PatternSummaryPanelProps> = ({ patterns, cla
 
   const signalColor =
     bullishPct >= 60
-      ? 'text-green-600'
+      ? 'text-green-600 dark:text-green-400'
       : bearishPct >= 60
-      ? 'text-red-600'
-      : 'text-amber-600';
+      ? 'text-red-600 dark:text-red-400'
+      : 'text-amber-600 dark:text-amber-400';
 
   // Sort by date descending (most recent first)
   const sorted = [...patterns].sort((a, b) => b.index - a.index);
@@ -49,15 +49,15 @@ const PatternSummaryPanel: React.FC<PatternSummaryPanelProps> = ({ patterns, cla
       >
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-purple-500" />
-          <h3 className="text-lg font-semibold text-neutral-900">Pattern Analysis</h3>
-          <span className="text-xs font-medium text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Pattern Analysis</h3>
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700 px-2 py-0.5 rounded-full">
             {total} detected
           </span>
         </div>
         {expanded ? (
-          <ChevronUp className="w-5 h-5 text-neutral-400" />
+          <ChevronUp className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-neutral-400" />
+          <ChevronDown className="w-5 h-5 text-neutral-400 dark:text-neutral-500" />
         )}
       </button>
 
@@ -69,19 +69,19 @@ const PatternSummaryPanel: React.FC<PatternSummaryPanelProps> = ({ patterns, cla
               <div className="flex items-center gap-4 text-sm mb-2">
                 <span className="flex items-center gap-1">
                   <span className="w-3 h-3 rounded-sm bg-green-500 inline-block" />
-                  <span className="text-neutral-600">Bullish: <span className="font-semibold text-neutral-900">{bullish}</span></span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Bullish: <span className="font-semibold text-neutral-900 dark:text-white">{bullish}</span></span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-3 h-3 rounded-sm bg-red-500 inline-block" />
-                  <span className="text-neutral-600">Bearish: <span className="font-semibold text-neutral-900">{bearish}</span></span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Bearish: <span className="font-semibold text-neutral-900 dark:text-white">{bearish}</span></span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-3 h-3 rounded-sm bg-amber-400 inline-block" />
-                  <span className="text-neutral-600">Neutral: <span className="font-semibold text-neutral-900">{neutral}</span></span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Neutral: <span className="font-semibold text-neutral-900 dark:text-white">{neutral}</span></span>
                 </span>
               </div>
               {/* Progress bar */}
-              <div className="w-full h-2.5 bg-neutral-100 rounded-full overflow-hidden flex">
+              <div className="w-full h-2.5 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden flex">
                 {bullish > 0 && (
                   <div
                     className="bg-green-500 h-full"
@@ -103,18 +103,18 @@ const PatternSummaryPanel: React.FC<PatternSummaryPanelProps> = ({ patterns, cla
               </div>
             </div>
             <div className="text-right sm:min-w-[120px]">
-              <div className="text-xs text-neutral-500">Overall Signal</div>
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">Overall Signal</div>
               <div className={cn('text-sm font-bold', signalColor)}>
                 {overallSignal}
               </div>
-              <div className="text-xs text-neutral-400">
+              <div className="text-xs text-neutral-400 dark:text-neutral-500">
                 {bullishPct}% bullish
               </div>
             </div>
           </div>
 
           {/* Pattern list */}
-          <div className="border border-neutral-200 rounded-lg overflow-hidden">
+          <div className="border border-neutral-200 dark:border-neutral-600 rounded-lg overflow-hidden">
             <div className="max-h-[280px] overflow-y-auto">
               {sorted.map((p, i) => {
                 const meta = PATTERN_META[p.type] || { icon: '?', color: '#737373' };
@@ -123,11 +123,11 @@ const PatternSummaryPanel: React.FC<PatternSummaryPanelProps> = ({ patterns, cla
                     key={`${p.type}-${p.index}-${i}`}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 text-sm',
-                      i > 0 && 'border-t border-neutral-100'
+                      i > 0 && 'border-t border-neutral-100 dark:border-neutral-700'
                     )}
                   >
                     {/* Date */}
-                    <span className="text-xs text-neutral-500 w-[70px] shrink-0">
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400 w-[70px] shrink-0">
                       {(() => {
                         try {
                           return format(parseISO(p.date), 'MMM d');
@@ -144,7 +144,7 @@ const PatternSummaryPanel: React.FC<PatternSummaryPanelProps> = ({ patterns, cla
                       {meta.icon}
                     </span>
                     {/* Name */}
-                    <span className="font-medium text-neutral-900 flex-1 min-w-0 truncate">
+                    <span className="font-medium text-neutral-900 dark:text-white flex-1 min-w-0 truncate">
                       {p.name}
                     </span>
                     {/* Sentiment badge */}
@@ -152,10 +152,10 @@ const PatternSummaryPanel: React.FC<PatternSummaryPanelProps> = ({ patterns, cla
                       className={cn(
                         'px-2 py-0.5 text-xs font-medium rounded-full shrink-0',
                         p.sentiment === 'bullish'
-                          ? 'bg-green-50 text-green-700'
+                          ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                           : p.sentiment === 'bearish'
-                          ? 'bg-red-50 text-red-700'
-                          : 'bg-amber-50 text-amber-700'
+                          ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                       )}
                     >
                       {p.sentiment}
@@ -165,10 +165,10 @@ const PatternSummaryPanel: React.FC<PatternSummaryPanelProps> = ({ patterns, cla
                       className={cn(
                         'text-xs shrink-0 w-[52px] text-right',
                         p.reliability === 'high'
-                          ? 'text-green-600 font-semibold'
+                          ? 'text-green-600 dark:text-green-400 font-semibold'
                           : p.reliability === 'medium'
-                          ? 'text-neutral-500'
-                          : 'text-neutral-400'
+                          ? 'text-neutral-500 dark:text-neutral-400'
+                          : 'text-neutral-400 dark:text-neutral-500'
                       )}
                     >
                       {p.reliability}

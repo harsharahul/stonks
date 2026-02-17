@@ -91,17 +91,17 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
     
     if (recoverable) {
       return {
-        background: 'bg-gradient-to-r from-orange-50 to-orange-100',
+        background: 'bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/40 dark:to-orange-800/40',
         border: 'border-l-4 border-orange-500',
-        text: 'text-orange-900',
+        text: 'text-orange-900 dark:text-orange-200',
         button: 'bg-orange-500 hover:bg-orange-600 text-white'
       };
     }
 
     return {
-      background: 'bg-gradient-to-r from-red-50 to-red-100',
+      background: 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/40 dark:to-red-800/40',
       border: 'border-l-4 border-red-500',
-      text: 'text-red-900',
+      text: 'text-red-900 dark:text-red-200',
       button: 'bg-red-500 hover:bg-red-600 text-white'
     };
   };
@@ -128,9 +128,9 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
       `}>
         {/* Auto-hide progress bar */}
         {autoHide && timeRemaining > 0 && (
-          <div className="absolute top-0 left-0 h-1 bg-gray-300 w-full">
-            <div 
-              className="h-full bg-gray-600 transition-all duration-1000 ease-linear"
+          <div className="absolute top-0 left-0 h-1 bg-gray-300 dark:bg-neutral-600 w-full">
+            <div
+              className="h-full bg-gray-600 dark:bg-neutral-400 transition-all duration-1000 ease-linear"
               style={{ 
                 width: `${(timeRemaining / (autoHideDelay / 1000)) * 100}%` 
               }}
@@ -155,7 +155,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
             )}
             <button
               onClick={handleDismiss}
-              className="text-gray-500 hover:text-gray-700 p-1 rounded transition-colors"
+              className="text-gray-500 dark:text-neutral-400 hover:text-gray-700 dark:hover:text-neutral-200 p-1 rounded transition-colors"
               title="Dismiss"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -204,7 +204,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
             
             <button
               onClick={handleDismiss}
-              className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm font-medium transition-colors duration-200"
+              className="px-3 py-1 bg-gray-500 dark:bg-neutral-600 hover:bg-gray-600 dark:hover:bg-neutral-500 text-white rounded text-sm font-medium transition-colors duration-200"
             >
               Dismiss
             </button>
@@ -219,7 +219,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
         </div>
 
         {/* Error Code for Support */}
-        <div className="mt-3 pt-2 border-t border-gray-300 text-xs opacity-60">
+        <div className="mt-3 pt-2 border-t border-gray-300 dark:border-neutral-600 text-xs opacity-60">
           Error Code: {error.error_code}
           {'timestamp' in error && (
             <span className="ml-2">

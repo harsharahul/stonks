@@ -151,10 +151,10 @@ const DataIngestionStatus: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'operational': return 'text-green-600 bg-green-50 border-green-200';
-      case 'degraded': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'down': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'operational': return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700';
+      case 'degraded': return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700';
+      case 'down': return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700';
     }
   };
 
@@ -184,13 +184,13 @@ const DataIngestionStatus: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-neutral-900">Data Ingestion Status</h2>
-          <p className="text-sm text-neutral-600">Real-time monitoring of data pipeline health</p>
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Data Ingestion Status</h2>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">Real-time monitoring of data pipeline health</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="text-right">
-            <div className="text-sm text-neutral-500">Last refresh</div>
-            <div className="text-xs text-neutral-400">
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">Last refresh</div>
+            <div className="text-xs text-neutral-400 dark:text-neutral-500">
               {lastRefresh.toLocaleTimeString()}
             </div>
           </div>
@@ -198,9 +198,9 @@ const DataIngestionStatus: React.FC = () => {
             onClick={refreshStatus}
             disabled={isRefreshing}
             className={`px-3 py-2 rounded-lg font-medium transition-colors duration-200 ${
-              isRefreshing 
-                ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' 
-                : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+              isRefreshing
+                ? 'bg-neutral-100 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
+                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50'
             }`}
             title="Refresh status"
           >
@@ -211,48 +211,48 @@ const DataIngestionStatus: React.FC = () => {
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
           <div className="flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 text-red-600" />
-            <span className="text-sm text-red-700">{error}</span>
+            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+            <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
           </div>
         </div>
       )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-200 rounded-lg">
-              <Database className="w-5 h-5 text-blue-600" />
+            <div className="p-2 bg-blue-200 dark:bg-blue-900/50 rounded-lg">
+              <Database className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <div className="text-sm text-blue-600 font-medium">Total Articles</div>
-              <div className="text-2xl font-bold text-blue-900">{totalArticles.toLocaleString()}</div>
+              <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Articles</div>
+              <div className="text-2xl font-bold text-blue-900 dark:text-blue-300">{totalArticles.toLocaleString()}</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+        <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-green-200 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+            <div className="p-2 bg-green-200 dark:bg-green-900/50 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <div className="text-sm text-green-600 font-medium">Operational</div>
-              <div className="text-2xl font-bold text-green-900">{operationalSources}/{sources.length}</div>
+              <div className="text-sm text-green-600 dark:text-green-400 font-medium">Operational</div>
+              <div className="text-2xl font-bold text-green-900 dark:text-green-300">{operationalSources}/{sources.length}</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+        <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-200 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-purple-200 dark:bg-purple-900/50 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <div className="text-sm text-purple-600 font-medium">Pipeline Health</div>
-              <div className="text-2xl font-bold text-purple-900">
+              <div className="text-sm text-purple-600 dark:text-purple-400 font-medium">Pipeline Health</div>
+              <div className="text-2xl font-bold text-purple-900 dark:text-purple-300">
                 {Math.round((operationalSources / sources.length) * 100)}%
               </div>
             </div>
@@ -265,7 +265,7 @@ const DataIngestionStatus: React.FC = () => {
         {sources.map((source) => (
           <div
             key={source.name}
-            className="p-4 border border-neutral-200 rounded-lg hover:shadow-md transition-shadow duration-200"
+            className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:shadow-md transition-shadow duration-200"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -274,7 +274,7 @@ const DataIngestionStatus: React.FC = () => {
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h3 className="font-semibold text-neutral-900">{source.name}</h3>
+                    <h3 className="font-semibold text-neutral-900 dark:text-white">{source.name}</h3>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(source.status)}`}>
                       <div className="flex items-center space-x-1">
                         {getStatusIcon(source.status)}
@@ -282,16 +282,16 @@ const DataIngestionStatus: React.FC = () => {
                       </div>
                     </span>
                   </div>
-                  <p className="text-sm text-neutral-600 mt-1">{source.description}</p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{source.description}</p>
                 </div>
               </div>
 
               <div className="text-right">
-                <div className="text-sm text-neutral-500">Articles</div>
-                <div className="text-lg font-semibold text-neutral-900">
+                <div className="text-sm text-neutral-500 dark:text-neutral-400">Articles</div>
+                <div className="text-lg font-semibold text-neutral-900 dark:text-white">
                   {source.articleCount.toLocaleString()}
                 </div>
-                <div className="text-xs text-neutral-400 mt-1">
+                <div className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
                   {source.lastUpdate}
                 </div>
               </div>
@@ -299,11 +299,11 @@ const DataIngestionStatus: React.FC = () => {
 
             {/* Progress Bar */}
             <div className="mt-3">
-              <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+              <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 mb-1">
                 <span>Data Freshness</span>
                 <span>{source.lastUpdate}</span>
               </div>
-              <div className="w-full bg-neutral-200 rounded-full h-2">
+              <div className="w-full bg-neutral-200 dark:bg-neutral-600 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full transition-all duration-300 ${
                     source.status === 'operational' ? 'bg-green-500' :
@@ -322,13 +322,13 @@ const DataIngestionStatus: React.FC = () => {
       </div>
 
       {/* System Status */}
-      <div className="mt-6 pt-4 border-t border-neutral-200">
+      <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-700">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-neutral-600">System Status: All Systems Operational</span>
+            <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-neutral-600 dark:text-neutral-400">System Status: All Systems Operational</span>
           </div>
-          <div className="text-neutral-500">
+          <div className="text-neutral-500 dark:text-neutral-400">
             Next refresh in 2 minutes
           </div>
         </div>

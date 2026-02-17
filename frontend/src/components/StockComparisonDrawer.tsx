@@ -93,7 +93,7 @@ const MetricRow: React.FC<{
 
   return (
     <div className="py-3">
-      <div className="text-xs font-medium text-neutral-500 mb-2">{config.label}</div>
+      <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">{config.label}</div>
       <div className="space-y-1.5">
         {stocks.map((stock, i) => {
           const value = config.getValue(stock);
@@ -101,10 +101,10 @@ const MetricRow: React.FC<{
 
           return (
             <div key={stock.symbol} className="flex items-center gap-2">
-              <span className="w-12 text-xs font-mono font-semibold text-neutral-700 shrink-0 text-right">
+              <span className="w-12 text-xs font-mono font-semibold text-neutral-700 dark:text-neutral-300 shrink-0 text-right">
                 {stock.symbol}
               </span>
-              <div className="flex-1 h-5 bg-neutral-100 rounded overflow-hidden relative">
+              <div className="flex-1 h-5 bg-neutral-100 dark:bg-neutral-700 rounded overflow-hidden relative">
                 {value !== null ? (
                   <div
                     className={cn(
@@ -119,7 +119,7 @@ const MetricRow: React.FC<{
                   </div>
                 )}
               </div>
-              <span className="w-16 text-xs text-neutral-600 font-mono shrink-0 text-right">
+              <span className="w-16 text-xs text-neutral-600 dark:text-neutral-400 font-mono shrink-0 text-right">
                 {value !== null ? config.format(value) : '—'}
               </span>
             </div>
@@ -138,25 +138,25 @@ const StockComparisonDrawer: React.FC<StockComparisonDrawerProps> = ({
   if (stocks.length < 2) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-700">
         <div className="flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-blue-600" />
-          <h3 className="text-sm font-semibold text-neutral-900">
+          <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
             Comparing {stocks.length} Stocks
           </h3>
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
+          className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Stock chips */}
-      <div className="px-4 py-2.5 border-b border-neutral-100 flex flex-wrap gap-1.5">
+      <div className="px-4 py-2.5 border-b border-neutral-100 dark:border-neutral-700 flex flex-wrap gap-1.5">
         {stocks.map((stock, i) => (
           <span
             key={stock.symbol}
@@ -177,7 +177,7 @@ const StockComparisonDrawer: React.FC<StockComparisonDrawerProps> = ({
       </div>
 
       {/* Metric rows */}
-      <div className="px-4 divide-y divide-neutral-100">
+      <div className="px-4 divide-y divide-neutral-100 dark:divide-neutral-700">
         {metrics.map((m) => (
           <MetricRow key={m.key} config={m} stocks={stocks} />
         ))}

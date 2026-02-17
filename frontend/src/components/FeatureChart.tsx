@@ -39,11 +39,11 @@ const CustomTooltip: React.FC<TooltipProps<any, any> & { format?: 'number' | 'pe
   if (active && payload && payload.length) {
     const data = payload[0];
     return (
-      <div className="bg-white p-3 border border-neutral-200 rounded-lg shadow-lg">
-        <p className="text-sm font-medium text-neutral-900 mb-1">
+      <div className="bg-white dark:bg-neutral-800 p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg">
+        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
           {format(parseISO(label), 'MMM d, yyyy')}
         </p>
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
           <span className="font-medium" style={{ color: data.color }}>
             {formatType === 'percent' ? formatPercent(data.value) : formatNumber(data.value, 3)}
           </span>
@@ -82,15 +82,15 @@ const FeatureChart: React.FC<FeatureChartProps> = ({
   if (isLoading) {
     return (
       <div className={cn('card', className)}>
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">{title}</h3>
+        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{title}</h3>
         <div className="animate-pulse">
-          <div className="h-4 bg-neutral-200 rounded w-1/4 mb-4"></div>
-          <div className={`bg-neutral-200 rounded`} style={{ height }}>
+          <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-1/4 mb-4"></div>
+          <div className={`bg-neutral-200 dark:bg-neutral-700 rounded`} style={{ height }}>
             <div className="flex items-end justify-around h-full p-4">
               {[...Array(7)].map((_, i) => (
-                <div 
+                <div
                   key={i}
-                  className="bg-neutral-300 rounded-t"
+                  className="bg-neutral-300 dark:bg-neutral-600 rounded-t"
                   style={{ 
                     height: `${20 + Math.random() * 60}%`,
                     width: '8%'
@@ -107,7 +107,7 @@ const FeatureChart: React.FC<FeatureChartProps> = ({
   if (!data || data.length === 0) {
     return (
       <div className={cn('card', className)}>
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">{title}</h3>
+        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{title}</h3>
         <EmptyState height={height} title="No data available" message="Chart data will appear here when available" />
       </div>
     );
@@ -115,10 +115,10 @@ const FeatureChart: React.FC<FeatureChartProps> = ({
 
   return (
     <div className={cn('card', className)}>
-      <h3 className="text-lg font-semibold text-neutral-900 mb-4">{title}</h3>
+      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+          <CartesianGrid strokeDasharray="3 3" className="[&>line]:stroke-neutral-200 dark:[&>line]:stroke-neutral-700" />
           <XAxis 
             dataKey="date" 
             tickFormatter={formatXAxis}

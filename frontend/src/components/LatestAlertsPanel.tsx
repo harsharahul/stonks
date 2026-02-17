@@ -19,10 +19,10 @@ const fetchLatestAlerts = async (): Promise<AlertDTO[]> => {
 
 const severityBadge = (sev: AlertDTO['severity']) => {
   const map: Record<AlertDTO['severity'], string> = {
-    low: 'bg-neutral-100 text-neutral-700',
-    medium: 'bg-yellow-100 text-yellow-700',
-    high: 'bg-orange-100 text-orange-700',
-    critical: 'bg-red-100 text-red-700',
+    low: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300',
+    medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   };
   return map[sev] || map.low;
 };
@@ -33,36 +33,36 @@ const LatestAlertsPanel: React.FC = () => {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-neutral-900">Latest Alerts</h2>
-        <span className="text-xs text-neutral-500">Last 6 hours</span>
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Latest Alerts</h2>
+        <span className="text-xs text-neutral-500 dark:text-neutral-400">Last 6 hours</span>
       </div>
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-12 bg-neutral-200 rounded animate-pulse" />
+            <div key={i} className="h-12 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
           ))}
         </div>
       ) : isError ? (
-        <div className="text-sm text-red-600">Failed to load alerts</div>
+        <div className="text-sm text-red-600 dark:text-red-400">Failed to load alerts</div>
       ) : data && data.length > 0 ? (
-        <ul className="divide-y divide-neutral-200">
+        <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
           {data.slice(0, 6).map((a) => (
             <li key={a.id} className="py-3 flex items-start justify-between">
               <div className="mr-3">
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-mono font-semibold text-neutral-900">{a.ticker}</span>
+                  <span className="text-sm font-mono font-semibold text-neutral-900 dark:text-white">{a.ticker}</span>
                   <span className={`text-xs px-2 py-0.5 rounded ${severityBadge(a.severity)}`}>{a.severity.toUpperCase()}</span>
-                  <span className="text-xs text-neutral-500">{new Date(a.triggered_at).toLocaleTimeString()}</span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{new Date(a.triggered_at).toLocaleTimeString()}</span>
                 </div>
-                <div className="text-sm font-medium text-neutral-900 mt-1">{a.title}</div>
-                <div className="text-xs text-neutral-600 mt-0.5">{a.message}</div>
+                <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mt-1">{a.title}</div>
+                <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5">{a.message}</div>
               </div>
-              <span className="text-xs text-neutral-500 capitalize">{a.alert_type.replace('_', ' ')}</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 capitalize">{a.alert_type.replace('_', ' ')}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <div className="text-sm text-neutral-500">No alerts in the last 6 hours</div>
+        <div className="text-sm text-neutral-500 dark:text-neutral-400">No alerts in the last 6 hours</div>
       )}
     </div>
   );

@@ -57,34 +57,34 @@ const Toast: React.FC<ToastProps> = ({
     switch (type) {
       case 'success':
         return {
-          background: 'bg-gradient-to-r from-green-50 to-green-100',
+          background: 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-800/40',
           border: 'border-l-4 border-green-500',
-          text: 'text-green-900',
+          text: 'text-green-900 dark:text-green-200',
           icon: '✅',
           progress: 'bg-green-500'
         };
       case 'error':
         return {
-          background: 'bg-gradient-to-r from-red-50 to-red-100',
+          background: 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/40 dark:to-red-800/40',
           border: 'border-l-4 border-red-500',
-          text: 'text-red-900',
+          text: 'text-red-900 dark:text-red-200',
           icon: '❌',
           progress: 'bg-red-500'
         };
       case 'warning':
         return {
-          background: 'bg-gradient-to-r from-yellow-50 to-yellow-100',
+          background: 'bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/40 dark:to-yellow-800/40',
           border: 'border-l-4 border-yellow-500',
-          text: 'text-yellow-900',
+          text: 'text-yellow-900 dark:text-yellow-200',
           icon: '⚠️',
           progress: 'bg-yellow-500'
         };
       case 'info':
       default:
         return {
-          background: 'bg-gradient-to-r from-blue-50 to-blue-100',
+          background: 'bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/40 dark:to-blue-800/40',
           border: 'border-l-4 border-blue-500',
-          text: 'text-blue-900',
+          text: 'text-blue-900 dark:text-blue-200',
           icon: 'ℹ️',
           progress: 'bg-blue-500'
         };
@@ -109,7 +109,7 @@ const Toast: React.FC<ToastProps> = ({
       `}>
         {/* Auto-hide progress bar */}
         {autoHide && timeRemaining > 0 && (
-          <div className="absolute top-0 left-0 h-1 bg-gray-300 w-full">
+          <div className="absolute top-0 left-0 h-1 bg-gray-300 dark:bg-neutral-600 w-full">
             <div 
               className={`h-full ${theme.progress} transition-all duration-1000 ease-linear`}
               style={{ 
@@ -136,7 +136,7 @@ const Toast: React.FC<ToastProps> = ({
             )}
             <button
               onClick={handleDismiss}
-              className="text-gray-500 hover:text-gray-700 p-1 rounded transition-colors"
+              className="text-gray-500 dark:text-neutral-400 hover:text-gray-700 dark:hover:text-neutral-200 p-1 rounded transition-colors"
               title="Dismiss"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -157,7 +157,7 @@ const Toast: React.FC<ToastProps> = ({
         <div className="flex items-center justify-end">
           <button
             onClick={handleDismiss}
-            className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm font-medium transition-colors duration-200"
+            className="px-3 py-1 bg-gray-500 dark:bg-neutral-600 hover:bg-gray-600 dark:hover:bg-neutral-500 text-white rounded text-sm font-medium transition-colors duration-200"
           >
             Dismiss
           </button>

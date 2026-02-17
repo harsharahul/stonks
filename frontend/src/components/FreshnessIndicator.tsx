@@ -21,16 +21,16 @@ const FreshnessIndicator: React.FC<FreshnessIndicatorProps> = ({
   const expectedMs = expectedIntervalMinutes * 60 * 1000;
 
   let dotColor = 'bg-emerald-500';
-  let textColor = 'text-neutral-500';
+  let textColor = 'text-neutral-500 dark:text-neutral-400';
   let prefix = '';
 
   if (ageMs > expectedMs * 2) {
     dotColor = 'bg-red-500';
-    textColor = 'text-red-600';
+    textColor = 'text-red-600 dark:text-red-400';
     prefix = 'Stale: ';
   } else if (ageMs > expectedMs) {
     dotColor = 'bg-amber-500';
-    textColor = 'text-amber-600';
+    textColor = 'text-amber-600 dark:text-amber-400';
   }
 
   const timeAgo = formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true });

@@ -72,16 +72,16 @@ export const formatRelativeTime = (dateString: string | null): string => {
 
 // Sentiment and metrics utilities
 export const getSentimentColor = (sentiment: number | null): string => {
-  if (sentiment === null || sentiment === undefined) return 'text-neutral-500';
-  
-  if (sentiment > 0.6) return 'text-success-600';
-  if (sentiment > 0.4) return 'text-neutral-600';
-  return 'text-danger-600';
+  if (sentiment === null || sentiment === undefined) return 'text-neutral-500 dark:text-neutral-400';
+
+  if (sentiment > 0.6) return 'text-success-600 dark:text-success-400';
+  if (sentiment > 0.4) return 'text-neutral-600 dark:text-neutral-400';
+  return 'text-danger-600 dark:text-danger-400';
 };
 
 export const getSentimentLabel = (sentiment: number | null): string => {
   if (sentiment === null || sentiment === undefined) return 'Neutral';
-  
+
   if (sentiment > 0.7) return 'Very Positive';
   if (sentiment > 0.6) return 'Positive';
   if (sentiment > 0.4) return 'Neutral';
@@ -90,19 +90,19 @@ export const getSentimentLabel = (sentiment: number | null): string => {
 };
 
 export const getReturnColor = (returnValue: number | null): string => {
-  if (returnValue === null || returnValue === undefined) return 'text-neutral-500';
-  
-  if (returnValue > 0) return 'text-success-600';
-  if (returnValue < 0) return 'text-danger-600';
-  return 'text-neutral-600';
+  if (returnValue === null || returnValue === undefined) return 'text-neutral-500 dark:text-neutral-400';
+
+  if (returnValue > 0) return 'text-success-600 dark:text-success-400';
+  if (returnValue < 0) return 'text-danger-600 dark:text-danger-400';
+  return 'text-neutral-600 dark:text-neutral-400';
 };
 
 export const getReturnBgColor = (returnValue: number | null): string => {
-  if (returnValue === null || returnValue === undefined) return 'bg-neutral-50';
-  
-  if (returnValue > 0) return 'bg-success-50';
-  if (returnValue < 0) return 'bg-danger-50';
-  return 'bg-neutral-50';
+  if (returnValue === null || returnValue === undefined) return 'bg-neutral-50 dark:bg-neutral-800';
+
+  if (returnValue > 0) return 'bg-success-50 dark:bg-success-900/30';
+  if (returnValue < 0) return 'bg-danger-50 dark:bg-danger-900/30';
+  return 'bg-neutral-50 dark:bg-neutral-800';
 };
 
 // Data validation utilities
@@ -135,15 +135,15 @@ export const prepareChartData = (data: any[], xKey: string, yKey: string) => {
 // Signal & strength utilities
 export const getStrengthColor = (strength: number): string => {
   const abs = Math.abs(strength);
-  if (abs >= 0.7) return strength >= 0 ? 'text-green-600' : 'text-red-600';
-  if (abs >= 0.4) return strength >= 0 ? 'text-green-500' : 'text-red-500';
-  return 'text-neutral-600';
+  if (abs >= 0.7) return strength >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+  if (abs >= 0.4) return strength >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+  return 'text-neutral-600 dark:text-neutral-400';
 };
 
 export const getDirectionColor = (direction: string): string => {
-  if (direction === 'bullish') return 'bg-green-100 text-green-700 border-green-200';
-  if (direction === 'bearish') return 'bg-red-100 text-red-700 border-red-200';
-  return 'bg-neutral-100 text-neutral-700 border-neutral-200';
+  if (direction === 'bullish') return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+  if (direction === 'bearish') return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+  return 'bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:border-neutral-600';
 };
 
 export const getSignalTypeLabel = (type: string): string =>
@@ -158,12 +158,12 @@ export const truncateText = (text: string | null, maxLength: number = 100): stri
 
 export const highlightTickers = (text: string, tickers: string[]): string => {
   if (!tickers || tickers.length === 0) return text;
-  
+
   let highlighted = text;
   tickers.forEach(ticker => {
     const regex = new RegExp(`\\b${ticker}\\b`, 'gi');
-    highlighted = highlighted.replace(regex, `<mark class="bg-blue-100 text-blue-800 px-1 rounded">$&</mark>`);
+    highlighted = highlighted.replace(regex, `<mark class="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-1 rounded">$&</mark>`);
   });
-  
+
   return highlighted;
 };

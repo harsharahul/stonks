@@ -85,7 +85,7 @@ const ThSortable: React.FC<{
 }> = ({ col, label, sortColumn, sortDirection, onSort, className }) => (
   <th
     className={cn(
-      'px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider cursor-pointer select-none hover:text-neutral-200 transition-colors',
+      'px-3 py-2 text-left text-xs font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider cursor-pointer select-none hover:text-neutral-200 dark:hover:text-neutral-300 transition-colors',
       className
     )}
     onClick={() => onSort(col)}
@@ -259,18 +259,18 @@ const EnhancedStocksList: React.FC = () => {
 
   const getActivityLevel = (signals: number, alerts: number) => {
     const total = signals + alerts;
-    if (total >= 5) return { level: 'High', color: 'text-red-700 bg-red-50' };
-    if (total >= 2) return { level: 'Med', color: 'text-amber-700 bg-amber-50' };
-    if (total > 0) return { level: 'Low', color: 'text-blue-700 bg-blue-50' };
-    return { level: '—', color: 'text-neutral-500 bg-neutral-100' };
+    if (total >= 5) return { level: 'High', color: 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30' };
+    if (total >= 2) return { level: 'Med', color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30' };
+    if (total > 0) return { level: 'Low', color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30' };
+    return { level: '—', color: 'text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700' };
   };
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case 'high': return 'text-red-700 bg-red-50 border-red-200';
-      case 'normal': return 'text-neutral-600 bg-neutral-100 border-neutral-200';
-      case 'low': return 'text-neutral-500 bg-neutral-50 border-neutral-200';
-      default: return 'text-neutral-500 bg-neutral-50 border-neutral-200';
+      case 'high': return 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700';
+      case 'normal': return 'text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700 border-neutral-200 dark:border-neutral-700';
+      case 'low': return 'text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700';
+      default: return 'text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700';
     }
   };
 
@@ -444,11 +444,11 @@ const EnhancedStocksList: React.FC = () => {
 
   if (error) {
     return (
-      <div className="max-w-3xl mx-auto mt-12 bg-red-50 border border-red-200 rounded-lg p-6">
+      <div className="max-w-3xl mx-auto mt-12 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-6">
         <div className="flex items-center gap-3">
           <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
           <div>
-            <h3 className="text-sm font-medium text-red-800">Error Loading Data</h3>
+            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error Loading Data</h3>
             <p className="mt-1 text-sm text-red-600">{error}</p>
           </div>
         </div>
@@ -481,7 +481,7 @@ const EnhancedStocksList: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={fetchStocksData}
-              className="px-3 py-2 text-sm bg-neutral-800 text-neutral-300 rounded-lg hover:bg-neutral-700 border border-neutral-700 transition-colors inline-flex items-center gap-1.5"
+              className="px-3 py-2 text-sm bg-neutral-800 dark:bg-neutral-700 text-neutral-300 dark:text-neutral-200 rounded-lg hover:bg-neutral-700 dark:hover:bg-neutral-600 border border-neutral-700 dark:border-neutral-600 transition-colors inline-flex items-center gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Refresh
@@ -522,15 +522,15 @@ const EnhancedStocksList: React.FC = () => {
       {(sentimentLoading || sentimentData) && (
         <div className={cn(
           'rounded-xl px-4 py-3 border',
-          sentimentLoading ? 'bg-neutral-50 border-neutral-200' :
-          sentimentData?.overall_sentiment.label === 'BULLISH' ? 'bg-emerald-50 border-emerald-200' :
-          sentimentData?.overall_sentiment.label === 'BEARISH' ? 'bg-red-50 border-red-200' :
-          'bg-amber-50 border-amber-200'
+          sentimentLoading ? 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700' :
+          sentimentData?.overall_sentiment.label === 'BULLISH' ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700' :
+          sentimentData?.overall_sentiment.label === 'BEARISH' ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700' :
+          'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700'
         )}>
           {sentimentLoading ? (
             <div className="flex items-center gap-3">
-              <div className="h-4 w-20 bg-neutral-200 rounded animate-pulse" />
-              <div className="h-3 w-32 bg-neutral-200 rounded animate-pulse" />
+              <div className="h-4 w-20 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+              <div className="h-3 w-32 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
             </div>
           ) : sentimentData ? (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -542,17 +542,17 @@ const EnhancedStocksList: React.FC = () => {
               )}>
                 {sentimentData.overall_sentiment.label}
               </span>
-              <span className="text-neutral-600">
+              <span className="text-neutral-600 dark:text-neutral-300">
                 Score: <span className="font-mono font-medium">{formatNumber(sentimentData.overall_sentiment.score, 3)}</span>
               </span>
-              <span className="text-neutral-500">
+              <span className="text-neutral-500 dark:text-neutral-400">
                 {sentimentData.overall_sentiment.confidence} confidence
               </span>
               <span className="text-neutral-400 hidden sm:inline">|</span>
-              <span className="text-neutral-500">
+              <span className="text-neutral-500 dark:text-neutral-400">
                 {sentimentData.statistics.stocks_analyzed} stocks analyzed
               </span>
-              <span className="text-neutral-500">
+              <span className="text-neutral-500 dark:text-neutral-400">
                 {sentimentData.statistics.total_articles} articles
               </span>
             </div>
@@ -574,7 +574,7 @@ const EnhancedStocksList: React.FC = () => {
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm text-neutral-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">All Priorities</option>
             <option value="high">High</option>
@@ -583,24 +583,24 @@ const EnhancedStocksList: React.FC = () => {
           </select>
         </div>
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-neutral-500" />
           <input
             type="text"
             placeholder="Search ticker or name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-700 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-9 pr-8 py-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
-        <div className="text-sm text-neutral-500">
+        <div className="text-sm text-neutral-500 dark:text-neutral-400">
           {filteredStocks.length} of {stocks.length} stocks
         </div>
         {selectedSymbols.size >= 2 && (
@@ -627,7 +627,7 @@ const EnhancedStocksList: React.FC = () => {
         {selectedSymbols.size > 0 && (
           <button
             onClick={clearSelection}
-            className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
+            className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
           >
             Clear selection
           </button>
@@ -645,7 +645,7 @@ const EnhancedStocksList: React.FC = () => {
       {/* Main Content: Table + Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Stock Table */}
-        <div className="lg:col-span-8 bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+        <div className="lg:col-span-8 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm" style={{ minWidth: '500px' }}>
               <thead>
@@ -655,7 +655,7 @@ const EnhancedStocksList: React.FC = () => {
                       type="checkbox"
                       checked={allFilteredSelected && filteredStocks.length > 0}
                       onChange={toggleSelectAll}
-                      className="w-3.5 h-3.5 rounded border-neutral-500 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-neutral-500 dark:border-neutral-400 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                   </th>
                   <ThSortable col="symbol" label="Ticker" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
@@ -669,7 +669,7 @@ const EnhancedStocksList: React.FC = () => {
                   <th className="px-3 py-2 w-10"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100">
+              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
                 {filteredStocks.map((stock) => {
                   const activity = getActivityLevel(stock.recent_activity.signals_7d, stock.recent_activity.alerts_7d);
                   const sentiment = stock.latest_features?.sentiment ?? null;
@@ -680,24 +680,24 @@ const EnhancedStocksList: React.FC = () => {
                   const isSelected = selectedSymbols.has(stock.symbol);
 
                   return (
-                    <tr key={stock.symbol} className={cn('hover:bg-neutral-50 transition-colors group', isSelected && 'bg-blue-50/50')}>
+                    <tr key={stock.symbol} className={cn('hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors group', isSelected && 'bg-blue-50/50 dark:bg-blue-900/30')}>
                       <td className="px-2 py-2.5">
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelection(stock.symbol)}
-                          className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          className="w-3.5 h-3.5 rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
                       </td>
                       <td className="px-3 py-2.5">
                         <Link
                           to={`/stocks/${stock.symbol}`}
-                          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                          className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
                         >
                           {stock.symbol}
                         </Link>
                       </td>
-                      <td className="px-3 py-2.5 text-neutral-600 hidden md:table-cell">
+                      <td className="px-3 py-2.5 text-neutral-600 dark:text-neutral-400 hidden md:table-cell">
                         <span className="truncate block max-w-[180px]">{stock.name}</span>
                       </td>
                       <td className="px-3 py-2.5">
@@ -711,7 +711,7 @@ const EnhancedStocksList: React.FC = () => {
                       <td className="px-3 py-2.5">
                         {sentiment !== null ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-12 bg-neutral-200 rounded-full h-1.5">
+                            <div className="w-12 bg-neutral-200 dark:bg-neutral-600 rounded-full h-1.5">
                               <div
                                 className={cn(
                                   'h-1.5 rounded-full',
@@ -725,7 +725,7 @@ const EnhancedStocksList: React.FC = () => {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-neutral-400 text-xs">—</span>
+                          <span className="text-neutral-400 dark:text-neutral-500 text-xs">—</span>
                         )}
                       </td>
                       <td className="px-3 py-2.5">
@@ -733,10 +733,10 @@ const EnhancedStocksList: React.FC = () => {
                           {ret5d !== null ? formatPercent(ret5d, 1) : '—'}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-neutral-700 text-xs hidden sm:table-cell">
+                      <td className="px-3 py-2.5 text-neutral-700 dark:text-neutral-300 text-xs hidden sm:table-cell">
                         {volZ !== null ? formatNumber(volZ, 2) : '—'}
                       </td>
-                      <td className="px-3 py-2.5 text-neutral-700 text-xs hidden sm:table-cell">
+                      <td className="px-3 py-2.5 text-neutral-700 dark:text-neutral-300 text-xs hidden sm:table-cell">
                         {articles}
                       </td>
                       <td className="px-3 py-2.5 hidden md:table-cell">
@@ -747,7 +747,7 @@ const EnhancedStocksList: React.FC = () => {
                       <td className="px-3 py-2.5">
                         <button
                           onClick={() => removeStock(stock.symbol)}
-                          className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-500 transition-all"
+                          className="opacity-0 group-hover:opacity-100 text-neutral-400 dark:text-neutral-500 hover:text-red-500 dark:hover:text-red-400 transition-all"
                           title={`Remove ${stock.symbol}`}
                         >
                           <X className="w-4 h-4" />
@@ -763,11 +763,11 @@ const EnhancedStocksList: React.FC = () => {
           {/* Empty state */}
           {filteredStocks.length === 0 && (
             <div className="text-center py-12 px-6">
-              <Star className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
-              <h3 className="text-sm font-medium text-neutral-900 mb-1">
+              <Star className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mx-auto mb-3" />
+              <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-1">
                 {searchQuery || filterPriority ? 'No stocks match your filters' : 'Start building your watchlist'}
               </h3>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {searchQuery || filterPriority
                   ? 'Try adjusting your search or filter.'
                   : 'Use Quick Add to search and add stocks to track.'}
@@ -779,24 +779,24 @@ const EnhancedStocksList: React.FC = () => {
         {/* Sidebar */}
         <div className="lg:col-span-4 space-y-6">
           {/* Quick Add Panel */}
-          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+          <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm p-4">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
               <Plus className="w-4 h-4 text-emerald-600" />
               Quick Add
             </h3>
             <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-neutral-500" />
               <input
                 type="text"
                 placeholder="Search by ticker..."
                 value={quickAddQuery}
                 onChange={(e) => setQuickAddQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-9 pr-3 py-2 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg text-sm dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
             {quickAddLoading && (
-              <div className="text-xs text-neutral-400 py-2">Searching...</div>
+              <div className="text-xs text-neutral-400 dark:text-neutral-500 py-2">Searching...</div>
             )}
 
             {quickAddResults.length > 0 && (
@@ -806,16 +806,16 @@ const EnhancedStocksList: React.FC = () => {
                   return (
                     <div
                       key={r.symbol}
-                      className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-neutral-50 transition-colors"
+                      className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
                     >
                       <div className="min-w-0">
-                        <span className="font-semibold text-sm text-neutral-900">{r.symbol}</span>
-                        <span className="text-xs text-neutral-500 ml-2 truncate">
+                        <span className="font-semibold text-sm text-neutral-900 dark:text-white">{r.symbol}</span>
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-2 truncate">
                           {r.company_name}
                         </span>
                       </div>
                       {isTracked ? (
-                        <span className="text-xs text-emerald-600 font-medium shrink-0">Tracked</span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium shrink-0">Tracked</span>
                       ) : (
                         <button
                           onClick={() => addStock(r.symbol, r.company_name)}
@@ -831,11 +831,11 @@ const EnhancedStocksList: React.FC = () => {
             )}
 
             {quickAddQuery && !quickAddLoading && quickAddResults.length === 0 && (
-              <div className="text-xs text-neutral-400 py-2">
+              <div className="text-xs text-neutral-400 dark:text-neutral-500 py-2">
                 No results for "{quickAddQuery}". You can add it manually:
                 <button
                   onClick={() => addStock(quickAddQuery)}
-                  className="ml-1 text-blue-600 hover:underline font-medium"
+                  className="ml-1 text-blue-600 dark:text-blue-400 hover:underline font-medium"
                 >
                   Add {quickAddQuery.toUpperCase()}
                 </button>
@@ -845,11 +845,11 @@ const EnhancedStocksList: React.FC = () => {
 
           {/* AI Suggestions Panel */}
           {suggestions.length > 0 && (
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
-              <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+            <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm p-4">
+              <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
                 <Brain className="w-4 h-4 text-purple-600" />
                 AI Suggestions
-                <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
                   {suggestions.length}
                 </span>
               </h3>
@@ -857,12 +857,12 @@ const EnhancedStocksList: React.FC = () => {
                 {suggestions.map((s) => (
                   <div
                     key={s.ticker}
-                    className="flex items-center justify-between py-2 px-2 bg-neutral-50 rounded-lg"
+                    className="flex items-center justify-between py-2 px-2 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg border border-transparent dark:border-neutral-600"
                   >
                     <div className="min-w-0">
-                      <div className="font-semibold text-sm text-neutral-900">{s.ticker}</div>
-                      <div className="text-xs text-neutral-500 truncate">{s.reason}</div>
-                      <div className="text-xs text-neutral-400">
+                      <div className="font-semibold text-sm text-neutral-900 dark:text-white">{s.ticker}</div>
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{s.reason}</div>
+                      <div className="text-xs text-neutral-400 dark:text-neutral-500">
                         {s.recent_signals} signals &middot; {(s.confidence * 100).toFixed(0)}% conf
                       </div>
                     </div>

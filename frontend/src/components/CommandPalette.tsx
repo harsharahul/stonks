@@ -14,6 +14,7 @@ import {
   Keyboard,
   ArrowRight,
   Monitor,
+  Shield,
 } from 'lucide-react';
 import { stocksApi } from '../api/client';
 
@@ -31,6 +32,7 @@ const allPages = [
   { to: '/anomalies', label: 'Anomalies', shortcut: 'Ctrl+5', icon: AlertTriangle, keywords: ['outliers', 'unusual', 'detection'] },
   { to: '/wsb-trending', label: 'WSB Trending', shortcut: 'Ctrl+6', icon: TrendingUp, keywords: ['reddit', 'wallstreetbets', 'meme'] },
   { to: '/system', label: 'System Status', shortcut: 'Ctrl+7', icon: Monitor, keywords: ['health', 'pipeline', 'celery', 'ingestion', 'status'] },
+  { to: '/admin', label: 'Admin Dashboard', shortcut: 'Ctrl+8', icon: Shield, keywords: ['admin', 'tasks', 'jobs', 'etl', 'celery', 'dispatch'] },
 ];
 
 const allActions = [
@@ -62,7 +64,7 @@ const useStockSearch = (query: string) => {
 };
 
 const itemClass = `flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer text-sm
-  text-neutral-700 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 transition-colors`;
+  text-neutral-700 dark:text-neutral-300 data-[selected=true]:bg-blue-50 dark:data-[selected=true]:bg-blue-900/30 data-[selected=true]:text-blue-700 dark:data-[selected=true]:text-blue-400 transition-colors`;
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onShowShortcuts }) => {
   const [search, setSearch] = useState('');
@@ -108,29 +110,29 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onS
       loop
       shouldFilter={false}
       overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
-      contentClassName="fixed top-[20%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg bg-white rounded-xl shadow-2xl border border-neutral-200 overflow-hidden z-[101]"
+      contentClassName="fixed top-[20%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg bg-white dark:bg-neutral-800 rounded-xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden z-[101]"
     >
       {/* Visually-hidden a11y elements for Radix Dialog */}
       <Dialog.Title className="sr-only">Command palette</Dialog.Title>
       <Dialog.Description className="sr-only">Search stocks, navigate pages, or run actions</Dialog.Description>
 
       {/* Search input */}
-      <div className="flex items-center border-b border-neutral-200 px-4">
-        <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+      <div className="flex items-center border-b border-neutral-200 dark:border-neutral-700 px-4">
+        <Search className="w-4 h-4 text-neutral-400 dark:text-neutral-400 shrink-0" />
         <Command.Input
           value={search}
           onValueChange={setSearch}
           placeholder="Search stocks, pages, actions..."
-          className="w-full py-3 px-3 text-sm outline-none placeholder-neutral-400 bg-transparent"
+          className="w-full py-3 px-3 text-sm outline-none placeholder-neutral-400 dark:placeholder-neutral-500 bg-transparent dark:text-neutral-100"
         />
-        <kbd className="text-[10px] text-neutral-400 font-mono bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200 shrink-0">
+        <kbd className="text-[10px] text-neutral-400 dark:text-neutral-400 font-mono bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-600 shrink-0">
           Esc
         </kbd>
       </div>
 
       <Command.List className="max-h-[320px] overflow-y-auto p-2">
         {showNoResults && (
-          <div className="px-4 py-8 text-center text-sm text-neutral-500">
+          <div className="px-4 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
             No results found.
           </div>
         )}
@@ -139,7 +141,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onS
         {search.length >= 1 && (stocks.length > 0 || stocksLoading) && (
           <Command.Group
             heading={
-              <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-2">
+              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-2">
                 Stocks {stocksLoading && '...'}
               </span>
             }
@@ -152,10 +154,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onS
                 className={itemClass}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="font-mono font-semibold text-blue-600 w-12">{stock.symbol}</span>
-                  <span className="text-neutral-500 truncate max-w-[200px]">{stock.company_name}</span>
+                  <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 w-12">{stock.symbol}</span>
+                  <span className="text-neutral-500 dark:text-neutral-400 truncate max-w-[200px]">{stock.company_name}</span>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-neutral-300" />
+                <ArrowRight className="w-3.5 h-3.5 text-neutral-300 dark:text-neutral-600" />
               </Command.Item>
             ))}
           </Command.Group>
@@ -164,7 +166,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onS
         {/* Pages */}
         {filteredPages.length > 0 && (
           <Command.Group
-            heading={<span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-2">Pages</span>}
+            heading={<span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-2">Pages</span>}
           >
             {filteredPages.map((page) => (
               <Command.Item
@@ -174,10 +176,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onS
                 className={itemClass}
               >
                 <div className="flex items-center gap-2.5">
-                  <page.icon className="w-4 h-4 text-neutral-400" />
+                  <page.icon className="w-4 h-4 text-neutral-400 dark:text-neutral-400" />
                   <span>{page.label}</span>
                 </div>
-                <kbd className="text-[10px] text-neutral-400 font-mono bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                <kbd className="text-[10px] text-neutral-400 dark:text-neutral-400 font-mono bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-600">
                   {page.shortcut}
                 </kbd>
               </Command.Item>
@@ -188,7 +190,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onS
         {/* Quick Actions */}
         {filteredActions.length > 0 && (
           <Command.Group
-            heading={<span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-2">Quick Actions</span>}
+            heading={<span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-2">Quick Actions</span>}
           >
             {filteredActions.map((action) => (
               <Command.Item
@@ -201,11 +203,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onS
                 className={itemClass}
               >
                 <div className="flex items-center gap-2.5">
-                  <action.icon className="w-4 h-4 text-neutral-400" />
+                  <action.icon className="w-4 h-4 text-neutral-400 dark:text-neutral-400" />
                   <span>{action.label}</span>
                 </div>
                 {action.shortcut && (
-                  <kbd className="text-[10px] text-neutral-400 font-mono bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                  <kbd className="text-[10px] text-neutral-400 dark:text-neutral-400 font-mono bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-600">
                     {action.shortcut}
                   </kbd>
                 )}

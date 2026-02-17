@@ -18,17 +18,17 @@ import type { Alert, Anomaly, Recommendation, WSBTrendingTicker, Article } from 
 const SkeletonLines: React.FC<{ lines?: number }> = ({ lines = 3 }) => (
   <div className="animate-pulse space-y-2">
     {[...Array(lines)].map((_, i) => (
-      <div key={i} className="h-3 bg-neutral-200 rounded" style={{ width: `${90 - i * 15}%` }} />
+      <div key={i} className="h-3 bg-neutral-200 dark:bg-neutral-600 rounded" style={{ width: `${90 - i * 15}%` }} />
     ))}
   </div>
 );
 
 const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
   const styles: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700 border-red-200',
-    high: 'bg-orange-100 text-orange-700 border-orange-200',
-    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    low: 'bg-blue-100 text-blue-700 border-blue-200',
+    critical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700',
+    high: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700',
+    medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700',
+    low: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700',
   };
   return (
     <span className={cn('px-1.5 py-0.5 text-[10px] font-semibold rounded border uppercase', styles[severity] || styles.low)}>
@@ -39,9 +39,9 @@ const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
 
 const ActionBadge: React.FC<{ action: string }> = ({ action }) => {
   const styles: Record<string, string> = {
-    buy: 'bg-green-100 text-green-700 border-green-200',
-    sell: 'bg-red-100 text-red-700 border-red-200',
-    hold: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+    buy: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700',
+    sell: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700',
+    hold: 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700',
   };
   return (
     <span className={cn('px-2 py-0.5 text-xs font-bold rounded border uppercase', styles[action] || styles.hold)}>
@@ -188,11 +188,11 @@ const Dashboard: React.FC = () => {
       {outlook.isLoading ? (
         <div className="card animate-pulse h-32" />
       ) : outlook.error ? (
-        <div className="card border-red-200 bg-red-50">
-          <div className="flex items-center gap-2 text-red-600 text-sm">
+        <div className="card border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
             <AlertTriangle className="w-4 h-4" />
             <span>Failed to load tomorrow's outlook</span>
-            <button onClick={() => outlook.refetch()} className="ml-auto text-xs text-red-600 hover:underline">Retry</button>
+            <button onClick={() => outlook.refetch()} className="ml-auto text-xs text-red-600 dark:text-red-400 hover:underline">Retry</button>
           </div>
         </div>
       ) : outlook.data ? (
@@ -240,7 +240,7 @@ const Dashboard: React.FC = () => {
           {/* -- RECOMMENDATIONS -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <Shield className="w-5 h-5 text-green-600" />
                 Today's Recommendations
               </h2>
@@ -252,31 +252,31 @@ const Dashboard: React.FC = () => {
             ) : recommendations.error ? (
               <div className="text-center py-6">
                 <AlertTriangle className="w-6 h-6 text-red-400 mx-auto mb-2" />
-                <p className="text-neutral-600 text-sm">Failed to load recommendations</p>
+                <p className="text-neutral-600 dark:text-neutral-400 text-sm">Failed to load recommendations</p>
                 <button onClick={() => recommendations.refetch()} className="mt-2 text-sm text-blue-600 hover:underline">Retry</button>
               </div>
             ) : !recommendations.data?.recommendations?.length ? (
               <div className="text-center py-6">
-                <Shield className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
-                <p className="text-neutral-500 text-sm">No recommendations available yet</p>
-                <p className="text-xs text-neutral-400 mt-1">Recommendations are generated daily from feature calculations</p>
+                <Shield className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+                <p className="text-neutral-500 dark:text-neutral-400 text-sm">No recommendations available yet</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Recommendations are generated daily from feature calculations</p>
               </div>
             ) : (
               <div className="space-y-2.5">
                 {recommendations.data.recommendations.slice(0, 5).map((rec: Recommendation) => (
                   <div
                     key={rec.symbol}
-                    className="p-3 rounded-lg border border-neutral-100 bg-neutral-50 hover:border-neutral-200 transition-colors"
+                    className="p-3 rounded-lg border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 hover:border-neutral-200 dark:hover:border-neutral-600 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-3">
-                        <Link to={`/stocks/${rec.symbol}`} className="font-bold text-neutral-900 hover:text-blue-600 text-sm">
+                        <Link to={`/stocks/${rec.symbol}`} className="font-bold text-neutral-900 dark:text-white hover:text-blue-600 text-sm">
                           ${rec.symbol}
                         </Link>
                         <ActionBadge action={rec.action} />
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                        <div className="w-16 h-1.5 bg-neutral-200 dark:bg-neutral-600 rounded-full overflow-hidden">
                           <div
                             className={cn(
                               'h-full rounded-full',
@@ -285,13 +285,13 @@ const Dashboard: React.FC = () => {
                             style={{ width: `${rec.score * 100}%` }}
                           />
                         </div>
-                        <span className="text-xs font-semibold text-neutral-700">{formatNumber(rec.score, 2)}</span>
+                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{formatNumber(rec.score, 2)}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-neutral-500 mb-1.5">{rec.rationale.notes}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1.5">{rec.rationale.notes}</p>
                     <div className="flex flex-wrap gap-1">
                       {rec.rationale.top_signals.slice(0, 3).map((sig, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-white border border-neutral-200 rounded text-[10px] text-neutral-600">
+                        <span key={i} className="px-1.5 py-0.5 bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded text-[10px] text-neutral-600 dark:text-neutral-300">
                           {sig.signal.replace(/_/g, ' ')} ({formatPercent(sig.contribution, 0)})
                         </span>
                       ))}
@@ -305,19 +305,19 @@ const Dashboard: React.FC = () => {
           {/* -- TOP MOVERS (GAINERS + LOSERS) -- */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="card">
-              <h2 className="text-base font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-green-600" />
                 Top Gainers (5d)
               </h2>
               {featuresSummary.isLoading ? (
                 <SkeletonLines lines={5} />
               ) : topGainers.length === 0 ? (
-                <p className="text-xs text-neutral-400 py-4 text-center">No gainers data</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 py-4 text-center">No gainers data</p>
               ) : (
-                <ul className="divide-y divide-neutral-100">
+                <ul className="divide-y divide-neutral-100 dark:divide-neutral-700">
                   {topGainers.map((s) => (
                     <li key={s.ticker} className="py-2 flex items-center justify-between">
-                      <Link to={`/stocks/${s.ticker}`} className="font-medium text-sm text-neutral-900 hover:text-blue-600">
+                      <Link to={`/stocks/${s.ticker}`} className="font-medium text-sm text-neutral-900 dark:text-white hover:text-blue-600">
                         {s.ticker}
                       </Link>
                       <span className="text-green-600 font-semibold text-sm">
@@ -329,19 +329,19 @@ const Dashboard: React.FC = () => {
               )}
             </div>
             <div className="card">
-              <h2 className="text-base font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
                 <TrendingDown className="w-4 h-4 text-red-600" />
                 Top Losers (5d)
               </h2>
               {featuresSummary.isLoading ? (
                 <SkeletonLines lines={5} />
               ) : topLosers.length === 0 ? (
-                <p className="text-xs text-neutral-400 py-4 text-center">No losers data</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 py-4 text-center">No losers data</p>
               ) : (
-                <ul className="divide-y divide-neutral-100">
+                <ul className="divide-y divide-neutral-100 dark:divide-neutral-700">
                   {topLosers.map((s) => (
                     <li key={s.ticker} className="py-2 flex items-center justify-between">
-                      <Link to={`/stocks/${s.ticker}`} className="font-medium text-sm text-neutral-900 hover:text-blue-600">
+                      <Link to={`/stocks/${s.ticker}`} className="font-medium text-sm text-neutral-900 dark:text-white hover:text-blue-600">
                         {s.ticker}
                       </Link>
                       <span className="text-red-600 font-semibold text-sm">
@@ -357,7 +357,7 @@ const Dashboard: React.FC = () => {
           {/* -- WSB TRENDING COMPACT -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-neutral-900 flex items-center gap-2">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <span className="text-base">&#129421;</span>
                 Trending on WSB
               </h2>
@@ -367,14 +367,14 @@ const Dashboard: React.FC = () => {
             {wsbTrending.isLoading ? (
               <SkeletonLines lines={5} />
             ) : wsbTrending.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load WSB data</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load WSB data</p>
             ) : !wsbTrending.data?.trending_tickers?.length ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No WSB trending data available</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No WSB trending data available</p>
             ) : (
               <div className="overflow-x-auto -mx-6">
                 <table className="w-full text-sm" style={{ minWidth: '400px' }}>
                   <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500 uppercase tracking-wider">
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700 text-left text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       <th className="px-6 py-2 w-8 hidden sm:table-cell">#</th>
                       <th className="px-3 py-2">Ticker</th>
                       <th className="px-3 py-2 text-right">Score</th>
@@ -382,17 +382,17 @@ const Dashboard: React.FC = () => {
                       <th className="px-3 py-2 text-right">Sentiment</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
                     {wsbTrending.data.trending_tickers.slice(0, 5).map((t: WSBTrendingTicker, i: number) => (
-                      <tr key={t.ticker} className="hover:bg-blue-50 transition-colors">
-                        <td className="px-6 py-2 text-neutral-400 text-xs hidden sm:table-cell">{i + 1}</td>
+                      <tr key={t.ticker} className="hover:bg-blue-50 dark:hover:bg-neutral-800 transition-colors">
+                        <td className="px-6 py-2 text-neutral-400 dark:text-neutral-500 text-xs hidden sm:table-cell">{i + 1}</td>
                         <td className="px-3 py-2">
-                          <Link to={`/stocks/${t.ticker}`} className="font-bold text-neutral-900 hover:text-blue-600">
+                          <Link to={`/stocks/${t.ticker}`} className="font-bold text-neutral-900 dark:text-white hover:text-blue-600">
                             ${t.ticker}
                           </Link>
                         </td>
-                        <td className="px-3 py-2 text-right font-medium text-neutral-700">{formatNumber(t.trending_score, 2)}</td>
-                        <td className="px-3 py-2 text-right text-neutral-600">{t.mention_count}</td>
+                        <td className="px-3 py-2 text-right font-medium text-neutral-700 dark:text-neutral-300">{formatNumber(t.trending_score, 2)}</td>
+                        <td className="px-3 py-2 text-right text-neutral-600 dark:text-neutral-400">{t.mention_count}</td>
                         <td className="px-3 py-2 text-right">
                           <span className={cn('font-medium text-xs', getSentimentColor(t.avg_sentiment))}>
                             {formatNumber(t.avg_sentiment, 2)}
@@ -413,36 +413,36 @@ const Dashboard: React.FC = () => {
           {/* -- LIVE ALERTS -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 <Zap className="w-4 h-4 text-orange-500" />
                 Live Alerts
               </h2>
-              <span className="text-[10px] text-neutral-400">{alertCount} recent</span>
+              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{alertCount} recent</span>
             </div>
 
             {alerts.isLoading ? (
               <div className="space-y-2">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : alerts.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load alerts</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load alerts</p>
             ) : (alerts.data?.alerts?.length ?? 0) === 0 ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No recent alerts</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No recent alerts</p>
             ) : (
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                 {alerts.data!.alerts.map((a: Alert) => (
-                  <div key={a.id} className="p-2.5 bg-neutral-50 rounded-lg border border-neutral-100 hover:border-neutral-200 transition-colors">
+                  <div key={a.id} className="p-2.5 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-100 dark:border-neutral-700 hover:border-neutral-200 dark:hover:border-neutral-600 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm">{alertTypeIcon(a.alert_type)}</span>
-                        <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 hover:text-blue-600">
+                        <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 dark:text-white hover:text-blue-600">
                           ${a.ticker}
                         </Link>
                         <SeverityBadge severity={a.severity} />
                       </div>
-                      <span className="text-[10px] text-neutral-400">{formatRelativeTime(a.triggered_at)}</span>
+                      <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{formatRelativeTime(a.triggered_at)}</span>
                     </div>
-                    <p className="text-[11px] text-neutral-600 leading-tight line-clamp-2">{a.title}</p>
+                    <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-tight line-clamp-2">{a.title}</p>
                   </div>
                 ))}
               </div>
@@ -452,7 +452,7 @@ const Dashboard: React.FC = () => {
           {/* -- MARKET ANOMALIES -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4 text-red-500" />
                 Market Anomalies
               </h2>
@@ -460,32 +460,32 @@ const Dashboard: React.FC = () => {
 
             {anomalies.isLoading ? (
               <div className="space-y-2">
-                {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : anomalies.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load anomalies</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load anomalies</p>
             ) : (anomalies.data?.market_anomalies?.length ?? 0) === 0 ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No anomalies detected</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No anomalies detected</p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                 {anomalies.data!.market_anomalies.slice(0, 8).map((a: Anomaly, i: number) => (
-                  <div key={`${a.ticker}-${a.anomaly_type}-${i}`} className="p-2.5 rounded-lg border border-neutral-100 bg-neutral-50">
+                  <div key={`${a.ticker}-${a.anomaly_type}-${i}`} className="p-2.5 rounded-lg border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
                     <div className="flex items-center justify-between mb-1">
-                      <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 hover:text-blue-600">
+                      <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 dark:text-white hover:text-blue-600">
                         ${a.ticker}
                       </Link>
                       <span className={cn(
                         'text-[10px] font-semibold px-1.5 py-0.5 rounded',
-                        a.severity >= 0.7 ? 'bg-red-100 text-red-700' :
-                        a.severity >= 0.4 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700',
+                        a.severity >= 0.7 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                        a.severity >= 0.4 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                        'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
                       )}>
                         {formatNumber(a.severity, 2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-neutral-500">{anomalyTypeLabel(a.anomaly_type)}</span>
-                      <span className="text-neutral-400">z={formatNumber(a.z_score, 1)}</span>
+                      <span className="text-neutral-500 dark:text-neutral-400">{anomalyTypeLabel(a.anomaly_type)}</span>
+                      <span className="text-neutral-400 dark:text-neutral-500">z={formatNumber(a.z_score, 1)}</span>
                     </div>
                   </div>
                 ))}
@@ -496,45 +496,45 @@ const Dashboard: React.FC = () => {
           {/* -- RECENT ARTICLES -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 <Newspaper className="w-4 h-4 text-blue-500" />
                 Recent Articles
               </h2>
-              <span className="text-[10px] text-neutral-400">{articles.data?.total ?? 0} total</span>
+              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{articles.data?.total ?? 0} total</span>
             </div>
 
             {articles.isLoading ? (
               <div className="space-y-2">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : articles.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load articles</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load articles</p>
             ) : (articles.data?.items?.length ?? 0) === 0 ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No recent articles</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No recent articles</p>
             ) : (
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                 {articles.data!.items.slice(0, 8).map((art: Article) => (
-                  <div key={art.id} className="p-2.5 rounded-lg border border-neutral-100 bg-neutral-50 hover:border-neutral-200 transition-colors">
+                  <div key={art.id} className="p-2.5 rounded-lg border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 hover:border-neutral-200 dark:hover:border-neutral-600 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <p className="text-xs font-medium text-neutral-800 line-clamp-2 flex-1">
+                      <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 flex-1">
                         {art.title || 'Untitled article'}
                       </p>
                       {art.sentiment !== null && (
                         <span className={cn(
                           'text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0',
-                          art.sentiment >= 0.6 ? 'bg-green-100 text-green-700' :
-                          art.sentiment >= 0.4 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700',
+                          art.sentiment >= 0.6 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                          art.sentiment >= 0.4 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                          'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
                         )}>
                           {formatNumber(art.sentiment, 2)}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-neutral-400">
+                    <div className="flex items-center gap-2 text-[10px] text-neutral-400 dark:text-neutral-500">
                       {art.tickers && art.tickers.length > 0 && (
                         <div className="flex gap-1">
                           {art.tickers.slice(0, 3).map(t => (
-                            <Link key={t} to={`/stocks/${t}`} className="text-blue-500 hover:underline font-medium">
+                            <Link key={t} to={`/stocks/${t}`} className="text-blue-500 dark:text-blue-400 hover:underline font-medium">
                               ${t}
                             </Link>
                           ))}
@@ -553,7 +553,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* ====== FOOTER ====== */}
-      <div className="text-center text-xs text-neutral-400 pt-2 border-t border-neutral-200">
+      <div className="text-center text-xs text-neutral-400 pt-2 border-t border-neutral-200 dark:border-neutral-700">
         Stonks Command Center &middot; Powered by multi-source analytics
         {outlook.data?.generated_at && (
           <span> &middot; Generated {formatRelativeTime(outlook.data.generated_at)}</span>

@@ -30,10 +30,10 @@ import type { WSBTrendingTicker, Alert, Anomaly } from '../types/api';
 /** Skeleton card for loading states */
 const SkeletonCard: React.FC<{ lines?: number }> = ({ lines = 3 }) => (
   <div className="card animate-pulse">
-    <div className="h-4 bg-neutral-200 rounded w-1/3 mb-4" />
+    <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-1/3 mb-4" />
     <div className="space-y-2">
       {[...Array(lines)].map((_, i) => (
-        <div key={i} className="h-3 bg-neutral-200 rounded" style={{ width: `${80 - i * 15}%` }} />
+        <div key={i} className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded" style={{ width: `${80 - i * 15}%` }} />
       ))}
     </div>
   </div>
@@ -51,19 +51,19 @@ const PulseCard: React.FC<{
   if (isLoading) {
     return (
       <div className="card animate-pulse">
-        <div className="h-4 bg-neutral-200 rounded w-2/3 mb-2" />
-        <div className="h-6 bg-neutral-200 rounded w-1/2" />
+        <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-2/3 mb-2" />
+        <div className="h-6 bg-neutral-200 dark:bg-neutral-700 rounded w-1/2" />
       </div>
     );
   }
   return (
     <div className="card hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">{label}</span>
         <span className={cn('p-1.5 rounded-lg', color)}>{icon}</span>
       </div>
-      <div className="text-2xl font-bold text-neutral-900">{value}</div>
-      {subtitle && <div className="text-xs text-neutral-500 mt-0.5">{subtitle}</div>}
+      <div className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</div>
+      {subtitle && <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{subtitle}</div>}
     </div>
   );
 };
@@ -71,10 +71,10 @@ const PulseCard: React.FC<{
 /** Severity badge for alerts */
 const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
   const styles: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700 border-red-200',
-    high: 'bg-orange-100 text-orange-700 border-orange-200',
-    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    low: 'bg-blue-100 text-blue-700 border-blue-200',
+    critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+    high: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
+    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+    low: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
   };
   return (
     <span className={cn('px-1.5 py-0.5 text-[10px] font-semibold rounded border uppercase', styles[severity] || styles.low)}>
@@ -85,10 +85,10 @@ const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
 
 /** Sort indicator arrow */
 const SortIcon: React.FC<{ active: boolean; direction: 'asc' | 'desc' }> = ({ active, direction }) => {
-  if (!active) return <span className="text-neutral-300 ml-0.5 inline-block w-3"><ChevronUp className="w-3 h-3" /></span>;
+  if (!active) return <span className="text-neutral-300 dark:text-neutral-600 ml-0.5 inline-block w-3"><ChevronUp className="w-3 h-3" /></span>;
   return direction === 'asc'
-    ? <ChevronUp className="w-3 h-3 ml-0.5 text-blue-600 inline-block" />
-    : <ChevronDown className="w-3 h-3 ml-0.5 text-blue-600 inline-block" />;
+    ? <ChevronUp className="w-3 h-3 ml-0.5 text-blue-600 dark:text-blue-400 inline-block" />
+    : <ChevronDown className="w-3 h-3 ml-0.5 text-blue-600 dark:text-blue-400 inline-block" />;
 };
 
 // ---------------------------------------------------------------------------
@@ -177,10 +177,10 @@ const WSBTrendingDashboard: React.FC = () => {
   // ---- Helpers ----
 
   const trendingScoreColor = (score: number) => {
-    if (score >= 0.7) return 'text-purple-700 bg-purple-100';
-    if (score >= 0.5) return 'text-blue-700 bg-blue-100';
-    if (score >= 0.3) return 'text-yellow-700 bg-yellow-100';
-    return 'text-neutral-600 bg-neutral-100';
+    if (score >= 0.7) return 'text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30';
+    if (score >= 0.5) return 'text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30';
+    if (score >= 0.3) return 'text-yellow-700 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/30';
+    return 'text-neutral-600 bg-neutral-100 dark:text-neutral-400 dark:bg-neutral-700';
   };
 
   const sentimentBarColor = (s: number) => {
@@ -218,21 +218,21 @@ const WSBTrendingDashboard: React.FC = () => {
       {/* ====== HEADER ====== */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-neutral-900">🦍 WSB Terminal</h1>
-          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-full">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">🦍 WSB Terminal</h1>
+          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-xs font-semibold rounded-full">
             <span className="w-2 h-2 rounded-full bg-red-500 pulse-green" />
             LIVE
           </span>
         </div>
         <div className="flex items-center gap-3">
           {trending.dataUpdatedAt && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
               Updated {new Date(trending.dataUpdatedAt).toLocaleTimeString()}
             </span>
           )}
           <button
             onClick={handleRefreshAll}
-            className="p-2 text-neutral-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-2 text-neutral-500 hover:text-blue-600 hover:bg-blue-50 dark:text-neutral-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
             title="Refresh all panels"
           >
             <RefreshCw className={cn('w-4 h-4', trending.isFetching && 'animate-spin')} />
@@ -247,7 +247,7 @@ const WSBTrendingDashboard: React.FC = () => {
           value={trendingCount}
           subtitle={`Past ${trending.data?.days ?? 7} days`}
           icon={<TrendingUp className="w-4 h-4" />}
-          color="bg-purple-50 text-purple-600"
+          color="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
           isLoading={trending.isLoading}
         />
         <PulseCard
@@ -256,9 +256,9 @@ const WSBTrendingDashboard: React.FC = () => {
           subtitle={overallSentiment?.label ?? 'Loading...'}
           icon={<Activity className="w-4 h-4" />}
           color={cn(
-            overallSentiment && overallSentiment.score > 0.6 ? 'bg-green-50 text-green-600' :
-            overallSentiment && overallSentiment.score < 0.4 ? 'bg-red-50 text-red-600' :
-            'bg-blue-50 text-blue-600',
+            overallSentiment && overallSentiment.score > 0.6 ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' :
+            overallSentiment && overallSentiment.score < 0.4 ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' :
+            'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400',
           )}
           isLoading={sentiment.isLoading}
         />
@@ -267,7 +267,7 @@ const WSBTrendingDashboard: React.FC = () => {
           value={alertCount}
           subtitle="Past 24h"
           icon={<Zap className="w-4 h-4" />}
-          color="bg-orange-50 text-orange-600"
+          color="bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
           isLoading={alerts.isLoading}
         />
         <PulseCard
@@ -276,8 +276,8 @@ const WSBTrendingDashboard: React.FC = () => {
           subtitle={ingestion.data ? `${ingestion.data.system_health ?? 'checking'}` : undefined}
           icon={<Database className="w-4 h-4" />}
           color={cn(
-            ingestion.data?.system_health === 'healthy' ? 'bg-green-50 text-green-600' :
-            'bg-yellow-50 text-yellow-600',
+            ingestion.data?.system_health === 'healthy' ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' :
+            'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400',
           )}
           isLoading={ingestion.isLoading}
         />
@@ -292,11 +292,11 @@ const WSBTrendingDashboard: React.FC = () => {
           {/* -- WSB TRENDING TABLE -- */}
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between px-1 mb-4">
-              <h2 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-purple-600" />
                 Trending on r/wallstreetbets
               </h2>
-              <span className="text-xs text-neutral-500">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
                 {enrichedTrending.length} tickers
               </span>
             </div>
@@ -304,26 +304,26 @@ const WSBTrendingDashboard: React.FC = () => {
             {trending.isLoading ? (
               <div className="space-y-2">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-10 bg-neutral-100 rounded animate-pulse" />
+                  <div key={i} className="h-10 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />
                 ))}
               </div>
             ) : trending.error ? (
               <div className="text-center py-8">
-                <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-                <p className="text-neutral-600 text-sm">Failed to load trending data</p>
-                <button onClick={() => trending.refetch()} className="mt-2 text-sm text-blue-600 hover:underline">Retry</button>
+                <AlertTriangle className="w-8 h-8 text-red-400 dark:text-red-500 mx-auto mb-2" />
+                <p className="text-neutral-600 dark:text-neutral-400 text-sm">Failed to load trending data</p>
+                <button onClick={() => trending.refetch()} className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">Retry</button>
               </div>
             ) : sortedTrending.length === 0 ? (
               <div className="text-center py-12">
                 <span className="text-4xl block mb-2">🦍</span>
-                <p className="text-neutral-500">No trending tickers found</p>
-                <p className="text-xs text-neutral-400 mt-1">WSB data will appear here when available</p>
+                <p className="text-neutral-500 dark:text-neutral-400">No trending tickers found</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">WSB data will appear here when available</p>
               </div>
             ) : (
               <div className="overflow-x-auto -mx-6">
                 <table className="w-full text-sm" style={{ minWidth: '400px' }}>
                   <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500 uppercase tracking-wider">
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700 text-left text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       <th className="px-6 py-2 w-10">#</th>
                       <ThSortable col="ticker" label="Ticker" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                       <ThSortable col="trending_score" label="Score" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
@@ -334,7 +334,7 @@ const WSBTrendingDashboard: React.FC = () => {
                       <ThSortable col="ret_5d" label="5d Ret" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
                     {sortedTrending.map((t, idx) => {
                       const originalIdx = enrichedTrending.findIndex(e => e.ticker === t.ticker);
                       const isSelected = effectiveTicker === t.ticker;
@@ -343,15 +343,15 @@ const WSBTrendingDashboard: React.FC = () => {
                           key={t.ticker}
                           onClick={() => setSelectedTicker(t.ticker)}
                           className={cn(
-                            'cursor-pointer transition-colors hover:bg-blue-50',
-                            isSelected && 'bg-blue-50 border-l-2 border-l-blue-500',
+                            'cursor-pointer transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30',
+                            isSelected && 'bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-500',
                           )}
                         >
-                          <td className="px-6 py-2.5 font-medium text-neutral-400">
+                          <td className="px-6 py-2.5 font-medium text-neutral-400 dark:text-neutral-500">
                             {originalIdx === 0 ? '🥇' : originalIdx === 1 ? '🥈' : originalIdx === 2 ? '🥉' : originalIdx + 1}
                           </td>
                           <td className="px-3 py-2.5">
-                            <Link to={`/stocks/${t.ticker}`} className="font-bold text-neutral-900 hover:text-blue-600" onClick={e => e.stopPropagation()}>
+                            <Link to={`/stocks/${t.ticker}`} className="font-bold text-neutral-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400" onClick={e => e.stopPropagation()}>
                               ${t.ticker}
                             </Link>
                           </td>
@@ -360,10 +360,10 @@ const WSBTrendingDashboard: React.FC = () => {
                               {t.trending_score.toFixed(2)}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5 font-medium">{t.mention_count}</td>
+                          <td className="px-3 py-2.5 font-medium text-neutral-900 dark:text-white">{t.mention_count}</td>
                           <td className="px-3 py-2.5">
                             <div className="flex items-center gap-2">
-                              <div className="w-16 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                              <div className="w-16 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                                 <div
                                   className={cn('h-full rounded-full bg-gradient-to-r', sentimentBarColor(t.avg_sentiment))}
                                   style={{ width: `${Math.max(t.avg_sentiment * 100, 5)}%` }}
@@ -374,8 +374,8 @@ const WSBTrendingDashboard: React.FC = () => {
                               </span>
                             </div>
                           </td>
-                          <td className="px-3 py-2.5 text-neutral-700 hidden md:table-cell">{formatNumber(t.avg_reddit_score, 0)}</td>
-                          <td className="px-3 py-2.5 text-neutral-700 hidden md:table-cell">{formatNumber(t.avg_comments, 0)}</td>
+                          <td className="px-3 py-2.5 text-neutral-700 dark:text-neutral-300 hidden md:table-cell">{formatNumber(t.avg_reddit_score, 0)}</td>
+                          <td className="px-3 py-2.5 text-neutral-700 dark:text-neutral-300 hidden md:table-cell">{formatNumber(t.avg_comments, 0)}</td>
                           <td className="px-3 py-2.5">
                             {t.ret_5d !== null ? (
                               <span className={cn('flex items-center gap-0.5 font-medium text-xs', getReturnColor(t.ret_5d))}>
@@ -383,7 +383,7 @@ const WSBTrendingDashboard: React.FC = () => {
                                 {formatPercent(t.ret_5d, 1)}
                               </span>
                             ) : (
-                              <span className="text-neutral-400 text-xs">—</span>
+                              <span className="text-neutral-400 dark:text-neutral-500 text-xs">—</span>
                             )}
                           </td>
                         </tr>
@@ -398,15 +398,15 @@ const WSBTrendingDashboard: React.FC = () => {
           {/* -- SENTIMENT HEATMAP -- */}
           {sentiment.data?.stock_breakdown && sentiment.data.stock_breakdown.length > 0 && (
             <div className="card">
-              <h2 className="text-lg font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
                 <Activity className="w-5 h-5 text-blue-600" />
                 Sentiment Heatmap
               </h2>
               <div className="flex flex-wrap gap-2">
                 {sentiment.data.stock_breakdown.map(s => {
-                  const bg = s.sentiment >= 0.6 ? 'bg-green-100 border-green-200 text-green-800'
-                    : s.sentiment >= 0.4 ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                    : 'bg-red-100 border-red-200 text-red-800';
+                  const bg = s.sentiment >= 0.6 ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-300'
+                    : s.sentiment >= 0.4 ? 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-300'
+                    : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300';
                   const isSelected = effectiveTicker === s.ticker;
                   return (
                     <button
@@ -430,7 +430,7 @@ const WSBTrendingDashboard: React.FC = () => {
           {/* -- SELECTED TICKER CHART -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-green-600" />
                 {effectiveTicker ? `$${effectiveTicker} — 30-Day Trends` : 'Select a ticker'}
               </h2>
@@ -442,13 +442,13 @@ const WSBTrendingDashboard: React.FC = () => {
             </div>
 
             {!effectiveTicker ? (
-              <div className="text-center py-12 text-neutral-400">
+              <div className="text-center py-12 text-neutral-400 dark:text-neutral-500">
                 Click a ticker in the table or heatmap to view its trend
               </div>
             ) : featureHistory.isLoading ? (
-              <div className="h-48 bg-neutral-100 rounded animate-pulse" />
+              <div className="h-48 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />
             ) : featureHistory.error || (chartData.length === 0 && returnsChartData.length === 0) ? (
-              <div className="text-center py-12 text-neutral-400 text-sm">
+              <div className="text-center py-12 text-neutral-400 dark:text-neutral-500 text-sm">
                 No feature history available for ${effectiveTicker}
               </div>
             ) : (
@@ -456,10 +456,10 @@ const WSBTrendingDashboard: React.FC = () => {
                 {/* Sentiment chart */}
                 {chartData.length > 0 && (
                   <div>
-                    <h3 className="text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wide">Sentiment (7d Mean)</h3>
+                    <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2 uppercase tracking-wide">Sentiment (7d Mean)</h3>
                     <ResponsiveContainer width="100%" height={180}>
                       <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" className="dark:stroke-neutral-700" />
                         <XAxis
                           dataKey="date"
                           tick={{ fontSize: 10, fill: '#737373' }}
@@ -483,10 +483,10 @@ const WSBTrendingDashboard: React.FC = () => {
                 {/* Returns chart */}
                 {returnsChartData.length > 0 && (
                   <div>
-                    <h3 className="text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wide">Returns (5d)</h3>
+                    <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2 uppercase tracking-wide">Returns (5d)</h3>
                     <ResponsiveContainer width="100%" height={180}>
                       <LineChart data={returnsChartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" className="dark:stroke-neutral-700" />
                         <XAxis
                           dataKey="date"
                           tick={{ fontSize: 10, fill: '#737373' }}
@@ -518,36 +518,36 @@ const WSBTrendingDashboard: React.FC = () => {
           {/* -- LIVE ALERTS FEED -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 <Zap className="w-4 h-4 text-orange-500" />
                 Live Alerts
               </h2>
-              <span className="text-[10px] text-neutral-400">{alertCount} in 24h</span>
+              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{alertCount} in 24h</span>
             </div>
 
             {alerts.isLoading ? (
               <div className="space-y-2">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : alerts.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load alerts</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load alerts</p>
             ) : (alerts.data?.alerts?.length ?? 0) === 0 ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No recent alerts</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No recent alerts</p>
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                 {alerts.data!.alerts.map((a: Alert) => (
-                  <div key={a.id} className="p-2.5 bg-neutral-50 rounded-lg border border-neutral-100 hover:border-neutral-200 transition-colors">
+                  <div key={a.id} className="p-2.5 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-100 dark:border-neutral-700 hover:border-neutral-200 dark:hover:border-neutral-600 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm">{alertTypeIcon(a.alert_type)}</span>
-                        <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 hover:text-blue-600">
+                        <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400">
                           ${a.ticker}
                         </Link>
                         <SeverityBadge severity={a.severity} />
                       </div>
-                      <span className="text-[10px] text-neutral-400">{formatRelativeTime(a.triggered_at)}</span>
+                      <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{formatRelativeTime(a.triggered_at)}</span>
                     </div>
-                    <p className="text-[11px] text-neutral-600 leading-tight line-clamp-2">{a.title}</p>
+                    <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-tight line-clamp-2">{a.title}</p>
                   </div>
                 ))}
               </div>
@@ -557,7 +557,7 @@ const WSBTrendingDashboard: React.FC = () => {
           {/* -- MARKET ANOMALIES -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4 text-red-500" />
                 Anomalies
               </h2>
@@ -565,32 +565,32 @@ const WSBTrendingDashboard: React.FC = () => {
 
             {anomalies.isLoading ? (
               <div className="space-y-2">
-                {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : anomalies.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load anomalies</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load anomalies</p>
             ) : (anomalies.data?.market_anomalies?.length ?? 0) === 0 ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No anomalies detected</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No anomalies detected</p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                 {anomalies.data!.market_anomalies.slice(0, 10).map((a: Anomaly, i: number) => (
-                  <div key={`${a.ticker}-${a.anomaly_type}-${i}`} className="p-2.5 rounded-lg border border-neutral-100 bg-neutral-50">
+                  <div key={`${a.ticker}-${a.anomaly_type}-${i}`} className="p-2.5 rounded-lg border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                     <div className="flex items-center justify-between mb-1">
-                      <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 hover:text-blue-600">
+                      <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400">
                         ${a.ticker}
                       </Link>
                       <span className={cn(
                         'text-[10px] font-semibold px-1.5 py-0.5 rounded',
-                        a.severity >= 0.7 ? 'bg-red-100 text-red-700' :
-                        a.severity >= 0.4 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700',
+                        a.severity >= 0.7 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                        a.severity >= 0.4 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
                       )}>
                         {formatNumber(a.severity, 2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-neutral-500">{anomalyTypeLabel(a.anomaly_type)}</span>
-                      <span className="text-neutral-400">z={formatNumber(a.z_score, 1)}</span>
+                      <span className="text-neutral-500 dark:text-neutral-400">{anomalyTypeLabel(a.anomaly_type)}</span>
+                      <span className="text-neutral-400 dark:text-neutral-500">z={formatNumber(a.z_score, 1)}</span>
                     </div>
                   </div>
                 ))}
@@ -600,31 +600,31 @@ const WSBTrendingDashboard: React.FC = () => {
 
           {/* -- PIPELINE STATUS -- */}
           <div className="card">
-            <h2 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-1.5">
               <Database className="w-4 h-4 text-blue-500" />
               Data Pipeline
             </h2>
 
             {ingestion.isLoading ? (
               <div className="space-y-2">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-6 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(4)].map((_, i) => <div key={i} className="h-6 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : ingestion.error ? (
-              <p className="text-xs text-red-500 py-2 text-center">Failed to load</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-2 text-center">Failed to load</p>
             ) : (
               <div className="space-y-2">
                 {ingestion.data?.sources.map(src => {
                   const statusColor = src.status === 'operational' ? 'bg-green-500' :
                     src.status === 'degraded' ? 'bg-yellow-500' : 'bg-red-500';
-                  const statusBg = src.status === 'operational' ? 'bg-green-50' :
-                    src.status === 'degraded' ? 'bg-yellow-50' : 'bg-red-50';
+                  const statusBg = src.status === 'operational' ? 'bg-green-50 dark:bg-green-900/20' :
+                    src.status === 'degraded' ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-red-50 dark:bg-red-900/20';
                   return (
                     <div key={src.name} className={cn('flex items-center justify-between p-2 rounded-lg', statusBg)}>
                       <div className="flex items-center gap-2">
                         <span className={cn('w-2 h-2 rounded-full', statusColor)} />
-                        <span className="text-xs font-medium text-neutral-700">{src.name}</span>
+                        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">{src.name}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-neutral-500">
+                      <div className="flex items-center gap-2 text-[10px] text-neutral-500 dark:text-neutral-400">
                         <span>{src.article_count} articles</span>
                         {src.freshness_minutes !== null && (
                           <span>{src.freshness_minutes < 60 ? `${Math.round(src.freshness_minutes)}m ago` : `${Math.round(src.freshness_minutes / 60)}h ago`}</span>
@@ -640,22 +640,22 @@ const WSBTrendingDashboard: React.FC = () => {
           {/* -- QUICK STATS from sentiment analysis -- */}
           {sentiment.data?.statistics && (
             <div className="card">
-              <h2 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-1.5">
                 <BarChart3 className="w-4 h-4 text-indigo-500" />
                 Coverage
               </h2>
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 bg-neutral-50 rounded-lg">
-                  <div className="text-lg font-bold text-neutral-900">{sentiment.data.statistics.stocks_analyzed}</div>
-                  <div className="text-[10px] text-neutral-500">Stocks</div>
+                <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                  <div className="text-lg font-bold text-neutral-900 dark:text-white">{sentiment.data.statistics.stocks_analyzed}</div>
+                  <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Stocks</div>
                 </div>
-                <div className="p-2 bg-neutral-50 rounded-lg">
-                  <div className="text-lg font-bold text-neutral-900">{sentiment.data.statistics.total_articles}</div>
-                  <div className="text-[10px] text-neutral-500">Articles</div>
+                <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                  <div className="text-lg font-bold text-neutral-900 dark:text-white">{sentiment.data.statistics.total_articles}</div>
+                  <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Articles</div>
                 </div>
-                <div className="p-2 bg-neutral-50 rounded-lg">
-                  <div className="text-lg font-bold text-neutral-900">{formatNumber(sentiment.data.statistics.avg_sentiment, 2)}</div>
-                  <div className="text-[10px] text-neutral-500">Avg Sent</div>
+                <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                  <div className="text-lg font-bold text-neutral-900 dark:text-white">{formatNumber(sentiment.data.statistics.avg_sentiment, 2)}</div>
+                  <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Avg Sent</div>
                 </div>
               </div>
             </div>
@@ -664,7 +664,7 @@ const WSBTrendingDashboard: React.FC = () => {
       </div>
 
       {/* ====== FOOTER ====== */}
-      <div className="text-center text-xs text-neutral-400 pt-2 border-t border-neutral-200">
+      <div className="text-center text-xs text-neutral-400 dark:text-neutral-500 pt-2 border-t border-neutral-200 dark:border-neutral-700">
         Data sourced from r/wallstreetbets, SEC EDGAR, Google News, and computed features
         {trending.data?.generated_at && (
           <span> · Last generated {formatRelativeTime(trending.data.generated_at)}</span>
@@ -687,7 +687,7 @@ const ThSortable: React.FC<{
   className?: string;
 }> = ({ col, label, sortColumn, sortDirection, onSort, className }) => (
   <th
-    className={cn("px-3 py-2 cursor-pointer select-none hover:text-neutral-700 transition-colors", className)}
+    className={cn("px-3 py-2 cursor-pointer select-none hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors", className)}
     onClick={() => onSort(col)}
   >
     <span className="inline-flex items-center">

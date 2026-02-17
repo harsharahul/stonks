@@ -39,16 +39,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       }
 
       return (
-        <div className="error-boundary p-4 border border-red-300 rounded-lg bg-red-50">
-          <h2 className="text-lg font-semibold text-red-800 mb-2">
+        <div className="error-boundary p-4 border border-red-300 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-900/20">
+          <h2 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">
             Something went wrong
           </h2>
-          <p className="text-red-700 mb-3">
+          <p className="text-red-700 dark:text-red-400 mb-3">
             An unexpected error occurred. Please refresh the page to continue.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 dark:hover:bg-red-500 transition-colors"
           >
             Refresh Page
           </button>

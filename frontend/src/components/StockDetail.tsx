@@ -131,12 +131,12 @@ const StockDetail: React.FC = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
             <BarChart3 className="w-8 h-8 text-blue-600" />
           </div>
-          <h2 className="text-2xl font-semibold text-neutral-900 mb-2">No Data Available Yet</h2>
-          <p className="text-neutral-600 mb-6 max-w-md mx-auto">
-            Features haven't been calculated for <span className="font-semibold text-neutral-900">{ticker}</span> yet.
+          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-2">No Data Available Yet</h2>
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md mx-auto">
+            Features haven't been calculated for <span className="font-semibold text-neutral-900 dark:text-white">{ticker}</span> yet.
             This data is calculated daily, or you can generate it now.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-8">
@@ -159,21 +159,21 @@ const StockDetail: React.FC = () => {
             </button>
             <a
               href="/stocks"
-              className="text-neutral-600 hover:text-neutral-900 underline"
+              className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white underline"
             >
               ← Back to Stocks
             </a>
           </div>
           {calculateFeatures.isError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-sm text-red-800">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-sm text-red-800 dark:text-red-200">
                 <span className="font-semibold">Unable to calculate features.</span> This might require admin access or the calculation service may be unavailable.
               </p>
             </div>
           )}
-          <div className="mt-8 pt-8 border-t border-neutral-200">
-            <p className="text-sm text-neutral-500 mb-2">Automatic calculation schedule:</p>
-            <p className="text-sm font-medium text-neutral-700">Daily at 05:00 UTC</p>
+          <div className="mt-8 pt-8 border-t border-neutral-200 dark:border-neutral-700">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">Automatic calculation schedule:</p>
+            <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Daily at 05:00 UTC</p>
           </div>
         </div>
       </div>
@@ -185,11 +185,11 @@ const StockDetail: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-neutral-900">{ticker}</h1>
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">{ticker}</h1>
           <button
             onClick={toggleTracked}
             disabled={starLoading || trackedStocks.isLoading}
-            className="p-1 rounded-lg hover:bg-neutral-100 transition-colors disabled:opacity-50"
+            className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
             title={isTracked ? 'Remove from watchlist' : 'Add to watchlist'}
           >
             <Star
@@ -199,13 +199,13 @@ const StockDetail: React.FC = () => {
               )}
             />
           </button>
-          <p className="text-neutral-600 hidden sm:block">Stock Analytics Dashboard</p>
+          <p className="text-neutral-600 dark:text-neutral-400 hidden sm:block">Stock Analytics Dashboard</p>
         </div>
         <div className="flex items-center space-x-4">
           {features && (
             <div className="text-right">
-              <p className="text-sm text-neutral-500">Last Updated</p>
-              <p className="text-sm font-medium">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">Last Updated</p>
+              <p className="text-sm font-medium dark:text-neutral-300">
                 {formatRelativeTime(features.created_at)}
               </p>
             </div>
@@ -225,16 +225,16 @@ const StockDetail: React.FC = () => {
         <div className="card mb-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div className="flex items-center justify-between sm:justify-start sm:space-x-2">
-              <span className="text-neutral-600">Articles (7d)</span>
-              <span className="font-semibold text-neutral-900">{features.context?.article_count_7d || 0}</span>
+              <span className="text-neutral-600 dark:text-neutral-400">Articles (7d)</span>
+              <span className="font-semibold text-neutral-900 dark:text-white">{features.context?.article_count_7d || 0}</span>
             </div>
             <div className="flex items-center justify-between sm:justify-start sm:space-x-2">
-              <span className="text-neutral-600">Feature Version</span>
-              <span className="font-semibold text-neutral-900">{features.feature_version}</span>
+              <span className="text-neutral-600 dark:text-neutral-400">Feature Version</span>
+              <span className="font-semibold text-neutral-900 dark:text-white">{features.feature_version}</span>
             </div>
             <div className="flex items-center justify-between sm:justify-start sm:space-x-2">
-              <span className="text-neutral-600">WSB Sentiment</span>
-              <span className="font-semibold text-neutral-900">
+              <span className="text-neutral-600 dark:text-neutral-400">WSB Sentiment</span>
+              <span className="font-semibold text-neutral-900 dark:text-white">
                 {getWSBData('wsb_sentiment_7d') ? getWSBData('wsb_sentiment_7d').toFixed(3) : 'N/A'}
               </span>
             </div>
@@ -264,18 +264,18 @@ const StockDetail: React.FC = () => {
       {/* WSB Sentiment Section */}
       <div className="card mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-neutral-900">🦍 WSB Sentiment Analysis</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">🦍 WSB Sentiment Analysis</h2>
           <div className="flex items-center space-x-2">
-            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+            <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full">
               LIVE DATA
             </span>
             {wsbLoading && (
-              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
                 🔄 Loading Trending Data
               </span>
             )}
             {wsbTrending && !features?.retail_sentiment?.wsb_mention_count_7d && (
-              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+              <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">
                 📊 From Trending Data
               </span>
             )}
@@ -283,58 +283,58 @@ const StockDetail: React.FC = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border border-red-200">
+          <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-lg border border-red-200 dark:border-red-700">
             <div className="flex items-center space-x-2 mb-2">
-              <span className="text-red-600">📊</span>
-              <span className="text-sm font-medium text-red-700">WSB Mentions</span>
+              <span className="text-red-600 dark:text-red-400">📊</span>
+              <span className="text-sm font-medium text-red-700 dark:text-red-300">WSB Mentions</span>
             </div>
-            <div className="text-2xl font-bold text-red-900">
+            <div className="text-2xl font-bold text-red-900 dark:text-red-200">
               {getWSBData('wsb_mention_count_7d')}
             </div>
-            <div className="text-xs text-red-600 mt-1">Last 7 days</div>
+            <div className="text-xs text-red-600 dark:text-red-400 mt-1">Last 7 days</div>
           </div>
 
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg border border-blue-200 dark:border-blue-700">
             <div className="flex items-center space-x-2 mb-2">
-              <span className="text-blue-600">💬</span>
-              <span className="text-sm font-medium text-blue-700">Sentiment (7d)</span>
+              <span className="text-blue-600 dark:text-blue-400">💬</span>
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Sentiment (7d)</span>
             </div>
-            <div className="text-2xl font-bold text-blue-900">
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">
               {getWSBData('wsb_sentiment_7d') ? getWSBData('wsb_sentiment_7d').toFixed(3) : 'N/A'}
             </div>
-            <div className="text-xs text-blue-600 mt-1">
-              {getWSBData('wsb_sentiment_7d') && getWSBData('wsb_sentiment_7d') > 0.5 ? 'Bullish' : 
+            <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+              {getWSBData('wsb_sentiment_7d') && getWSBData('wsb_sentiment_7d') > 0.5 ? 'Bullish' :
                getWSBData('wsb_sentiment_7d') && getWSBData('wsb_sentiment_7d') < 0.5 ? 'Bearish' : 'Neutral'}
             </div>
           </div>
 
-          <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+          <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg border border-green-200 dark:border-green-700">
             <div className="flex items-center space-x-2 mb-2">
-              <span className="text-green-600">🚀</span>
-              <span className="text-sm font-medium text-green-700">Engagement</span>
+              <span className="text-green-600 dark:text-green-400">🚀</span>
+              <span className="text-sm font-medium text-green-700 dark:text-green-300">Engagement</span>
             </div>
-            <div className="text-2xl font-bold text-green-900">
+            <div className="text-2xl font-bold text-green-900 dark:text-green-200">
               {getWSBData('wsb_engagement_score') ? getWSBData('wsb_engagement_score').toFixed(3) : 'N/A'}
             </div>
-            <div className="text-xs text-green-600 mt-1">Reddit activity</div>
+            <div className="text-xs text-green-600 dark:text-green-400 mt-1">Reddit activity</div>
           </div>
 
-          <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+          <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg border border-purple-200 dark:border-purple-700">
             <div className="flex items-center space-x-2 mb-2">
-              <span className="text-purple-600">🎭</span>
-              <span className="text-sm font-medium text-purple-700">Meme Potential</span>
+              <span className="text-purple-600 dark:text-purple-400">🎭</span>
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Meme Potential</span>
             </div>
-            <div className="text-2xl font-bold text-purple-900">
+            <div className="text-2xl font-bold text-purple-900 dark:text-purple-200">
               {getWSBData('meme_stock_indicator') ? getWSBData('meme_stock_indicator').toFixed(3) : 'N/A'}
             </div>
-            <div className="text-xs text-purple-600 mt-1">WSB meme score</div>
+            <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">WSB meme score</div>
           </div>
         </div>
 
         {/* Sentiment Visualization */}
         {getWSBData('wsb_sentiment_7d') && (
           <div className="mt-6">
-            <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
+            <div className="flex items-center justify-between text-sm text-neutral-600 dark:text-neutral-400 mb-2">
               <span>Sentiment Distribution</span>
               <span className="font-medium">
                 {getWSBData('wsb_sentiment_7d') > 0.6 ? 'Very Bullish' :
@@ -342,13 +342,13 @@ const StockDetail: React.FC = () => {
                  getWSBData('wsb_sentiment_7d') > 0.2 ? 'Slightly Bearish' : 'Very Bearish'}
               </span>
             </div>
-            <div className="w-full bg-neutral-200 rounded-full h-3">
+            <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-3">
               <div
                 className="bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 h-3 rounded-full transition-all duration-500"
                 style={{ width: `${getWSBData('wsb_sentiment_7d') * 100}%` }}
               ></div>
             </div>
-            <div className="flex justify-between text-xs text-neutral-500 mt-1">
+            <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               <span>Bearish</span>
               <span>Neutral</span>
               <span>Bullish</span>
@@ -441,44 +441,44 @@ const StockDetail: React.FC = () => {
 
       {/* AI Insights */}
       <div className="card mb-8">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">AI Insights</h2>
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">AI Insights</h2>
         {enhancedLoading ? (
           <div className="space-y-2 animate-pulse">
-            <div className="h-4 bg-neutral-200 rounded w-1/3" />
-            <div className="h-4 bg-neutral-200 rounded w-2/3" />
-            <div className="h-24 bg-neutral-200 rounded" />
+            <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-1/3" />
+            <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-2/3" />
+            <div className="h-24 bg-neutral-200 dark:bg-neutral-700 rounded" />
           </div>
         ) : enhanced ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-3 bg-neutral-50 rounded border border-neutral-200">
-                <div className="text-xs text-neutral-500">Risk Level</div>
-                <div className="text-lg font-semibold capitalize">{enhanced?.llm_enhancement?.summary?.risk_level || 'N/A'}</div>
+              <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Risk Level</div>
+                <div className="text-lg font-semibold capitalize dark:text-neutral-100">{enhanced?.llm_enhancement?.summary?.risk_level || 'N/A'}</div>
               </div>
-              <div className="p-3 bg-neutral-50 rounded border border-neutral-200">
-                <div className="text-xs text-neutral-500">Confidence</div>
-                <div className="text-lg font-semibold capitalize">{enhanced?.llm_enhancement?.summary?.recommendation_confidence || 'N/A'}</div>
+              <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Confidence</div>
+                <div className="text-lg font-semibold capitalize dark:text-neutral-100">{enhanced?.llm_enhancement?.summary?.recommendation_confidence || 'N/A'}</div>
               </div>
-              <div className="p-3 bg-neutral-50 rounded border border-neutral-200">
-                <div className="text-xs text-neutral-500">Article Coverage</div>
-                <div className="text-lg font-semibold">{enhanced?.llm_enhancement?.analysis?.article_coverage || 'N/A'}</div>
+              <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700">
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Article Coverage</div>
+                <div className="text-lg font-semibold dark:text-neutral-100">{enhanced?.llm_enhancement?.analysis?.article_coverage || 'N/A'}</div>
               </div>
             </div>
             {enhanced?.llm_enhancement?.llm_enhancements?.article_synthesis && (
               <div>
-                <h3 className="text-lg font-medium text-neutral-900 mb-2">Article Synthesis</h3>
-                <p className="text-sm text-neutral-700 whitespace-pre-line">{enhanced.llm_enhancement.llm_enhancements.article_synthesis}</p>
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">Article Synthesis</h3>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-line">{enhanced.llm_enhancement.llm_enhancements.article_synthesis}</p>
               </div>
             )}
             {enhanced?.llm_enhancement?.llm_enhancements?.recommendations && (
               <div>
-                <h3 className="text-lg font-medium text-neutral-900 mb-2">Recommendations</h3>
-                <p className="text-sm text-neutral-700 whitespace-pre-line">{enhanced.llm_enhancement.llm_enhancements.recommendations}</p>
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">Recommendations</h3>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-line">{enhanced.llm_enhancement.llm_enhancements.recommendations}</p>
               </div>
             )}
           </div>
         ) : (
-          <div className="text-sm text-neutral-500">No AI insights available.</div>
+          <div className="text-sm text-neutral-500 dark:text-neutral-400">No AI insights available.</div>
         )}
       </div>
 
@@ -488,47 +488,47 @@ const StockDetail: React.FC = () => {
       {/* Feature Details */}
       {features && (
         <div className="card">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">Feature Details</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">Feature Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-lg font-medium text-neutral-800 mb-3">Sentiment Analysis</h3>
+              <h3 className="text-lg font-medium text-neutral-800 dark:text-neutral-200 mb-3">Sentiment Analysis</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">3-Day Average:</span>
-                  <span className="font-medium">{features.sentiment?.mean_3d?.toFixed(3) || '—'}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">3-Day Average:</span>
+                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_3d?.toFixed(3) || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">7-Day Average:</span>
-                  <span className="font-medium">{features.sentiment?.mean_7d?.toFixed(3) || '—'}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">7-Day Average:</span>
+                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_7d?.toFixed(3) || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">10-Day Average:</span>
-                  <span className="font-medium">{features.sentiment?.mean_10d?.toFixed(3) || '—'}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">10-Day Average:</span>
+                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_10d?.toFixed(3) || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">Volume Weighted:</span>
-                  <span className="font-medium">{features.sentiment?.volume_weighted?.toFixed(3) || '—'}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Volume Weighted:</span>
+                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.volume_weighted?.toFixed(3) || '—'}</span>
                 </div>
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-neutral-800 mb-3">Market Metrics</h3>
+              <h3 className="text-lg font-medium text-neutral-800 dark:text-neutral-200 mb-3">Market Metrics</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">Feature Version:</span>
-                  <span className="font-medium">{features.feature_version}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Feature Version:</span>
+                  <span className="font-medium dark:text-neutral-200">{features.feature_version}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">Model Version:</span>
-                  <span className="font-medium">{features.metadata?.model_version || '—'}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Model Version:</span>
+                  <span className="font-medium dark:text-neutral-200">{features.metadata?.model_version || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">Articles (7d):</span>
-                  <span className="font-medium">{features.context?.article_count_7d || 0}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Articles (7d):</span>
+                  <span className="font-medium dark:text-neutral-200">{features.context?.article_count_7d || 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">Last Calculated:</span>
-                  <span className="font-medium">{formatDate(features.metadata?.created_at)}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Last Calculated:</span>
+                  <span className="font-medium dark:text-neutral-200">{formatDate(features.metadata?.created_at)}</span>
                 </div>
               </div>
             </div>
@@ -555,23 +555,23 @@ const ArticlesSection: React.FC<{ ticker: string }> = ({ ticker }) => {
 
   return (
     <div className="card mb-8">
-      <h2 className="text-xl font-semibold text-neutral-900 mb-4">Top Articles (7d)</h2>
+      <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">Top Articles (7d)</h2>
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-16 bg-neutral-200 rounded animate-pulse" />
+            <div key={i} className="h-16 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
           ))}
         </div>
       ) : data && data.items && data.items.length > 0 ? (
-        <ul className="divide-y divide-neutral-200">
+        <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
           {data.items.map((a) => (
             <li key={a.id} className="py-3">
               <div className="flex items-start justify-between">
                 <div className="pr-4">
-                  <a href={a.url} target="_blank" rel="noreferrer" className="font-medium text-blue-700 hover:underline">
+                  <a href={a.url} target="_blank" rel="noreferrer" className="font-medium text-blue-700 dark:text-blue-400 hover:underline">
                     {a.title || a.url}
                   </a>
-                  <div className="text-xs text-neutral-500 mt-1">
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                     {a.published_at ? formatDate(a.published_at) : '—'}
                     {a.author ? ` • ${a.author}` : ''}
                   </div>
@@ -580,10 +580,10 @@ const ArticlesSection: React.FC<{ ticker: string }> = ({ ticker }) => {
                   <span className={cn(
                     'px-2 py-0.5 rounded text-xs font-medium',
                     a.sentiment === null || a.sentiment === undefined
-                      ? 'bg-neutral-50 text-neutral-700'
+                      ? 'bg-neutral-50 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                       : a.sentiment > 0
-                      ? 'bg-success-50 text-success-700'
-                      : 'bg-danger-50 text-danger-700'
+                      ? 'bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400'
+                      : 'bg-danger-50 dark:bg-danger-900/30 text-danger-700 dark:text-danger-400'
                   )}>
                     {a.sentiment === null || a.sentiment === undefined ? '—' : a.sentiment.toFixed(2)}
                   </span>
@@ -593,7 +593,7 @@ const ArticlesSection: React.FC<{ ticker: string }> = ({ ticker }) => {
           ))}
         </ul>
       ) : (
-        <div className="text-sm text-neutral-500">No recent articles found</div>
+        <div className="text-sm text-neutral-500 dark:text-neutral-400">No recent articles found</div>
       )}
     </div>
   );

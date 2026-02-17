@@ -28,10 +28,10 @@ import type { Alert, Anomaly, Recommendation } from '../types/api';
 
 const SkeletonCard: React.FC<{ lines?: number }> = ({ lines = 3 }) => (
   <div className="card animate-pulse">
-    <div className="h-4 bg-neutral-200 rounded w-1/3 mb-4" />
+    <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-1/3 mb-4" />
     <div className="space-y-2">
       {[...Array(lines)].map((_, i) => (
-        <div key={i} className="h-3 bg-neutral-200 rounded" style={{ width: `${80 - i * 15}%` }} />
+        <div key={i} className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded" style={{ width: `${80 - i * 15}%` }} />
       ))}
     </div>
   </div>
@@ -48,29 +48,29 @@ const PulseCard: React.FC<{
   if (isLoading) {
     return (
       <div className="card animate-pulse">
-        <div className="h-4 bg-neutral-200 rounded w-2/3 mb-2" />
-        <div className="h-6 bg-neutral-200 rounded w-1/2" />
+        <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-2/3 mb-2" />
+        <div className="h-6 bg-neutral-200 dark:bg-neutral-700 rounded w-1/2" />
       </div>
     );
   }
   return (
     <div className="card hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">{label}</span>
         <span className={cn('p-1.5 rounded-lg', color)}>{icon}</span>
       </div>
-      <div className="text-2xl font-bold text-neutral-900">{value}</div>
-      {subtitle && <div className="text-xs text-neutral-500 mt-0.5">{subtitle}</div>}
+      <div className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</div>
+      {subtitle && <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{subtitle}</div>}
     </div>
   );
 };
 
 const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
   const styles: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700 border-red-200',
-    high: 'bg-orange-100 text-orange-700 border-orange-200',
-    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    low: 'bg-blue-100 text-blue-700 border-blue-200',
+    critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+    high: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
+    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+    low: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
   };
   return (
     <span className={cn('px-1.5 py-0.5 text-[10px] font-semibold rounded border uppercase', styles[severity] || styles.low)}>
@@ -81,9 +81,9 @@ const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
 
 const ActionBadge: React.FC<{ action: string }> = ({ action }) => {
   const styles: Record<string, string> = {
-    buy: 'bg-green-100 text-green-700 border-green-200',
-    sell: 'bg-red-100 text-red-700 border-red-200',
-    hold: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+    buy: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
+    sell: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+    hold: 'bg-neutral-100 text-neutral-600 border-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:border-neutral-600',
   };
   return (
     <span className={cn('px-2 py-0.5 text-xs font-bold rounded border uppercase', styles[action] || styles.hold)}>
@@ -99,7 +99,7 @@ const StatusDot: React.FC<{ status: string }> = ({ status }) => {
   return (
     <div className="flex items-center gap-2">
       <span className={cn('w-2 h-2 rounded-full', dotColor)} />
-      <span className="text-xs text-neutral-600">{status}</span>
+      <span className="text-xs text-neutral-600 dark:text-neutral-400">{status}</span>
     </div>
   );
 };
@@ -186,24 +186,24 @@ const MarketIntelligence: React.FC = () => {
       {/* ====== HEADER ====== */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
             <Brain className="w-6 h-6 text-purple-600" />
             AI Intelligence
           </h1>
-          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
             <span className="w-2 h-2 rounded-full bg-green-500 pulse-green" />
             LIVE
           </span>
         </div>
         <div className="flex items-center gap-3">
           {outlook.dataUpdatedAt && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
               Updated {new Date(outlook.dataUpdatedAt).toLocaleTimeString()}
             </span>
           )}
           <button
             onClick={handleRefreshAll}
-            className="p-2 text-neutral-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-2 text-neutral-500 dark:text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
             title="Refresh all panels"
           >
             <RefreshCw className={cn('w-4 h-4', (outlook.isFetching || overview.isFetching) && 'animate-spin')} />
@@ -215,11 +215,11 @@ const MarketIntelligence: React.FC = () => {
       {outlook.isLoading ? (
         <div className="card animate-pulse h-36" />
       ) : outlook.error ? (
-        <div className="card border-red-200 bg-red-50">
-          <div className="flex items-center gap-2 text-red-600 text-sm">
+        <div className="card border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
             <AlertTriangle className="w-4 h-4" />
             <span>Failed to load tomorrow's outlook</span>
-            <button onClick={() => outlook.refetch()} className="ml-auto text-xs text-red-600 hover:underline">Retry</button>
+            <button onClick={() => outlook.refetch()} className="ml-auto text-xs text-red-600 dark:text-red-400 hover:underline">Retry</button>
           </div>
         </div>
       ) : outlook.data ? (
@@ -241,15 +241,15 @@ const MarketIntelligence: React.FC = () => {
                 {/* Gauge */}
                 <div className="hidden md:flex flex-col items-center">
                   <div className="relative w-20 h-10 overflow-hidden">
-                    <div className="absolute inset-0 border-t-4 border-l-4 border-r-4 border-white/30 rounded-t-full" />
+                    <div className="absolute inset-0 border-t-4 border-l-4 border-r-4 border-white/30 dark:border-white/40 rounded-t-full" />
                     <div
-                      className="absolute bottom-0 left-1/2 w-1 h-8 bg-white origin-bottom rounded-t"
+                      className="absolute bottom-0 left-1/2 w-1 h-8 bg-white dark:bg-white origin-bottom rounded-t"
                       style={{
                         transform: `rotate(${(outlook.data.market_sentiment.score - 0.5) * 180}deg)`,
                       }}
                     />
                   </div>
-                  <span className="text-[10px] text-white/60 mt-0.5">0 — 1</span>
+                  <span className="text-[10px] text-white/60 dark:text-white/70 mt-0.5">0 — 1</span>
                 </div>
               </div>
             </div>
@@ -284,7 +284,7 @@ const MarketIntelligence: React.FC = () => {
           value={systemHealth?.stocks_tracked ?? '—'}
           subtitle={systemHealth?.status ?? 'Loading...'}
           icon={<Target className="w-4 h-4" />}
-          color="bg-blue-50 text-blue-600"
+          color="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
           isLoading={overview.isLoading}
         />
         <PulseCard
@@ -292,7 +292,7 @@ const MarketIntelligence: React.FC = () => {
           value={systemHealth?.active_signals ?? '—'}
           subtitle="All tickers"
           icon={<Activity className="w-4 h-4" />}
-          color="bg-purple-50 text-purple-600"
+          color="bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
           isLoading={overview.isLoading}
         />
         <PulseCard
@@ -300,7 +300,7 @@ const MarketIntelligence: React.FC = () => {
           value={alertCount}
           subtitle={`${alerts.data?.alerts?.filter((a: Alert) => a.severity === 'high' || a.severity === 'critical').length ?? 0} high priority`}
           icon={<Zap className="w-4 h-4" />}
-          color="bg-orange-50 text-orange-600"
+          color="bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
           isLoading={alerts.isLoading}
         />
         <PulseCard
@@ -309,9 +309,9 @@ const MarketIntelligence: React.FC = () => {
           subtitle={overallSentiment ? `${overallSentiment.label} (${overallSentiment.confidence})` : 'Loading...'}
           icon={<TrendingUp className="w-4 h-4" />}
           color={cn(
-            overallSentiment && overallSentiment.score > 0.6 ? 'bg-green-50 text-green-600' :
-            overallSentiment && overallSentiment.score < 0.4 ? 'bg-red-50 text-red-600' :
-            'bg-blue-50 text-blue-600',
+            overallSentiment && overallSentiment.score > 0.6 ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
+            overallSentiment && overallSentiment.score < 0.4 ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+            'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
           )}
           isLoading={sentiment.isLoading}
         />
@@ -326,11 +326,11 @@ const MarketIntelligence: React.FC = () => {
           {/* -- STOCK INTELLIGENCE TABLE -- */}
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between px-1 mb-4">
-              <h2 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <Target className="w-5 h-5 text-blue-600" />
                 Stock Intelligence
               </h2>
-              <span className="text-xs text-neutral-500">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
                 {enrichedStocks.length} stocks
               </span>
             </div>
@@ -338,26 +338,26 @@ const MarketIntelligence: React.FC = () => {
             {overview.isLoading ? (
               <div className="space-y-2">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-10 bg-neutral-100 rounded animate-pulse" />
+                  <div key={i} className="h-10 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />
                 ))}
               </div>
             ) : overview.error ? (
               <div className="text-center py-8">
-                <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-                <p className="text-neutral-600 text-sm">Failed to load stock data</p>
-                <button onClick={() => overview.refetch()} className="mt-2 text-sm text-blue-600 hover:underline">Retry</button>
+                <AlertTriangle className="w-8 h-8 text-red-400 dark:text-red-500 mx-auto mb-2" />
+                <p className="text-neutral-600 dark:text-neutral-400 text-sm">Failed to load stock data</p>
+                <button onClick={() => overview.refetch()} className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">Retry</button>
               </div>
             ) : enrichedStocks.length === 0 ? (
               <div className="text-center py-12">
-                <Brain className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
-                <p className="text-neutral-500">No stock data available</p>
-                <p className="text-xs text-neutral-400 mt-1">Data will appear when feature calculations run</p>
+                <Brain className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+                <p className="text-neutral-500 dark:text-neutral-400">No stock data available</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Data will appear when feature calculations run</p>
               </div>
             ) : (
               <div className="overflow-x-auto -mx-6">
                 <table className="w-full text-sm" style={{ minWidth: '400px' }}>
                   <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500 uppercase tracking-wider">
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700 text-left text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       <th className="px-6 py-2">Ticker</th>
                       <th className="px-3 py-2">Sentiment</th>
                       <th className="px-3 py-2">5d Return</th>
@@ -366,17 +366,17 @@ const MarketIntelligence: React.FC = () => {
                       <th className="px-3 py-2 hidden sm:table-cell">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
                     {enrichedStocks.map(s => (
-                      <tr key={s.ticker} className="hover:bg-blue-50 transition-colors">
+                      <tr key={s.ticker} className="hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
                         <td className="px-6 py-2.5">
-                          <Link to={`/stocks/${s.ticker}`} className="font-bold text-neutral-900 hover:text-blue-600">
+                          <Link to={`/stocks/${s.ticker}`} className="font-bold text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
                             ${s.ticker}
                           </Link>
                         </td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                            <div className="w-16 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                               <div
                                 className={cn('h-full rounded-full bg-gradient-to-r', sentimentBarColor(s.sentiment))}
                                 style={{ width: `${Math.max(s.sentiment * 100, 5)}%` }}
@@ -396,15 +396,15 @@ const MarketIntelligence: React.FC = () => {
                         <td className="px-3 py-2.5">
                           <span className={cn(
                             'text-xs font-medium',
-                            s.vol_z !== null && Math.abs(s.vol_z) > 2 ? 'text-red-600' :
-                            s.vol_z !== null && Math.abs(s.vol_z) > 1 ? 'text-yellow-600' :
-                            'text-neutral-600',
+                            s.vol_z !== null && Math.abs(s.vol_z) > 2 ? 'text-red-600 dark:text-red-400' :
+                            s.vol_z !== null && Math.abs(s.vol_z) > 1 ? 'text-yellow-600 dark:text-yellow-400' :
+                            'text-neutral-600 dark:text-neutral-400',
                           )}>
                             {s.vol_z !== null ? formatNumber(s.vol_z, 1) : '—'}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-neutral-600 text-xs">{s.article_count_7d}</td>
-                        <td className="px-3 py-2.5 text-neutral-400 text-xs hidden sm:table-cell">{s.date}</td>
+                        <td className="px-3 py-2.5 text-neutral-600 dark:text-neutral-400 text-xs">{s.article_count_7d}</td>
+                        <td className="px-3 py-2.5 text-neutral-400 dark:text-neutral-500 text-xs hidden sm:table-cell">{s.date}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -415,7 +415,7 @@ const MarketIntelligence: React.FC = () => {
 
           {/* -- SENTIMENT HEATMAP -- */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
               <Activity className="w-5 h-5 text-blue-600" />
               Sentiment Heatmap
             </h2>
@@ -423,19 +423,19 @@ const MarketIntelligence: React.FC = () => {
             {sentiment.isLoading ? (
               <div className="flex flex-wrap gap-2">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="h-8 w-20 bg-neutral-100 rounded-lg animate-pulse" />
+                  <div key={i} className="h-8 w-20 bg-neutral-100 dark:bg-neutral-700 rounded-lg animate-pulse" />
                 ))}
               </div>
             ) : sentiment.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load sentiment data</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load sentiment data</p>
             ) : !sentiment.data?.stock_breakdown?.length ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No sentiment data available</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No sentiment data available</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {sentiment.data.stock_breakdown.map(s => {
-                  const bg = s.sentiment >= 0.6 ? 'bg-green-100 border-green-200 text-green-800'
-                    : s.sentiment >= 0.4 ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                    : 'bg-red-100 border-red-200 text-red-800';
+                  const bg = s.sentiment >= 0.6 ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-400'
+                    : s.sentiment >= 0.4 ? 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-400'
+                    : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400';
                   return (
                     <button
                       key={s.ticker}
@@ -457,12 +457,12 @@ const MarketIntelligence: React.FC = () => {
           {/* -- DAILY RECOMMENDATIONS -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-neutral-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <Shield className="w-5 h-5 text-green-600" />
                 Daily Recommendations
               </h2>
               {recommendations.data && (
-                <span className="text-xs text-neutral-400">
+                <span className="text-xs text-neutral-400 dark:text-neutral-500">
                   Model {recommendations.data.model_version}
                 </span>
               )}
@@ -472,31 +472,31 @@ const MarketIntelligence: React.FC = () => {
               <SkeletonCard lines={4} />
             ) : recommendations.error ? (
               <div className="text-center py-8">
-                <AlertTriangle className="w-6 h-6 text-red-400 mx-auto mb-2" />
-                <p className="text-neutral-600 text-sm">Failed to load recommendations</p>
-                <button onClick={() => recommendations.refetch()} className="mt-2 text-sm text-blue-600 hover:underline">Retry</button>
+                <AlertTriangle className="w-6 h-6 text-red-400 dark:text-red-500 mx-auto mb-2" />
+                <p className="text-neutral-600 dark:text-neutral-400 text-sm">Failed to load recommendations</p>
+                <button onClick={() => recommendations.refetch()} className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">Retry</button>
               </div>
             ) : !recommendations.data?.recommendations?.length ? (
               <div className="text-center py-8">
-                <Shield className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
-                <p className="text-neutral-500 text-sm">No recommendations available</p>
+                <Shield className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+                <p className="text-neutral-500 dark:text-neutral-400 text-sm">No recommendations available</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {recommendations.data.recommendations.map((rec: Recommendation) => (
                   <div
                     key={rec.symbol}
-                    className="p-4 rounded-lg border border-neutral-100 bg-neutral-50 hover:border-neutral-200 transition-colors"
+                    className="p-4 rounded-lg border border-neutral-100 bg-neutral-50 dark:bg-neutral-800 dark:border-neutral-700 hover:border-neutral-200 dark:hover:border-neutral-600 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <Link to={`/stocks/${rec.symbol}`} className="font-bold text-neutral-900 hover:text-blue-600 text-sm">
+                        <Link to={`/stocks/${rec.symbol}`} className="font-bold text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-sm">
                           ${rec.symbol}
                         </Link>
                         <ActionBadge action={rec.action} />
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-20 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                        <div className="w-20 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                           <div
                             className={cn(
                               'h-full rounded-full',
@@ -505,13 +505,13 @@ const MarketIntelligence: React.FC = () => {
                             style={{ width: `${rec.score * 100}%` }}
                           />
                         </div>
-                        <span className="text-xs font-semibold text-neutral-700">{formatNumber(rec.score, 2)}</span>
+                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{formatNumber(rec.score, 2)}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-neutral-500 mb-2">{rec.rationale.notes}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">{rec.rationale.notes}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {rec.rationale.top_signals.map((sig, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-white border border-neutral-200 rounded text-[10px] text-neutral-600">
+                        <span key={i} className="px-2 py-0.5 bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded text-[10px] text-neutral-600 dark:text-neutral-400">
                           {sig.signal.replace(/_/g, ' ')} ({formatPercent(sig.contribution, 0)})
                         </span>
                       ))}
@@ -529,36 +529,36 @@ const MarketIntelligence: React.FC = () => {
           {/* -- LIVE ALERTS FEED -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 <Zap className="w-4 h-4 text-orange-500" />
                 Live Alerts
               </h2>
-              <span className="text-[10px] text-neutral-400">{alertCount} in 24h</span>
+              <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{alertCount} in 24h</span>
             </div>
 
             {alerts.isLoading ? (
               <div className="space-y-2">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : alerts.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load alerts</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load alerts</p>
             ) : (alerts.data?.alerts?.length ?? 0) === 0 ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No recent alerts</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No recent alerts</p>
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                 {alerts.data!.alerts.map((a: Alert) => (
-                  <div key={a.id} className="p-2.5 bg-neutral-50 rounded-lg border border-neutral-100 hover:border-neutral-200 transition-colors">
+                  <div key={a.id} className="p-2.5 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-100 dark:border-neutral-700 hover:border-neutral-200 dark:hover:border-neutral-600 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm">{alertTypeIcon(a.alert_type)}</span>
-                        <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 hover:text-blue-600">
+                        <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
                           ${a.ticker}
                         </Link>
                         <SeverityBadge severity={a.severity} />
                       </div>
-                      <span className="text-[10px] text-neutral-400">{formatRelativeTime(a.triggered_at)}</span>
+                      <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{formatRelativeTime(a.triggered_at)}</span>
                     </div>
-                    <p className="text-[11px] text-neutral-600 leading-tight line-clamp-2">{a.title}</p>
+                    <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-tight line-clamp-2">{a.title}</p>
                   </div>
                 ))}
               </div>
@@ -568,7 +568,7 @@ const MarketIntelligence: React.FC = () => {
           {/* -- MARKET ANOMALIES -- */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4 text-red-500" />
                 Anomalies
               </h2>
@@ -576,32 +576,32 @@ const MarketIntelligence: React.FC = () => {
 
             {anomalies.isLoading ? (
               <div className="space-y-2">
-                {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : anomalies.error ? (
-              <p className="text-xs text-red-500 py-4 text-center">Failed to load anomalies</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load anomalies</p>
             ) : (anomalies.data?.market_anomalies?.length ?? 0) === 0 ? (
-              <p className="text-xs text-neutral-400 py-6 text-center">No anomalies detected</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No anomalies detected</p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                 {anomalies.data!.market_anomalies.slice(0, 10).map((a: Anomaly, i: number) => (
-                  <div key={`${a.ticker}-${a.anomaly_type}-${i}`} className="p-2.5 rounded-lg border border-neutral-100 bg-neutral-50">
+                  <div key={`${a.ticker}-${a.anomaly_type}-${i}`} className="p-2.5 rounded-lg border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                     <div className="flex items-center justify-between mb-1">
-                      <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 hover:text-blue-600">
+                      <Link to={`/stocks/${a.ticker}`} className="font-bold text-xs text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
                         ${a.ticker}
                       </Link>
                       <span className={cn(
                         'text-[10px] font-semibold px-1.5 py-0.5 rounded',
-                        a.severity >= 0.7 ? 'bg-red-100 text-red-700' :
-                        a.severity >= 0.4 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700',
+                        a.severity >= 0.7 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                        a.severity >= 0.4 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
                       )}>
                         {formatNumber(a.severity, 2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-neutral-500">{anomalyTypeLabel(a.anomaly_type)}</span>
-                      <span className="text-neutral-400">z={formatNumber(a.z_score, 1)}</span>
+                      <span className="text-neutral-500 dark:text-neutral-400">{anomalyTypeLabel(a.anomaly_type)}</span>
+                      <span className="text-neutral-400 dark:text-neutral-500">z={formatNumber(a.z_score, 1)}</span>
                     </div>
                   </div>
                 ))}
@@ -611,26 +611,26 @@ const MarketIntelligence: React.FC = () => {
 
           {/* -- AI SYSTEM HEALTH -- */}
           <div className="card">
-            <h2 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-1.5">
               <Brain className="w-4 h-4 text-purple-500" />
               AI System Health
             </h2>
 
             {pressureTest.isLoading ? (
               <div className="space-y-2">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-6 bg-neutral-100 rounded animate-pulse" />)}
+                {[...Array(4)].map((_, i) => <div key={i} className="h-6 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
               </div>
             ) : pressureTest.error ? (
-              <p className="text-xs text-red-500 py-2 text-center">Failed to load</p>
+              <p className="text-xs text-red-500 dark:text-red-400 py-2 text-center">Failed to load</p>
             ) : pressureTest.data ? (
               <div className="space-y-3">
                 {/* Test Results */}
                 <div>
-                  <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-1.5">System Tests</div>
+                  <div className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-1.5">System Tests</div>
                   <div className="space-y-1.5">
                     {Object.entries(pressureTest.data.test_results).map(([key, value]) => (
                       <div key={key} className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-600 capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="text-xs text-neutral-600 dark:text-neutral-400 capitalize">{key.replace(/_/g, ' ')}</span>
                         <StatusDot status={value} />
                       </div>
                     ))}
@@ -638,12 +638,12 @@ const MarketIntelligence: React.FC = () => {
                 </div>
 
                 {/* AI Capabilities */}
-                <div className="border-t border-neutral-100 pt-3">
-                  <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mb-1.5">AI Capabilities</div>
+                <div className="border-t border-neutral-100 dark:border-neutral-700 pt-3">
+                  <div className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-1.5">AI Capabilities</div>
                   <div className="space-y-1.5">
                     {Object.entries(pressureTest.data.ai_capabilities).map(([key, value]) => (
                       <div key={key} className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-600 capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="text-xs text-neutral-600 dark:text-neutral-400 capitalize">{key.replace(/_/g, ' ')}</span>
                         <StatusDot status={value} />
                       </div>
                     ))}
@@ -651,10 +651,10 @@ const MarketIntelligence: React.FC = () => {
                 </div>
 
                 {/* Overall */}
-                <div className="border-t border-neutral-100 pt-3">
+                <div className="border-t border-neutral-100 dark:border-neutral-700 pt-3">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-xs font-medium text-neutral-700">{pressureTest.data.overall_status}</span>
+                    <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">{pressureTest.data.overall_status}</span>
                   </div>
                 </div>
               </div>
@@ -664,22 +664,22 @@ const MarketIntelligence: React.FC = () => {
           {/* -- COVERAGE STATS -- */}
           {sentiment.data?.statistics && (
             <div className="card">
-              <h2 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-1.5">
                 <Activity className="w-4 h-4 text-indigo-500" />
                 Coverage
               </h2>
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 bg-neutral-50 rounded-lg">
-                  <div className="text-lg font-bold text-neutral-900">{sentiment.data.statistics.stocks_analyzed}</div>
-                  <div className="text-[10px] text-neutral-500">Stocks</div>
+                <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                  <div className="text-lg font-bold text-neutral-900 dark:text-white">{sentiment.data.statistics.stocks_analyzed}</div>
+                  <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Stocks</div>
                 </div>
-                <div className="p-2 bg-neutral-50 rounded-lg">
-                  <div className="text-lg font-bold text-neutral-900">{sentiment.data.statistics.total_articles}</div>
-                  <div className="text-[10px] text-neutral-500">Articles</div>
+                <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                  <div className="text-lg font-bold text-neutral-900 dark:text-white">{sentiment.data.statistics.total_articles}</div>
+                  <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Articles</div>
                 </div>
-                <div className="p-2 bg-neutral-50 rounded-lg">
-                  <div className="text-lg font-bold text-neutral-900">{formatNumber(sentiment.data.statistics.avg_sentiment, 2)}</div>
-                  <div className="text-[10px] text-neutral-500">Avg Sent</div>
+                <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                  <div className="text-lg font-bold text-neutral-900 dark:text-white">{formatNumber(sentiment.data.statistics.avg_sentiment, 2)}</div>
+                  <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Avg Sent</div>
                 </div>
               </div>
             </div>
@@ -688,7 +688,7 @@ const MarketIntelligence: React.FC = () => {
       </div>
 
       {/* ====== FOOTER ====== */}
-      <div className="text-center text-xs text-neutral-400 pt-2 border-t border-neutral-200">
+      <div className="text-center text-xs text-neutral-400 dark:text-neutral-500 pt-2 border-t border-neutral-200 dark:border-neutral-700">
         AI Intelligence powered by local LLM, feature calculations, and multi-source data
         {outlook.data?.generated_at && (
           <span> · Generated {formatRelativeTime(outlook.data.generated_at)}</span>

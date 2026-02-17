@@ -36,17 +36,17 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   };
 
   const getValueColor = (val: number | null) => {
-    if (val === null || val === undefined) return 'text-neutral-500';
-    
+    if (val === null || val === undefined) return 'text-neutral-500 dark:text-neutral-400';
+
     switch (format) {
       case 'sentiment':
         return getSentimentColor(val);
       case 'return':
         return getReturnColor(val);
       case 'percent':
-        return val > 0 ? 'text-success-600' : val < 0 ? 'text-danger-600' : 'text-neutral-600';
+        return val > 0 ? 'text-success-600' : val < 0 ? 'text-danger-600' : 'text-neutral-600 dark:text-neutral-400';
       default:
-        return 'text-neutral-900';
+        return 'text-neutral-900 dark:text-neutral-100';
     }
   };
 
@@ -81,9 +81,9 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
     return (
       <div className={cn('card', className)}>
         <div className="animate-pulse">
-          <div className="h-4 bg-neutral-200 rounded w-1/2 mb-2"></div>
-          <div className="h-8 bg-neutral-200 rounded w-3/4 mb-1"></div>
-          <div className="h-3 bg-neutral-200 rounded w-1/3"></div>
+          <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-1/2 mb-2"></div>
+          <div className="h-8 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4 mb-1"></div>
+          <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-1/3"></div>
         </div>
       </div>
     );
@@ -93,7 +93,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
     <div className={cn('card', className)}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-neutral-600 mb-1">{title}</p>
+          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-1">{title}</p>
           <div className="flex items-center space-x-2">
             <p className={cn('text-2xl font-bold', getValueColor(value))}>
               {formatValue(value)}
@@ -101,7 +101,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
             {getTrendIcon()}
           </div>
           {subtitle && (
-            <p className="text-sm text-neutral-500 mt-1">{subtitle}</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{subtitle}</p>
           )}
         </div>
       </div>

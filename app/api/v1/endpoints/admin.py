@@ -1,89 +1,187 @@
 """
 Admin API endpoints
-Handles administrative operations and ETL triggers
+Handles administrative operations: task dispatch, ETL job history, task catalog
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime, timezone as tz
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from pydantic import BaseModel
 
 from app.core.database import get_db
+from app.worker import worker
+from app.models.etl_job_run import ETLJobRun
 
 router = APIRouter()
 
+# Map of user-facing job names to Celery task paths and queues
+TASK_CATALOG = {
+    "news_ingestion": {
+        "task": "app.tasks.data_ingestion.ingest_rss_feeds_task",
+        "queue": "ingestion",
+        "description": "Fetch and process RSS news feeds",
+        "schedule": "Every 10 min",
+    },
+    "wsb_ingestion": {
+        "task": "app.tasks.reddit_wsb_enhanced.fetch_wsb_enhanced",
+        "queue": "ingestion",
+        "description": "Scrape WSB subreddit posts",
+        "schedule": "Every 30 min",
+    },
+    "price_ingestion": {
+        "task": "app.tasks.price_ingestion.fetch_prices_for_all_stocks",
+        "queue": "ingestion",
+        "description": "Fetch price data for all tracked stocks",
+        "schedule": "Every hour",
+    },
+    "feature_calculation": {
+        "task": "app.tasks.feature_calculation.calculate_daily_features",
+        "queue": "compute",
+        "description": "Calculate daily feature vectors",
+        "schedule": "Daily 05:00 UTC",
+    },
+    "signal_generation": {
+        "task": "app.tasks.signal_generation.daily_signal_generation_task",
+        "queue": "analytics",
+        "description": "Generate trading signals from features",
+        "schedule": "Daily 06:00 UTC",
+    },
+    "recommendation_generation": {
+        "task": "app.tasks.recommendation_generation.generate_daily_recommendations_task",
+        "queue": "analytics",
+        "description": "Generate buy/sell recommendations",
+        "schedule": "Daily 06:30 UTC",
+    },
+    "anomaly_detection": {
+        "task": "app.tasks.anomaly_detection.continuous_anomaly_monitoring_task",
+        "queue": "analytics",
+        "description": "Detect market anomalies",
+        "schedule": "Every 15 min",
+    },
+    "alert_generation": {
+        "task": "app.tasks.signal_generation.generate_alerts_task",
+        "queue": "analytics",
+        "description": "Generate alerts from recent signals",
+        "schedule": "Every 5 min",
+    },
+    "earnings_calendar": {
+        "task": "app.tasks.earnings_calendar.fetch_nasdaq_earnings_calendar",
+        "queue": "ingestion",
+        "description": "Fetch upcoming earnings dates",
+        "schedule": "Daily 07:00 UTC",
+    },
+    "post_ingest_processing": {
+        "task": "app.tasks.post_ingest_hooks.process_new_articles",
+        "queue": "compute",
+        "description": "Post-processing for newly ingested articles",
+        "schedule": "Every 15 min",
+    },
+}
+
 
 class ReindexRequest(BaseModel):
-    """Request model for reindex operation"""
+    """Request model for task dispatch"""
     job_name: str
     params: Optional[dict] = None
+
+
+@router.get("/task-catalog")
+async def get_task_catalog():
+    """Return the catalog of available tasks."""
+    return {
+        "tasks": {
+            name: {
+                "task": info["task"],
+                "queue": info["queue"],
+                "description": info["description"],
+                "schedule": info["schedule"],
+            }
+            for name, info in TASK_CATALOG.items()
+        }
+    }
 
 
 @router.post("/reindex")
 async def trigger_reindex(
     request: ReindexRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    Trigger backfill or reindex job
-    """
-    # TODO: Implement Celery task dispatch when worker is ready
-    valid_jobs = ["prices_backfill", "news_backfill", "analytics_refresh"]
-    
-    if request.job_name not in valid_jobs:
+    """Dispatch a Celery task by job name."""
+    if request.job_name not in TASK_CATALOG:
         raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid job name. Valid jobs: {', '.join(valid_jobs)}"
+            status_code=400,
+            detail=f"Invalid job name '{request.job_name}'. Valid jobs: {', '.join(sorted(TASK_CATALOG.keys()))}",
         )
-    
-    # Simulate job dispatch
-    job_id = f"job-{request.job_name}-{hash(str(request.params))}"
-    
+
+    catalog_entry = TASK_CATALOG[request.job_name]
+    task_path = catalog_entry["task"]
+    queue = catalog_entry["queue"]
+
+    # Create ETLJobRun record
+    job = ETLJobRun(
+        job_name=request.job_name,
+        started_at=datetime.now(tz.utc),
+        status="queued",
+        details={"params": request.params, "celery_task": task_path},
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    # Dispatch to Celery
+    try:
+        result = worker.send_task(task_path, queue=queue)
+        # Update with Celery task ID
+        job.details = {**(job.details or {}), "celery_task_id": result.id}
+        db.commit()
+    except Exception as e:
+        job.status = "failed"
+        job.finished_at = datetime.now(tz.utc)
+        job.details = {**(job.details or {}), "error": str(e)}
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"Failed to dispatch task: {e}")
+
     return {
         "enqueued": True,
-        "job_id": job_id,
+        "job_id": str(job.id),
         "job_name": request.job_name,
-        "params": request.params,
-        "message": f"Job {request.job_name} has been enqueued"
+        "celery_task_id": result.id,
+        "queue": queue,
+        "message": f"Task '{request.job_name}' dispatched to '{queue}' queue",
     }
 
 
 @router.get("/jobs")
 async def list_recent_jobs(
-    limit: int = 20,
-    db: Session = Depends(get_db)
+    limit: int = Query(default=50, le=200),
+    job_name: Optional[str] = Query(default=None),
+    status: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
 ):
-    """
-    List recent ETL job runs
-    """
-    # TODO: Implement database query when models are ready
+    """List recent ETL job runs with optional filters."""
+    query = db.query(ETLJobRun).order_by(desc(ETLJobRun.started_at))
+
+    if job_name:
+        query = query.filter(ETLJobRun.job_name == job_name)
+    if status:
+        query = query.filter(ETLJobRun.status == status)
+
+    jobs = query.limit(limit).all()
+
     return {
         "jobs": [
             {
-                "id": "job-1",
-                "job_name": "daily_analytics",
-                "started_at": "2025-08-15T00:30:00Z",
-                "finished_at": "2025-08-15T00:35:00Z",
-                "status": "success",
-                "items_processed": 2847,
-                "details": {
-                    "stocks_analyzed": 500,
-                    "recommendations_generated": 25,
-                    "duration_seconds": 300
-                }
-            },
-            {
-                "id": "job-2",
-                "job_name": "news_ingestion",
-                "started_at": "2025-08-15T10:00:00Z",
-                "finished_at": "2025-08-15T10:02:00Z", 
-                "status": "success",
-                "items_processed": 47,
-                "details": {
-                    "articles_fetched": 47,
-                    "new_articles": 12,
-                    "duplicates_skipped": 35
-                }
+                "id": str(j.id),
+                "job_name": j.job_name,
+                "started_at": j.started_at.isoformat() if j.started_at else None,
+                "finished_at": j.finished_at.isoformat() if j.finished_at else None,
+                "status": j.status,
+                "items_processed": j.items_processed,
+                "details": j.details,
             }
+            for j in jobs
         ],
-        "total": 2
+        "total": len(jobs),
     }

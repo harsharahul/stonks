@@ -95,33 +95,33 @@ const PriceTooltip = ({ active, payload, indicator }: any) => {
   if (!data) return null;
 
   return (
-    <div className="bg-white p-3 border border-neutral-200 rounded-lg shadow-lg text-sm">
-      <p className="font-medium text-neutral-900 mb-1">
+    <div className="bg-white dark:bg-neutral-800 p-3 border border-neutral-200 dark:border-neutral-600 rounded-lg shadow-lg text-sm">
+      <p className="font-medium text-neutral-900 dark:text-white mb-1">
         {format(parseISO(data.date), 'MMM d, yyyy')}
       </p>
-      <div className="space-y-0.5 text-neutral-600">
+      <div className="space-y-0.5 text-neutral-600 dark:text-neutral-400">
         <div className="flex justify-between gap-4">
           <span>Open</span>
-          <span className="font-medium text-neutral-900">{formatCurrency(data.open)}</span>
+          <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(data.open)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span>High</span>
-          <span className="font-medium text-neutral-900">{formatCurrency(data.high)}</span>
+          <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(data.high)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span>Low</span>
-          <span className="font-medium text-neutral-900">{formatCurrency(data.low)}</span>
+          <span className="font-medium text-neutral-900 dark:text-white">{formatCurrency(data.low)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span>Close</span>
-          <span className="font-bold text-neutral-900">{formatCurrency(data.close)}</span>
+          <span className="font-bold text-neutral-900 dark:text-white">{formatCurrency(data.close)}</span>
         </div>
-        <div className="flex justify-between gap-4 pt-1 border-t border-neutral-100">
+        <div className="flex justify-between gap-4 pt-1 border-t border-neutral-100 dark:border-neutral-600">
           <span>Volume</span>
-          <span className="font-medium text-neutral-900">{formatLargeNumber(data.volume)}</span>
+          <span className="font-medium text-neutral-900 dark:text-white">{formatLargeNumber(data.volume)}</span>
         </div>
         {indicator === 'bollinger' && data.bbUpper != null && (
-          <div className="pt-1 border-t border-neutral-100 space-y-0.5">
+          <div className="pt-1 border-t border-neutral-100 dark:border-neutral-600 space-y-0.5">
             <div className="flex justify-between gap-4">
               <span className="text-blue-600">BB Upper</span>
               <span className="font-medium">{formatCurrency(data.bbUpper)}</span>
@@ -137,7 +137,7 @@ const PriceTooltip = ({ active, payload, indicator }: any) => {
           </div>
         )}
         {data.patterns && data.patterns.length > 0 && (
-          <div className="pt-1 border-t border-neutral-100 mt-1">
+          <div className="pt-1 border-t border-neutral-100 dark:border-neutral-600 mt-1">
             <div className="text-xs font-semibold text-purple-600 mb-0.5">Patterns</div>
             {data.patterns.map((p: DetectedPattern, i: number) => {
               const meta = PATTERN_META[p.type] || { icon: '?', color: '#737373' };
@@ -168,8 +168,8 @@ const IndicatorTooltip = ({ active, payload }: any) => {
   if (!data) return null;
 
   return (
-    <div className="bg-white p-2 border border-neutral-200 rounded-lg shadow-lg text-xs">
-      <p className="font-medium text-neutral-900 mb-1">
+    <div className="bg-white dark:bg-neutral-800 p-2 border border-neutral-200 dark:border-neutral-600 rounded-lg shadow-lg text-xs">
+      <p className="font-medium text-neutral-900 dark:text-white mb-1">
         {format(parseISO(data.date), 'MMM d, yyyy')}
       </p>
       {data.rsi != null && (
@@ -324,7 +324,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
         {/* Left: Price info */}
         <div>
           <div className="flex items-baseline gap-3">
-            <h2 className="text-3xl font-bold text-neutral-900">
+            <h2 className="text-3xl font-bold text-neutral-900 dark:text-white">
               {summary ? formatCurrency(summary.current_price) : isLoading ? '---' : '--'}
             </h2>
             {summary && (
@@ -347,10 +347,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
             )}
           </div>
           {summary && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-neutral-500">
-              <span>High: <span className="font-medium text-neutral-700">{formatCurrency(summary.period_high)}</span></span>
-              <span>Low: <span className="font-medium text-neutral-700">{formatCurrency(summary.period_low)}</span></span>
-              <span>Avg Vol: <span className="font-medium text-neutral-700">{formatLargeNumber(summary.avg_volume)}</span></span>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+              <span>High: <span className="font-medium text-neutral-700 dark:text-neutral-300">{formatCurrency(summary.period_high)}</span></span>
+              <span>Low: <span className="font-medium text-neutral-700 dark:text-neutral-300">{formatCurrency(summary.period_low)}</span></span>
+              <span>Avg Vol: <span className="font-medium text-neutral-700 dark:text-neutral-300">{formatLargeNumber(summary.avg_volume)}</span></span>
             </div>
           )}
         </div>
@@ -358,7 +358,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
         {/* Right: Controls */}
         <div className="flex flex-col gap-2 sm:items-end">
           {/* Period selector */}
-          <div className="flex flex-wrap gap-1 bg-neutral-100 p-1 rounded-lg">
+          <div className="flex flex-wrap gap-1 bg-neutral-100 dark:bg-neutral-700 p-1 rounded-lg">
             {PERIODS.map((p) => (
               <button
                 key={p.value}
@@ -366,8 +366,8 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
                   period === p.value
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-500 hover:text-neutral-700'
+                    ? 'bg-white dark:bg-neutral-600 text-neutral-900 dark:text-white shadow-sm'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                 )}
               >
                 {p.label}
@@ -376,13 +376,13 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
           </div>
           {/* Chart mode + Indicator + Patterns */}
           <div className="flex flex-wrap gap-2">
-            <div className="flex bg-neutral-100 p-1 rounded-lg">
+            <div className="flex bg-neutral-100 dark:bg-neutral-700 p-1 rounded-lg">
               <button
                 onClick={() => setChartMode('area')}
                 title="Area chart"
                 className={cn(
                   'p-1.5 rounded-md transition-all',
-                  chartMode === 'area' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-400 hover:text-neutral-600'
+                  chartMode === 'area' ? 'bg-white dark:bg-neutral-600 shadow-sm text-neutral-900 dark:text-white' : 'text-neutral-400 dark:text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
                 )}
               >
                 <AreaChart className="w-4 h-4" />
@@ -392,13 +392,13 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                 title="Candlestick chart"
                 className={cn(
                   'p-1.5 rounded-md transition-all',
-                  chartMode === 'candlestick' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-400 hover:text-neutral-600'
+                  chartMode === 'candlestick' ? 'bg-white dark:bg-neutral-600 shadow-sm text-neutral-900 dark:text-white' : 'text-neutral-400 dark:text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
                 )}
               >
                 <CandlestickChart className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex gap-1 bg-neutral-100 p-1 rounded-lg">
+            <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-700 p-1 rounded-lg">
               {INDICATORS.map((ind) => (
                 <button
                   key={ind.value}
@@ -406,8 +406,8 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                   className={cn(
                     'px-2 py-1 text-xs font-medium rounded-md transition-all',
                     indicator === ind.value
-                      ? 'bg-white text-neutral-900 shadow-sm'
-                      : 'text-neutral-500 hover:text-neutral-700'
+                      ? 'bg-white dark:bg-neutral-600 text-neutral-900 dark:text-white shadow-sm'
+                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                   )}
                 >
                   {ind.label}
@@ -425,8 +425,8 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border',
                   showPatterns
-                    ? 'bg-purple-50 text-purple-700 border-purple-200'
-                    : 'bg-neutral-100 text-neutral-500 border-transparent hover:text-neutral-700'
+                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 border-transparent hover:text-neutral-700 dark:hover:text-neutral-200'
                 )}
               >
                 <Scan className="w-3.5 h-3.5" />
@@ -434,7 +434,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                 {allPatterns.length > 0 && (
                   <span className={cn(
                     'px-1.5 py-0.5 text-[10px] font-bold rounded-full',
-                    showPatterns ? 'bg-purple-200 text-purple-800' : 'bg-neutral-200 text-neutral-600'
+                    showPatterns ? 'bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200' : 'bg-neutral-200 dark:bg-neutral-600 text-neutral-600 dark:text-neutral-300'
                   )}>
                     {allPatterns.length}
                   </span>
@@ -444,7 +444,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                 <select
                   value={patternFilter}
                   onChange={(e) => setPatternFilter(e.target.value as PatternFilter)}
-                  className="text-xs bg-neutral-100 border border-neutral-200 rounded-md px-2 py-1.5 text-neutral-600"
+                  className="text-xs bg-neutral-100 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-md px-2 py-1.5 text-neutral-600 dark:text-neutral-300"
                 >
                   <option value="all">All</option>
                   <option value="bullish">Bullish</option>
@@ -459,21 +459,21 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
       {/* Chart */}
       {isLoading ? (
         <div className="animate-pulse">
-          <div className="h-[300px] bg-neutral-100 rounded flex items-end justify-around p-4">
+          <div className="h-[300px] bg-neutral-100 dark:bg-neutral-700 rounded flex items-end justify-around p-4">
             {[...Array(12)].map((_, i) => (
               <div
                 key={i}
-                className="bg-neutral-200 rounded-t"
+                className="bg-neutral-200 dark:bg-neutral-600 rounded-t"
                 style={{ height: `${20 + Math.random() * 60}%`, width: '6%' }}
               />
             ))}
           </div>
         </div>
       ) : error || chartData.length === 0 ? (
-        <div className="flex items-center justify-center h-[300px] bg-neutral-50 rounded border-2 border-dashed border-neutral-200">
+        <div className="flex items-center justify-center h-[300px] bg-neutral-50 dark:bg-neutral-800 rounded border-2 border-dashed border-neutral-200 dark:border-neutral-600">
           <div className="text-center">
-            <p className="text-sm font-medium text-neutral-900">No price data available</p>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-sm font-medium text-neutral-900 dark:text-white">No price data available</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               Price data is ingested hourly. Check back soon.
             </p>
           </div>
@@ -501,11 +501,12 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                   <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.08} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" className="dark:stroke-neutral-600" vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={formatXTick}
                 stroke="#737373"
+                className="dark:stroke-neutral-400"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -515,6 +516,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                 domain={priceDomain}
                 tickFormatter={(v: number) => `$${v}`}
                 stroke="#737373"
+                className="dark:stroke-neutral-400"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -533,6 +535,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                 yAxisId="volume"
                 dataKey="volume"
                 fill="#e5e7eb"
+                className="dark:fill-neutral-600"
                 opacity={0.5}
                 barSize={barSize}
               />
@@ -669,15 +672,16 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
           {/* RSI Sub-Chart */}
           {indicator === 'rsi' && (
             <div className="mt-2">
-              <div className="text-xs font-medium text-neutral-500 mb-1 ml-[70px]">RSI (14)</div>
+              <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 ml-[70px]">RSI (14)</div>
               <ResponsiveContainer width="100%" height={120}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" className="dark:stroke-neutral-700" vertical={false} />
                   <XAxis dataKey="date" hide />
                   <YAxis
                     domain={[0, 100]}
                     ticks={[30, 50, 70]}
                     stroke="#a3a3a3"
+                    className="dark:stroke-neutral-400"
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
@@ -721,13 +725,14 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
           {/* MACD Sub-Chart */}
           {indicator === 'macd' && (
             <div className="mt-2">
-              <div className="text-xs font-medium text-neutral-500 mb-1 ml-[70px]">MACD (12, 26, 9)</div>
+              <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1 ml-[70px]">MACD (12, 26, 9)</div>
               <ResponsiveContainer width="100%" height={130}>
                 <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" className="dark:stroke-neutral-700" vertical={false} />
                   <XAxis dataKey="date" hide />
                   <YAxis
                     stroke="#a3a3a3"
+                    className="dark:stroke-neutral-400"
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
@@ -735,7 +740,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ ticker, className, onPatternsDe
                     tickFormatter={(v: number) => v.toFixed(1)}
                   />
                   <Tooltip content={<IndicatorTooltip />} />
-                  <ReferenceLine y={0} stroke="#d4d4d4" strokeWidth={1} />
+                  <ReferenceLine y={0} stroke="#d4d4d4" className="dark:stroke-neutral-600" strokeWidth={1} />
                   <Bar dataKey="macdHist" barSize={barSize}>
                     {chartData.map((entry, index) => (
                       <Cell

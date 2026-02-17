@@ -14,7 +14,8 @@ import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import StatusBar from './components/StatusBar';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import SystemStatus from './components/SystemStatus';
-import { TrendingUp, Brain, AlertTriangle, Zap, Menu, X, Search, Monitor } from 'lucide-react';
+import AdminDashboard from './components/AdminDashboard';
+import { TrendingUp, Brain, AlertTriangle, Zap, Menu, X, Search, Monitor, Shield } from 'lucide-react';
 import { cn } from './utils/format';
 
 // Create a client
@@ -29,13 +30,14 @@ const queryClient = new QueryClient({
 });
 
 const navLinks = [
-  { to: '/', label: 'Dashboard', match: (p: string) => p === '/', activeClass: 'bg-blue-100 text-blue-700' },
-  { to: '/stocks', label: 'Stocks', match: (p: string) => p.startsWith('/stocks'), activeClass: 'bg-blue-100 text-blue-700' },
-  { to: '/intelligence', label: 'AI Intelligence', icon: <Brain className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/intelligence', activeClass: 'bg-blue-100 text-blue-700' },
-  { to: '/signals', label: 'Signals', icon: <Zap className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/signals', activeClass: 'bg-purple-100 text-purple-700' },
-  { to: '/anomalies', label: 'Anomalies', icon: <AlertTriangle className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/anomalies', activeClass: 'bg-orange-100 text-orange-700' },
-  { to: '/wsb-trending', label: '\u{1F412} WSB Trending', match: (p: string) => p === '/wsb-trending', activeClass: 'bg-red-100 text-red-700' },
-  { to: '/system', label: 'System', icon: <Monitor className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/system', activeClass: 'bg-neutral-200 text-neutral-800' },
+  { to: '/', label: 'Dashboard', match: (p: string) => p === '/', activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
+  { to: '/stocks', label: 'Stocks', match: (p: string) => p.startsWith('/stocks'), activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
+  { to: '/intelligence', label: 'AI Intelligence', icon: <Brain className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/intelligence', activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
+  { to: '/signals', label: 'Signals', icon: <Zap className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/signals', activeClass: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' },
+  { to: '/anomalies', label: 'Anomalies', icon: <AlertTriangle className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/anomalies', activeClass: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' },
+  { to: '/wsb-trending', label: '\u{1F412} WSB Trending', match: (p: string) => p === '/wsb-trending', activeClass: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
+  { to: '/system', label: 'System', icon: <Monitor className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/system', activeClass: 'bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200' },
+  { to: '/admin', label: 'Admin', icon: <Shield className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/admin', activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
 ];
 
 const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) => {
@@ -47,13 +49,13 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
   }, [location.pathname]);
 
   return (
-    <nav className="bg-white border-b border-neutral-200 relative z-50">
+    <nav className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 relative z-50">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <TrendingUp className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-neutral-900">Stonks</h1>
+              <h1 className="text-xl font-bold text-neutral-900 dark:text-white">Stonks</h1>
             </Link>
           </div>
           {/* Desktop nav */}
@@ -66,7 +68,7 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
                   'px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   link.match(location.pathname)
                     ? link.activeClass
-                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 )}
               >
                 {link.icon}{link.label}
@@ -75,11 +77,11 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
             {/* Search trigger */}
             <button
               onClick={onOpenSearch}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-200 text-sm text-neutral-500 hover:text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
             >
               <Search className="w-3.5 h-3.5" />
               <span>Search</span>
-              <kbd className="text-[10px] font-mono bg-neutral-100 text-neutral-400 px-1 py-0.5 rounded border border-neutral-200">
+              <kbd className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-400 px-1 py-0.5 rounded border border-neutral-200 dark:border-neutral-600">
                 Ctrl+K
               </kbd>
             </button>
@@ -87,14 +89,14 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
           {/* Mobile: search + hamburger */}
           <div className="md:hidden flex items-center gap-1">
             <button
-              className="flex items-center p-2 rounded-md text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+              className="flex items-center p-2 rounded-md text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
               onClick={onOpenSearch}
               aria-label="Search"
             >
               <Search className="w-5 h-5" />
             </button>
             <button
-              className="flex items-center p-2 rounded-md text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+              className="flex items-center p-2 rounded-md text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label="Toggle menu"
             >
@@ -106,11 +108,11 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
       {/* Mobile slide-down menu */}
       <div
         className={cn(
-          'md:hidden overflow-hidden transition-all duration-200 ease-in-out border-t border-neutral-200',
+          'md:hidden overflow-hidden transition-all duration-200 ease-in-out border-t border-neutral-200 dark:border-neutral-700',
           mobileMenuOpen ? 'max-h-80' : 'max-h-0 border-t-0'
         )}
       >
-        <div className="px-2 py-2 space-y-1 bg-white">
+        <div className="px-2 py-2 space-y-1 bg-white dark:bg-neutral-900">
           {navLinks.map((link) => (
             <Link
               key={link.to}
@@ -119,7 +121,7 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
                 'block py-3 px-4 rounded-md text-base font-medium transition-colors',
                 link.match(location.pathname)
                   ? link.activeClass
-                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
               )}
             >
               {link.icon}{link.label}
@@ -147,10 +149,11 @@ const AppContent: React.FC = () => {
     { key: '5', ctrl: true, handler: () => navigate('/anomalies'), description: 'Anomalies', category: 'Navigation' },
     { key: '6', ctrl: true, handler: () => navigate('/wsb-trending'), description: 'WSB Trending', category: 'Navigation' },
     { key: '7', ctrl: true, handler: () => navigate('/system'), description: 'System Status', category: 'Navigation' },
+    { key: '8', ctrl: true, handler: () => navigate('/admin'), description: 'Admin Dashboard', category: 'Navigation' },
   ]);
 
   return (
-    <div className="min-h-screen bg-neutral-50 md:pb-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 md:pb-8">
       <Navigation onOpenSearch={() => setCommandPaletteOpen(true)} />
       <Routes>
         <Route path="/" element={<Dashboard />} />
@@ -161,6 +164,7 @@ const AppContent: React.FC = () => {
         <Route path="/anomalies" element={<AnomalyExplorer />} />
         <Route path="/wsb-trending" element={<WSBTrendingDashboard />} />
         <Route path="/system" element={<SystemStatus />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
 
       {/* Real-time alerts overlay */}

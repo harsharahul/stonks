@@ -474,3 +474,39 @@ export interface AlertStatsResponse {
   top_alert_types: Array<{ type: string; count: number }>;
   unacknowledged_count: number;
 }
+
+// Admin types
+export interface TaskCatalogEntry {
+  task: string;
+  queue: string;
+  description: string;
+  schedule: string;
+}
+
+export interface TaskCatalogResponse {
+  tasks: Record<string, TaskCatalogEntry>;
+}
+
+export interface ETLJobRun {
+  id: string;
+  job_name: string;
+  started_at: string | null;
+  finished_at: string | null;
+  status: string;
+  items_processed: number | null;
+  details: Record<string, any> | null;
+}
+
+export interface JobHistoryResponse {
+  jobs: ETLJobRun[];
+  total: number;
+}
+
+export interface TriggerTaskResponse {
+  enqueued: boolean;
+  job_id: string;
+  job_name: string;
+  celery_task_id: string;
+  queue: string;
+  message: string;
+}

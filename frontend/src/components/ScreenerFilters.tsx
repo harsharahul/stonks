@@ -27,13 +27,13 @@ const RangeSlider: React.FC<{
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs font-medium text-neutral-600">{label}</span>
-        <span className="text-xs text-neutral-500 font-mono">
+        <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{label}</span>
+        <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
           {formatValue(value[0])} — {formatValue(value[1])}
         </span>
       </div>
       {/* Visual range bar */}
-      <div className="relative h-1.5 bg-neutral-200 rounded-full mb-2">
+      <div className="relative h-1.5 bg-neutral-200 dark:bg-neutral-600 rounded-full mb-2">
         <div
           className="absolute h-1.5 bg-blue-500 rounded-full"
           style={{ left: `${pctLeft}%`, width: `${pctRight - pctLeft}%` }}
@@ -80,31 +80,31 @@ const ScreenerFiltersPanel: React.FC<ScreenerFiltersPanelProps> = ({
   const active = isScreenerActive(filters);
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 shadow-sm">
+    <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm">
       {/* Collapse bar */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors rounded-xl"
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors rounded-xl"
       >
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-neutral-500" />
+          <SlidersHorizontal className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
           <span>Screener</span>
           {active && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
               {filteredCount} / {totalCount}
             </span>
           )}
         </div>
         {expanded ? (
-          <ChevronUp className="w-4 h-4 text-neutral-400" />
+          <ChevronUp className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-neutral-400" />
+          <ChevronDown className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
         )}
       </button>
 
       {/* Expanded filters */}
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-neutral-100">
+        <div className="px-4 pb-4 pt-1 border-t border-neutral-100 dark:border-neutral-700">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-3">
             {/* Sentiment range */}
             <RangeSlider
@@ -132,9 +132,9 @@ const ScreenerFiltersPanel: React.FC<ScreenerFiltersPanelProps> = ({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-medium text-neutral-600">Min Articles</span>
-                <span className="text-xs text-neutral-500 font-mono">{filters.minArticles}</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">{filters.minArticles}</span>
               </div>
-              <div className="relative h-1.5 bg-neutral-200 rounded-full mb-2">
+              <div className="relative h-1.5 bg-neutral-200 dark:bg-neutral-600 rounded-full mb-2">
                 <div
                   className="h-1.5 bg-blue-500 rounded-full"
                   style={{ width: `${(filters.minArticles / 50) * 100}%` }}
@@ -172,7 +172,7 @@ const ScreenerFiltersPanel: React.FC<ScreenerFiltersPanelProps> = ({
                         'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
                         selected
                           ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                          : 'bg-white dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
                       )}
                     >
                       {level}
@@ -188,7 +188,7 @@ const ScreenerFiltersPanel: React.FC<ScreenerFiltersPanelProps> = ({
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => onChange({ ...DEFAULT_SCREENER_FILTERS })}
-                className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
                 Reset all filters
