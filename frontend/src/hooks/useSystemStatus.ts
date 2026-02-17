@@ -7,7 +7,7 @@ export const useHealthCheck = () => {
   return useQuery({
     queryKey: ['system', 'health'],
     queryFn: async () => {
-      const res = await axios.get('/health');
+      const res = await axios.get(`${baseUrl}/health`);
       return res.data as { status: string; service: string };
     },
     staleTime: 15_000,
@@ -20,7 +20,7 @@ export const useReadyCheck = () => {
   return useQuery({
     queryKey: ['system', 'ready'],
     queryFn: async () => {
-      const res = await axios.get('/ready');
+      const res = await axios.get(`${baseUrl}/ready`);
       return res.data as { status: string; service: string };
     },
     staleTime: 30_000,

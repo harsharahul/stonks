@@ -23,3 +23,14 @@ api_router.include_router(intelligent_signals.router, prefix="/intelligent-signa
 api_router.include_router(market_analysis.router, prefix="/market-analysis", tags=["market-analysis"])
 api_router.include_router(stocks_enhanced.router, prefix="/stocks-enhanced", tags=["stocks-enhanced"])
 api_router.include_router(prices.router, prefix="/prices", tags=["prices"])
+
+
+# Health/ready endpoints (duplicated from root so they're reachable via /api/v1/ in k3s ingress)
+@api_router.get("/health", tags=["system"])
+async def health():
+    return {"status": "healthy", "service": "stonks-api"}
+
+
+@api_router.get("/ready", tags=["system"])
+async def ready():
+    return {"status": "ready", "service": "stonks-api"}
