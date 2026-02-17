@@ -4,6 +4,7 @@ Handles environment variables and settings
 """
 import os
 from typing import Optional
+from urllib.parse import quote_plus
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,7 +26,7 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL(self) -> str:
         """Construct database URL from components"""
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        return f"postgresql://{self.POSTGRES_USER}:{quote_plus(self.POSTGRES_PASSWORD)}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
     # Redis Configuration
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
@@ -37,7 +38,7 @@ class Settings(BaseSettings):
     def REDIS_URL(self) -> str:
         """Construct Redis URL from components"""
         if self.REDIS_PASSWORD:
-            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+            return f"redis://:{quote_plus(self.REDIS_PASSWORD)}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
     
     # Celery Configuration
