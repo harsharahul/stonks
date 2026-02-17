@@ -282,7 +282,7 @@ def fetch_wsb_enhanced(self, limit: int = 100, sort: str = 'hot') -> Dict:
         
         # Create ETL job run
         job_run = ETLJobRun(
-            job_name="wsb_enhanced",
+            job_name="wsb_ingestion",
             status="running",
             started_at=datetime.utcnow(),
             details={

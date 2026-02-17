@@ -20,6 +20,116 @@ class PriceIngestionError(Exception):
     pass
 
 
+def _fetch_prices_for_symbol(db, symbol: str, period: str = "5d", backfill_days: Optional[int] = None) -> Dict:
+    """
+    Core price-fetch logic for a single symbol. Used by both the Celery task
+    (fetch_yahoo_finance_prices) and parent tasks that iterate over symbols,
+    avoiding .apply_async().get() deadlocks.
+    """
+    print(f"📈 Fetching Yahoo Finance data for {symbol}")
+
+    stock = db.query(Stock).filter(Stock.symbol == symbol).first()
+    if not stock:
+        raise PriceIngestionError(f"Stock {symbol} not found in database")
+
+    # Determine date range
+    if backfill_days:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=backfill_days)
+        period_str = f"{backfill_days}d"
+    else:
+        period_str = period
+        start_date = None
+        end_date = None
+
+    # Fetch data from Yahoo Finance
+    try:
+        ticker = yf.Ticker(symbol)
+
+        if start_date and end_date:
+            hist = ticker.history(start=start_date, end=end_date)
+        else:
+            hist = ticker.history(period=period)
+
+        if hist.empty:
+            raise PriceIngestionError(f"No price data returned for {symbol}")
+
+        print(f"✅ Retrieved {len(hist)} price records for {symbol}")
+
+    except PriceIngestionError:
+        raise
+    except Exception as e:
+        raise PriceIngestionError(f"Yahoo Finance API error for {symbol}: {e}")
+
+    # Process and store price data
+    prices_new = 0
+    prices_updated = 0
+
+    for timestamp, row in hist.iterrows():
+        try:
+            if hasattr(timestamp, 'to_pydatetime'):
+                ts_datetime = timestamp.to_pydatetime()
+            else:
+                ts_datetime = pd.to_datetime(timestamp).to_pydatetime()
+
+            open_price = float(row['Open']) if not pd.isna(row['Open']) else None
+            high_price = float(row['High']) if not pd.isna(row['High']) else None
+            low_price = float(row['Low']) if not pd.isna(row['Low']) else None
+            close_price = float(row['Close']) if not pd.isna(row['Close']) else None
+            volume = int(row['Volume']) if not pd.isna(row['Volume']) else 0
+
+            if not all([open_price, high_price, low_price, close_price]):
+                print(f"   ⚠️  Skipping {ts_datetime} - missing OHLC data")
+                continue
+
+            existing = db.query(Price).filter(
+                Price.stock_id == stock.id,
+                Price.ts == ts_datetime
+            ).first()
+
+            if existing:
+                existing.open_price = Decimal(str(open_price))
+                existing.high = Decimal(str(high_price))
+                existing.low = Decimal(str(low_price))
+                existing.close = Decimal(str(close_price))
+                existing.volume = volume
+                existing.price = Decimal(str(close_price))
+                prices_updated += 1
+            else:
+                price_record = Price(
+                    stock_id=stock.id,
+                    ts=ts_datetime,
+                    symbol=symbol,
+                    timestamp=ts_datetime,
+                    price=Decimal(str(close_price)),
+                    source="yfinance",
+                    open_price=Decimal(str(open_price)),
+                    high=Decimal(str(high_price)),
+                    low=Decimal(str(low_price)),
+                    close=Decimal(str(close_price)),
+                    volume=volume,
+                )
+                db.add(price_record)
+                prices_new += 1
+
+        except Exception as e:
+            print(f"   ⚠️  Error processing price record for {ts_datetime}: {e}")
+            continue
+
+    db.commit()
+
+    print(f"✅ Yahoo Finance ingestion complete for {symbol}: {prices_new} new, {prices_updated} updated")
+
+    return {
+        "status": "success",
+        "symbol": symbol,
+        "prices_new": prices_new,
+        "prices_updated": prices_updated,
+        "total_processed": prices_new + prices_updated,
+        "period": period_str,
+    }
+
+
 @shared_task(bind=True)
 def fetch_yahoo_finance_prices(
     self,
@@ -28,31 +138,16 @@ def fetch_yahoo_finance_prices(
     backfill_days: Optional[int] = None
 ) -> Dict:
     """
-    Fetch price data for a single symbol from Yahoo Finance
-    
-    Args:
-        symbol: Stock ticker symbol
-        period: Period to fetch (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max)
-        backfill_days: Number of days to backfill (overrides period)
-        
-    Returns:
-        Dictionary with ingestion results
+    Fetch price data for a single symbol from Yahoo Finance (Celery task wrapper).
     """
-    
     db = SessionLocal()
     task_id = self.request.id
-    
+
     try:
-        print(f"📈 Fetching Yahoo Finance data for {symbol}")
-        
-        # Verify stock exists in our database
-        stock = db.query(Stock).filter(Stock.symbol == symbol).first()
-        if not stock:
-            raise PriceIngestionError(f"Stock {symbol} not found in database")
-        
         # Create ETL job run
         job_run = ETLJobRun(
             job_name=f"fetch_yahoo_prices_{symbol}",
+            started_at=datetime.utcnow(),
             status="running",
             details={
                 "task_id": task_id,
@@ -63,126 +158,23 @@ def fetch_yahoo_finance_prices(
         )
         db.add(job_run)
         db.commit()
-        
-        # Determine date range
-        if backfill_days:
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=backfill_days)
-            period_str = f"{backfill_days}d"
-        else:
-            period_str = period
-            start_date = None
-            end_date = None
-        
-        # Fetch data from Yahoo Finance
-        try:
-            ticker = yf.Ticker(symbol)
-            
-            if start_date and end_date:
-                hist = ticker.history(start=start_date, end=end_date)
-            else:
-                hist = ticker.history(period=period)
-            
-            if hist.empty:
-                raise PriceIngestionError(f"No price data returned for {symbol}")
-            
-            print(f"✅ Retrieved {len(hist)} price records for {symbol}")
-            
-        except Exception as e:
-            raise PriceIngestionError(f"Yahoo Finance API error for {symbol}: {e}")
-        
-        # Process and store price data
-        prices_new = 0
-        prices_updated = 0
-        prices_duplicate = 0
-        
-        for timestamp, row in hist.iterrows():
-            try:
-                # Convert timestamp to datetime
-                if hasattr(timestamp, 'to_pydatetime'):
-                    ts_datetime = timestamp.to_pydatetime()
-                else:
-                    ts_datetime = pd.to_datetime(timestamp).to_pydatetime()
-                
-                # Extract OHLCV data
-                open_price = float(row['Open']) if not pd.isna(row['Open']) else None
-                high_price = float(row['High']) if not pd.isna(row['High']) else None
-                low_price = float(row['Low']) if not pd.isna(row['Low']) else None
-                close_price = float(row['Close']) if not pd.isna(row['Close']) else None
-                volume = int(row['Volume']) if not pd.isna(row['Volume']) else 0
-                
-                # Skip if essential data is missing
-                if not all([open_price, high_price, low_price, close_price]):
-                    print(f"   ⚠️  Skipping {ts_datetime} - missing OHLC data")
-                    continue
-                
-                # Check if price record already exists
-                existing = db.query(Price).filter(
-                    Price.stock_id == stock.id,
-                    Price.ts == ts_datetime
-                ).first()
-                
-                if existing:
-                    # Update existing record
-                    existing.open_price = Decimal(str(open_price))
-                    existing.high = Decimal(str(high_price))
-                    existing.low = Decimal(str(low_price))
-                    existing.close = Decimal(str(close_price))
-                    existing.volume = volume
-                    existing.price = Decimal(str(close_price))
-                    prices_updated += 1
-                else:
-                    # Create new price record
-                    price_record = Price(
-                        stock_id=stock.id,
-                        ts=ts_datetime,
-                        symbol=symbol,
-                        timestamp=ts_datetime,
-                        price=Decimal(str(close_price)),
-                        source="yfinance",
-                        open_price=Decimal(str(open_price)),
-                        high=Decimal(str(high_price)),
-                        low=Decimal(str(low_price)),
-                        close=Decimal(str(close_price)),
-                        volume=volume,
-                    )
-                    db.add(price_record)
-                    prices_new += 1
-                
-            except Exception as e:
-                print(f"   ⚠️  Error processing price record for {ts_datetime}: {e}")
-                continue
-        
-        # Commit all price records
-        db.commit()
-        
+
+        result = _fetch_prices_for_symbol(db, symbol, period, backfill_days)
+
         # Update job run with success
         job_run.status = "success"
         job_run.finished_at = datetime.utcnow()
-        job_run.items_processed = prices_new + prices_updated
+        job_run.items_processed = result["total_processed"]
         job_run.details.update({
-            "prices_new": prices_new,
-            "prices_updated": prices_updated,
-            "prices_duplicate": prices_duplicate,
-            "date_range": f"{hist.index.min()} to {hist.index.max()}"
+            "prices_new": result["prices_new"],
+            "prices_updated": result["prices_updated"],
         })
-        
         db.commit()
-        
-        print(f"✅ Yahoo Finance ingestion complete for {symbol}: {prices_new} new, {prices_updated} updated")
-        
-        return {
-            "status": "success",
-            "symbol": symbol,
-            "prices_new": prices_new,
-            "prices_updated": prices_updated,
-            "total_processed": prices_new + prices_updated,
-            "period": period_str,
-            "job_run_id": str(job_run.id)
-        }
-        
+
+        result["job_run_id"] = str(job_run.id)
+        return result
+
     except Exception as e:
-        # Update job run with error
         if 'job_run' in locals():
             job_run.status = "error"
             job_run.finished_at = datetime.utcnow()
@@ -191,10 +183,10 @@ def fetch_yahoo_finance_prices(
                 "error_type": type(e).__name__
             })
             db.commit()
-        
+
         print(f"❌ Error fetching Yahoo Finance data for {symbol}: {e}")
         raise
-        
+
     finally:
         db.close()
 
@@ -217,18 +209,33 @@ def fetch_prices_for_all_stocks(
     """
     
     db = SessionLocal()
-    
+    task_id = self.request.id
+
     try:
         # Get all active stocks
         stocks_query = db.query(Stock).filter(Stock.is_active == True)
         if limit_symbols:
             stocks_query = stocks_query.limit(limit_symbols)
-        
+
         stocks = stocks_query.all()
         symbols = [stock.symbol for stock in stocks]
-        
+
         print(f"🔄 Starting price ingestion for {len(symbols)} stocks (period: {period})")
-        
+
+        # Create parent-level ETLJobRun
+        job_run = ETLJobRun(
+            job_name="price_ingestion",
+            started_at=datetime.utcnow(),
+            status="running",
+            details={
+                "task_id": task_id,
+                "period": period,
+                "total_stocks": len(symbols),
+            }
+        )
+        db.add(job_run)
+        db.commit()
+
         results = {
             "total_stocks": len(symbols),
             "successful_stocks": 0,
@@ -237,26 +244,25 @@ def fetch_prices_for_all_stocks(
             "total_prices_updated": 0,
             "stock_results": []
         }
-        
+
         for i, symbol in enumerate(symbols, 1):
             try:
                 print(f"[{i}/{len(symbols)}] Processing {symbol}")
-                
+
                 # Add rate limiting to avoid hitting API limits
                 if i > 1:
                     time.sleep(1)  # 1 second between requests
-                
-                result = fetch_yahoo_finance_prices.apply_async(
-                    args=[symbol, period]
-                ).get()
-                
+
+                # Direct call instead of .apply_async().get() to avoid deadlock
+                result = _fetch_prices_for_symbol(db, symbol, period)
+
                 results["successful_stocks"] += 1
                 results["total_prices_new"] += result["prices_new"]
                 results["total_prices_updated"] += result["prices_updated"]
                 results["stock_results"].append(result)
-                
+
                 print(f"   ✅ {symbol}: {result['prices_new']} new, {result['prices_updated']} updated")
-                
+
             except Exception as e:
                 print(f"   ❌ {symbol}: {e}")
                 results["failed_stocks"] += 1
@@ -265,17 +271,35 @@ def fetch_prices_for_all_stocks(
                     "symbol": symbol,
                     "error": str(e)
                 })
-        
+
         success_rate = results["successful_stocks"] / results["total_stocks"] if results["total_stocks"] > 0 else 0
-        
+
+        # Update parent ETLJobRun
+        job_run.status = "success"
+        job_run.finished_at = datetime.utcnow()
+        job_run.items_processed = results["total_prices_new"] + results["total_prices_updated"]
+        job_run.details.update({
+            "successful_stocks": results["successful_stocks"],
+            "failed_stocks": results["failed_stocks"],
+            "total_prices_new": results["total_prices_new"],
+            "total_prices_updated": results["total_prices_updated"],
+            "success_rate": f"{success_rate:.1%}",
+        })
+        db.commit()
+
         print(f"🎉 Price ingestion complete: {results['total_prices_new']} new, {results['total_prices_updated']} updated from {results['successful_stocks']}/{results['total_stocks']} stocks (success rate: {success_rate:.1%})")
-        
+
         return results
-        
+
     except Exception as e:
+        if 'job_run' in locals():
+            job_run.status = "failed"
+            job_run.finished_at = datetime.utcnow()
+            job_run.details = {**(job_run.details or {}), "error": str(e)}
+            db.commit()
         print(f"❌ Error in bulk price ingestion: {e}")
         raise
-        
+
     finally:
         db.close()
 
@@ -288,28 +312,19 @@ def backfill_prices_for_symbol(
 ) -> Dict:
     """
     Backfill historical price data for a specific symbol
-    
-    Args:
-        symbol: Stock ticker symbol
-        days: Number of days to backfill
-        
-    Returns:
-        Dictionary with backfill results
     """
-    
-    print(f"🔄 Backfilling {days} days of price data for {symbol}")
-    
+    db = SessionLocal()
+
     try:
-        result = fetch_yahoo_finance_prices.apply_async(
-            args=[symbol, None, days]
-        ).get()
-        
+        print(f"🔄 Backfilling {days} days of price data for {symbol}")
+        result = _fetch_prices_for_symbol(db, symbol, period="5d", backfill_days=days)
         print(f"✅ Backfill complete for {symbol}: {result['total_processed']} records")
         return result
-        
     except Exception as e:
         print(f"❌ Error backfilling {symbol}: {e}")
         raise
+    finally:
+        db.close()
 
 
 def validate_price_data(db, symbol: str, days: int = 5) -> Dict:
@@ -373,46 +388,34 @@ def validate_price_data(db, symbol: str, days: int = 5) -> Dict:
 def test_price_ingestion(self, test_symbols: List[str] = None) -> Dict:
     """
     Test price ingestion with a limited set of symbols
-    
-    Args:
-        test_symbols: List of symbols to test (defaults to first 3 active stocks)
-        
-    Returns:
-        Dictionary with test results
     """
-    
     db = SessionLocal()
-    
+
     try:
         if not test_symbols:
-            # Get first 3 active stocks for testing
             stocks = db.query(Stock).filter(Stock.is_active == True).limit(3).all()
             test_symbols = [stock.symbol for stock in stocks]
-        
+
         print(f"🧪 Testing price ingestion with symbols: {test_symbols}")
-        
+
         results = {
             "test_mode": True,
             "symbols_tested": test_symbols,
             "results": [],
             "validation": []
         }
-        
+
         for symbol in test_symbols:
             try:
-                # Fetch recent price data
-                result = fetch_yahoo_finance_prices.apply_async(
-                    args=[symbol, "5d"]
-                ).get()
-                
+                # Direct call instead of .apply_async().get()
+                result = _fetch_prices_for_symbol(db, symbol, period="5d")
                 results["results"].append(result)
-                
-                # Validate the data
+
                 validation = validate_price_data(db, symbol)
                 results["validation"].append(validation)
-                
+
                 print(f"✅ {symbol}: {result['total_processed']} prices, valid: {validation['valid']}")
-                
+
             except Exception as e:
                 print(f"❌ {symbol}: {e}")
                 results["results"].append({
@@ -420,8 +423,8 @@ def test_price_ingestion(self, test_symbols: List[str] = None) -> Dict:
                     "symbol": symbol,
                     "error": str(e)
                 })
-        
+
         return results
-        
+
     finally:
         db.close()

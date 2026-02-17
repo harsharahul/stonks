@@ -290,32 +290,25 @@ def fetch_google_news_by_ticker(self, ticker: str, days: int = 7) -> Dict:
         db.close()
 
 
-@shared_task(bind=True)
-def fetch_rss_feed(self, source_config: Dict) -> Dict:
+def _fetch_rss_feed_impl(source_config: Dict) -> Dict:
     """
-    Fetch and parse a single RSS feed
-    
-    Args:
-        source_config: Dictionary with RSS source configuration
-        
-    Returns:
-        Dictionary with ingestion results
+    Core RSS fetch logic for a single source. Used by both the Celery task
+    (fetch_rss_feed) and parent tasks that iterate over sources,
+    avoiding .apply_async().get() deadlocks.
     """
-    
     db = SessionLocal()
-    task_id = self.request.id
-    
+
     try:
         source_name = source_config["name"]
         source_url = source_config["url"]
-        
+
         print(f"📰 Fetching RSS feed: {source_name}")
-        
+
         # Get or create data source record
         data_source = db.query(DataSource).filter(
             DataSource.base_url == source_url
         ).first()
-        
+
         if not data_source:
             data_source = DataSource(
                 name=source_name,
@@ -325,68 +318,50 @@ def fetch_rss_feed(self, source_config: Dict) -> Dict:
             )
             db.add(data_source)
             db.flush()
-        
-        # Create ETL job run
-        job_run = ETLJobRun(
-            job_name=f"fetch_rss_feed_{source_name}",
-            status="running",
-            details={
-                "task_id": task_id,
-                "source_name": source_name,
-                "source_url": source_url
-            }
-        )
-        db.add(job_run)
-        db.commit()
-        
+
         # Fetch RSS feed with timeout and user agent
         headers = {
             'User-Agent': 'Mozilla/5.0 (compatible; Stonks-Analytics/1.0)'
         }
-        
+
         try:
             response = requests.get(source_url, headers=headers, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
             raise NewsIngestionError(f"Failed to fetch RSS feed: {e}")
-        
+
         # Parse RSS feed
         feed = feedparser.parse(response.content)
-        
+
         if feed.bozo:
             print(f"Warning: RSS feed parsing warning for {source_name}: {feed.bozo_exception}")
-        
+
         # Process articles
         articles_processed = 0
         articles_new = 0
         articles_duplicate = 0
-        
+
         for entry in feed.entries:
             try:
-                # Extract article data
                 title = clean_text(entry.get('title', ''))
                 url = entry.get('link', '')
-                
+
                 if not url or not title:
                     continue
-                
-                # Generate URL hash for deduplication
+
                 url_hash = generate_url_hash(url)
-                
-                # Check if article already exists
+
                 existing = db.query(Article).filter(Article.url_hash == url_hash).first()
                 if existing:
                     articles_duplicate += 1
                     continue
-                
-                # Extract published date
+
                 published_at = None
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
                     published_at = datetime(*entry.published_parsed[:6])
                 elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
                     published_at = datetime(*entry.updated_parsed[:6])
-                
-                # Extract content
+
                 content = ""
                 if hasattr(entry, 'content') and entry.content:
                     content = entry.content[0].value if entry.content else ""
@@ -394,15 +369,12 @@ def fetch_rss_feed(self, source_config: Dict) -> Dict:
                     content = entry.summary
                 elif hasattr(entry, 'description'):
                     content = entry.description
-                
-                # Clean content
+
                 raw_content = extract_text_from_html(content)
-                
-                # Extract tickers
+
                 full_text = f"{title} {raw_content}"
                 tickers = extract_tickers_basic(full_text)
-                
-                # Create article record
+
                 article = Article(
                     source_id=data_source.id,
                     url=url,
@@ -411,62 +383,96 @@ def fetch_rss_feed(self, source_config: Dict) -> Dict:
                     published_at=published_at,
                     raw_content=raw_content,
                     tickers=tickers if tickers else None,
-                    language="en"  # Assume English for now
+                    language="en"
                 )
-                
+
                 db.add(article)
                 db.flush()
-                
-                # Create entity links for extracted tickers
+
                 for ticker in tickers:
-                    # Check if ticker exists in our stocks table
                     stock_exists = db.query(Stock).filter(Stock.symbol == ticker).first()
                     if stock_exists:
                         entity = DocEntity(
                             doc_id=article.id,
                             ticker=ticker,
                             company_name=stock_exists.company_name,
-                            confidence=0.8,  # Basic confidence for regex extraction
+                            confidence=0.8,
                             method="rss_regex"
                         )
                         db.add(entity)
-                
+
                 articles_new += 1
                 articles_processed += 1
-                
+
             except Exception as e:
                 print(f"Warning: Error processing article from {source_name}: {e}")
                 continue
-        
-        # Commit all articles
+
         db.commit()
-        
-        # Update job run with success
-        job_run.status = "success"
-        job_run.finished_at = datetime.utcnow()
-        job_run.items_processed = articles_processed
-        job_run.details.update({
-            "articles_new": articles_new,
-            "articles_duplicate": articles_duplicate,
-            "feed_title": feed.feed.get('title', ''),
-            "feed_entries_total": len(feed.entries)
-        })
-        
-        db.commit()
-        
+
         print(f"✅ RSS ingestion complete for {source_name}: {articles_new} new, {articles_duplicate} duplicates")
-        
+
         return {
             "status": "success",
             "source_name": source_name,
             "articles_new": articles_new,
             "articles_duplicate": articles_duplicate,
             "articles_processed": articles_processed,
-            "job_run_id": str(job_run.id)
+            "feed_title": feed.feed.get('title', ''),
+            "feed_entries_total": len(feed.entries),
         }
-        
+
     except Exception as e:
-        # Update job run with error
+        print(f"❌ Error fetching RSS feed {source_config.get('name', 'unknown')}: {e}")
+        raise
+
+    finally:
+        db.close()
+
+
+@shared_task(bind=True)
+def fetch_rss_feed(self, source_config: Dict) -> Dict:
+    """
+    Fetch and parse a single RSS feed (Celery task wrapper).
+    """
+    db = SessionLocal()
+    task_id = self.request.id
+
+    try:
+        source_name = source_config["name"]
+
+        # Create ETL job run
+        job_run = ETLJobRun(
+            job_name=f"fetch_rss_feed_{source_name}",
+            started_at=datetime.utcnow(),
+            status="running",
+            details={
+                "task_id": task_id,
+                "source_name": source_name,
+                "source_url": source_config["url"]
+            }
+        )
+        db.add(job_run)
+        db.commit()
+
+        result = _fetch_rss_feed_impl(source_config)
+
+        # Update job run with success
+        job_run.status = "success"
+        job_run.finished_at = datetime.utcnow()
+        job_run.items_processed = result["articles_processed"]
+        job_run.details.update({
+            "articles_new": result["articles_new"],
+            "articles_duplicate": result["articles_duplicate"],
+            "feed_title": result.get("feed_title", ""),
+            "feed_entries_total": result.get("feed_entries_total", 0),
+        })
+        db.commit()
+
+        result["job_run_id"] = str(job_run.id)
+        return result
+
+    except Exception as e:
         if 'job_run' in locals():
             job_run.status = "error"
             job_run.finished_at = datetime.utcnow()
@@ -475,10 +481,8 @@ def fetch_rss_feed(self, source_config: Dict) -> Dict:
                 "error_type": type(e).__name__
             })
             db.commit()
-        
-        print(f"❌ Error fetching RSS feed {source_config.get('name', 'unknown')}: {e}")
         raise
-        
+
     finally:
         db.close()
 
@@ -507,14 +511,15 @@ def fetch_all_rss_feeds(self) -> Dict:
         try:
             # Add rate limiting between sources
             time.sleep(1)
-            
-            result = fetch_rss_feed.apply_async(args=[source_config]).get()
-            
+
+            # Direct call instead of .apply_async().get() to avoid deadlock
+            result = _fetch_rss_feed_impl(source_config)
+
             results["successful_sources"] += 1
             results["total_articles_new"] += result["articles_new"]
             results["total_articles_duplicate"] += result["articles_duplicate"]
             results["source_results"].append(result)
-            
+
         except Exception as e:
             print(f"❌ Failed to fetch RSS source {source_config['name']}: {e}")
             results["failed_sources"] += 1
@@ -555,13 +560,14 @@ def test_rss_ingestion(self, limit_sources: int = 2) -> Dict:
     
     for source_config in test_sources:
         try:
-            result = fetch_rss_feed.apply_async(args=[source_config]).get()
+            # Direct call instead of .apply_async().get()
+            result = _fetch_rss_feed_impl(source_config)
             results["results"].append(result)
-            
+
         except Exception as e:
             print(f"❌ Test failed for {source_config['name']}: {e}")
             results["results"].append({
-                "status": "error", 
+                "status": "error",
                 "source_name": source_config["name"],
                 "error": str(e)
             })
@@ -604,7 +610,7 @@ def ingest_rss_feeds_task(self, tickers: Optional[List[str]] = None) -> Dict:
         
         # Create ETL job run
         job_run = ETLJobRun(
-            job_name="automated_rss_ingestion",
+            job_name="news_ingestion",
             started_at=datetime.utcnow(),
             status="running",
             details={

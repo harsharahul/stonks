@@ -12,9 +12,33 @@ from app.models.stock import Stock
 from app.models.etl_job_run import ETLJobRun
 
 
+def _calculate_daily_features_impl(db, target_date_obj, tickers: List[str]) -> dict:
+    """
+    Core feature-calculation logic. Used by both the Celery task and
+    backfill_features to avoid .apply_async().get() deadlock.
+    """
+    print(f"🔧 Calculating features for {target_date_obj} ({len(tickers)} tickers)")
+
+    aggregator = FeatureAggregator(db)
+    results = aggregator.calculate_and_store_daily_features(
+        target_date=target_date_obj,
+        tickers=tickers
+    )
+    db.commit()
+
+    return {
+        "status": "success",
+        "target_date": target_date_obj.isoformat(),
+        "processed_count": len(results),
+        "total_count": len(tickers),
+        "processed_tickers": list(results.keys()),
+        "feature_version": aggregator.feature_version,
+    }
+
+
 @shared_task(bind=True)
 def calculate_daily_features(
-    self, 
+    self,
     target_date: Optional[str] = None,
     tickers: Optional[List[str]] = None
 ):
@@ -31,19 +55,17 @@ def calculate_daily_features(
     
     db = SessionLocal()
     task_id = self.request.id
-    
+
     try:
         # Parse target date
         if target_date:
             target_date_obj = datetime.strptime(target_date, "%Y-%m-%d").date()
         else:
             target_date_obj = date.today()
-        
-        print(f"🔧 Starting daily feature calculation for {target_date_obj}")
-        
+
         # Create ETL job run record
         job_run = ETLJobRun(
-            job_name="calculate_daily_features",
+            job_name="feature_calculation",
             started_at=datetime.utcnow(),
             status="running",
             details={
@@ -54,51 +76,32 @@ def calculate_daily_features(
         )
         db.add(job_run)
         db.commit()
-        
+
         # Get tickers to process
         if tickers is None:
             active_stocks = db.query(Stock).filter(Stock.is_active == True).all()
             tickers = [stock.symbol for stock in active_stocks]
-        
-        print(f"📊 Processing {len(tickers)} tickers: {tickers}")
-        
-        # Initialize feature aggregator
-        aggregator = FeatureAggregator(db)
-        
-        # Calculate and store features
-        results = aggregator.calculate_and_store_daily_features(
-            target_date=target_date_obj,
-            tickers=tickers
-        )
-        
+
+        # Use shared helper
+        result = _calculate_daily_features_impl(db, target_date_obj, tickers)
+
         # Update job run with success
         job_run.status = "success"
         job_run.finished_at = datetime.utcnow()
-        job_run.items_processed = len(results)
+        job_run.items_processed = result["processed_count"]
         job_run.details.update({
-            "processed_tickers": list(results.keys()),
-            "feature_version": aggregator.feature_version,
-            "success_count": len(results),
-            "error_count": len(tickers) - len(results)
+            "processed_tickers": result["processed_tickers"],
+            "feature_version": result["feature_version"],
+            "success_count": result["processed_count"],
+            "error_count": len(tickers) - result["processed_count"]
         })
-        
         db.commit()
-        
-        success_rate = len(results) / len(tickers) if tickers else 0
-        
-        return {
-            "status": "success",
-            "target_date": target_date_obj.isoformat(),
-            "processed_count": len(results),
-            "total_count": len(tickers),
-            "success_rate": success_rate,
-            "processed_tickers": list(results.keys()),
-            "feature_version": aggregator.feature_version,
-            "job_run_id": str(job_run.id)
-        }
-        
+
+        result["job_run_id"] = str(job_run.id)
+        result["success_rate"] = result["processed_count"] / len(tickers) if tickers else 0
+        return result
+
     except Exception as e:
-        # Update job run with error
         if 'job_run' in locals():
             job_run.status = "error"
             job_run.finished_at = datetime.utcnow()
@@ -107,10 +110,10 @@ def calculate_daily_features(
                 "error_type": type(e).__name__
             })
             db.commit()
-        
+
         print(f"❌ Error in daily feature calculation: {e}")
         raise
-        
+
     finally:
         db.close()
 
@@ -203,6 +206,7 @@ def backfill_features(
         # Create ETL job run record
         job_run = ETLJobRun(
             job_name="backfill_features",
+            started_at=datetime.utcnow(),
             status="running",
             details={
                 "task_id": task_id,
@@ -230,10 +234,10 @@ def backfill_features(
                 if current_date.weekday() < 5:  # Monday = 0, Sunday = 6
                     print(f"📅 Processing {current_date}")
                     
-                    # Calculate features for this date
-                    result = calculate_daily_features.apply_async(
-                        args=[current_date.isoformat(), tickers]
-                    ).get()
+                    # Direct call to avoid .apply_async().get() deadlock
+                    result = _calculate_daily_features_impl(
+                        db, current_date, tickers
+                    )
                     
                     total_processed += result.get("processed_count", 0)
                     total_errors += (result.get("total_count", 0) - result.get("processed_count", 0))

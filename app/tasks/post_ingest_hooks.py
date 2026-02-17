@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.features.sentiment import SentimentCalculator
 from app.models.article import Article
+from app.models.etl_job_run import ETLJobRun
 from app.models.stock import Stock
 from app.tasks.feature_calculation import calculate_features_for_ticker
 
@@ -101,12 +102,23 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
         Dict with processing statistics
     """
     db = SessionLocal()
-    
+    task_id = self.request.id
+
     try:
         print(f"🔄 Processing new articles (last {hours_back} hours)")
-        
+
+        # Create ETL job run
+        job_run = ETLJobRun(
+            job_name="post_ingest_processing",
+            started_at=datetime.utcnow(),
+            status="running",
+            details={"task_id": task_id, "hours_back": hours_back, "batch_size": batch_size}
+        )
+        db.add(job_run)
+        db.commit()
+
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
-        
+
         # Find unprocessed articles (sentiment = NULL indicates unprocessed)
         articles = db.query(Article).filter(
             and_(
@@ -114,13 +126,17 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
                 Article.sentiment.is_(None)  # Unprocessed articles
             )
         ).limit(batch_size).all()
-        
+
         if not articles:
             print("   No new articles to process")
+            job_run.status = "success"
+            job_run.finished_at = datetime.utcnow()
+            job_run.items_processed = 0
+            db.commit()
             return {"status": "no_articles", "processed": 0}
-        
+
         sentiment_calc = SentimentCalculator()
-        
+
         processed_count = 0
         ticker_updates = set()
         sentiment_stats = {
@@ -128,17 +144,17 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
             'neutral': 0,
             'negative': 0
         }
-        
+
         for article in articles:
             try:
                 # Calculate sentiment
                 if article.raw_content:
                     # Combine title and content for sentiment analysis
                     full_text = f"{article.title or ''} {article.raw_content}"
-                    
+
                     sentiment_result = sentiment_calc.calculate(full_text)
                     article.sentiment = sentiment_result['sentiment_score']
-                    
+
                     # Store additional sentiment details in entities
                     if not article.entities:
                         article.entities = {}
@@ -147,7 +163,7 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
                         'confidence': sentiment_result.get('confidence', 0),
                         'processed_at': datetime.utcnow().isoformat()
                     }
-                    
+
                     # Track sentiment distribution
                     if article.sentiment > 0.6:
                         sentiment_stats['positive'] += 1
@@ -155,11 +171,11 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
                         sentiment_stats['negative'] += 1
                     else:
                         sentiment_stats['neutral'] += 1
-                
+
                 # Extract tickers if not already present
                 if not article.tickers or len(article.tickers) == 0:
                     extracted_tickers = extract_tickers_advanced(
-                        f"{article.title or ''} {article.raw_content or ''}", 
+                        f"{article.title or ''} {article.raw_content or ''}",
                         db
                     )
                     if extracted_tickers:
@@ -167,20 +183,20 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
                         ticker_updates.update(extracted_tickers)
                 else:
                     ticker_updates.update(article.tickers)
-                
+
                 processed_count += 1
-                
+
             except Exception as e:
                 print(f"   ⚠️  Error processing article {article.id}: {e}")
                 continue
-        
+
         # Commit all article updates
         db.commit()
-        
+
         print(f"✅ Processed {processed_count} articles")
         print(f"   Sentiment: {sentiment_stats}")
         print(f"   Tickers found: {len(ticker_updates)}")
-        
+
         # Trigger feature recalculation for affected tickers
         if ticker_updates:
             for ticker in ticker_updates:
@@ -189,19 +205,33 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
                     print(f"   📊 Triggered feature update for {ticker}")
                 except Exception as e:
                     print(f"   ⚠️  Failed to trigger feature update for {ticker}: {e}")
-        
+
+        # Update ETL job run
+        job_run.status = "success"
+        job_run.finished_at = datetime.utcnow()
+        job_run.items_processed = processed_count
+        job_run.details.update({
+            "sentiment_distribution": sentiment_stats,
+            "tickers_updated": list(ticker_updates),
+        })
+        db.commit()
+
         return {
             "status": "success",
             "processed": processed_count,
             "sentiment_distribution": sentiment_stats,
             "tickers_updated": list(ticker_updates)
         }
-        
+
     except Exception as e:
+        if 'job_run' in locals():
+            job_run.status = "failed"
+            job_run.finished_at = datetime.utcnow()
+            job_run.details = {**(job_run.details or {}), "error": str(e)}
+            db.commit()
         print(f"❌ Error in post-ingestion processing: {e}")
-        db.rollback()
         raise
-        
+
     finally:
         db.close()
 

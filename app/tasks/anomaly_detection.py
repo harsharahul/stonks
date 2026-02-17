@@ -208,51 +208,67 @@ def continuous_anomaly_monitoring_task(self) -> Dict:
     Focuses on real-time anomalies with shorter lookback periods
     """
     db = SessionLocal()
-    
+    task_id = self.request.id
+
     try:
         print("🔄 Running continuous anomaly monitoring")
-        
+
+        # Create ETL job run
+        job_run = ETLJobRun(
+            job_name="anomaly_detection",
+            started_at=datetime.utcnow(),
+            status="running",
+            details={"task_id": task_id, "monitoring_type": "continuous"}
+        )
+        db.add(job_run)
+        db.commit()
+
         # Get most active stocks (those with recent price updates)
         from sqlalchemy import desc
         recent_prices = db.query(Price.ticker).filter(
             Price.timestamp > datetime.utcnow() - timedelta(hours=4)
         ).distinct().limit(20).all()
-        
+
         active_tickers = [p.ticker for p in recent_prices]
-        
+
         if not active_tickers:
             print("   No active tickers found")
+            job_run.status = "success"
+            job_run.finished_at = datetime.utcnow()
+            job_run.items_processed = 0
+            job_run.details.update({"message": "No recent price updates"})
+            db.commit()
             return {"status": "no_data", "message": "No recent price updates"}
-        
+
         print(f"   📊 Monitoring {len(active_tickers)} active tickers")
-        
+
         # Run focused anomaly detection with shorter lookback
         orchestrator = AnomalyDetectionOrchestrator(db)
-        
+
         critical_anomalies = []
-        
+
         for ticker in active_tickers:
             try:
                 # Focus on immediate anomalies (shorter lookback)
                 detector = orchestrator.statistical_detector
-                
+
                 # Price anomalies (7-day lookback for real-time)
                 price_anomalies = detector.detect_price_anomalies(ticker, lookback_days=7, z_threshold=3.0)
-                
+
                 # Only keep high-severity anomalies for real-time alerts
                 high_severity = [a for a in price_anomalies if a.severity > 0.7]
                 critical_anomalies.extend(high_severity)
-                
+
             except Exception as e:
                 logger.error(f"Error in continuous monitoring for {ticker}: {e}")
                 continue
-        
+
         # Generate immediate alerts for critical anomalies
         alerts_generated = 0
         if critical_anomalies:
             try:
                 alert_engine = AlertEngine(db)
-                
+
                 # Create high-priority signals
                 urgent_signals = []
                 for anomaly in critical_anomalies:
@@ -273,21 +289,32 @@ def continuous_anomaly_monitoring_task(self) -> Dict:
                         }
                     )
                     urgent_signals.append(signal)
-                
+
                 # Save and process
                 signal_generator = SignalGenerator(db)
                 signal_generator.save_signals(urgent_signals)
-                
+
                 alerts = alert_engine.process_signals(urgent_signals)
                 alerts_generated = alert_engine.save_alerts(alerts)
-                
+
                 print(f"   🚨 Generated {alerts_generated} urgent alerts")
-                
+
             except Exception as e:
                 logger.error(f"Error generating urgent alerts: {e}")
-        
+
+        # Update ETL job run
+        job_run.status = "success"
+        job_run.finished_at = datetime.utcnow()
+        job_run.items_processed = len(critical_anomalies)
+        job_run.details.update({
+            "active_tickers": len(active_tickers),
+            "critical_anomalies": len(critical_anomalies),
+            "urgent_alerts": alerts_generated,
+        })
+        db.commit()
+
         print(f"✅ Continuous monitoring complete: {len(critical_anomalies)} critical anomalies")
-        
+
         return {
             "status": "success",
             "active_tickers": len(active_tickers),
@@ -295,11 +322,16 @@ def continuous_anomaly_monitoring_task(self) -> Dict:
             "urgent_alerts": alerts_generated,
             "monitoring_type": "continuous"
         }
-        
+
     except Exception as e:
+        if 'job_run' in locals():
+            job_run.status = "failed"
+            job_run.finished_at = datetime.utcnow()
+            job_run.details = {**(job_run.details or {}), "error": str(e)}
+            db.commit()
         print(f"❌ Error in continuous monitoring: {e}")
         raise
-        
+
     finally:
         db.close()
 
