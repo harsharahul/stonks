@@ -17,6 +17,7 @@ from app.models.alert import Alert
 from app.services.signal_generator import SignalGenerator
 from app.services.alert_engine import AlertEngine
 from app.services.websocket_manager import event_broadcaster
+from app.tasks.etl_helpers import get_or_create_etl_job
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -128,18 +129,11 @@ def generate_alerts_task(self, hours_back: int = 1) -> Dict:
     try:
         print(f"🔔 Generating alerts from signals (last {hours_back} hours)")
         
-        # Create ETL job run
-        job_run = ETLJobRun(
-            job_name="alert_generation",
-            status="running",
-            started_at=datetime.utcnow(),
-            details={
-                "task_id": task_id,
-                "hours_back": hours_back
-            }
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "alert_generation", {
+            "task_id": task_id,
+            "hours_back": hours_back,
+        })
         
         # Get recent signals
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)

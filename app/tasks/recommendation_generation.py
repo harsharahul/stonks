@@ -15,6 +15,7 @@ from celery import shared_task
 from app.core.database import SessionLocal
 from app.models import Stock, Signal, Recommendation, ETLJobRun
 from app.models.ticker_features_daily import TickerFeaturesDaily
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 logger = logging.getLogger(__name__)
 
@@ -239,15 +240,11 @@ def generate_daily_recommendations_task(self) -> Dict:
     try:
         print(f"📊 Generating daily recommendations for {today}")
 
-        # ETL tracking
-        job_run = ETLJobRun(
-            job_name="recommendation_generation",
-            status="running",
-            started_at=datetime.utcnow(),
-            details={"task_id": task_id, "date": today.isoformat()},
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "recommendation_generation", {
+            "task_id": task_id,
+            "date": today.isoformat(),
+        })
 
         # Get all active stocks
         stocks = db.query(Stock).filter(Stock.is_active == True).all()

@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 from app.core.database import SessionLocal
 from app.models import Article, DataSource, Stock, ETLJobRun
 from app.models.doc_entity import DocEntity
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 
 # Financial news RSS feeds configuration
@@ -608,19 +609,12 @@ def ingest_rss_feeds_task(self, tickers: Optional[List[str]] = None) -> Dict:
             db.add(data_source)
             db.flush()
         
-        # Create ETL job run
-        job_run = ETLJobRun(
-            job_name="news_ingestion",
-            started_at=datetime.utcnow(),
-            status="running",
-            details={
-                "task_id": task_id,
-                "tickers_requested": tickers,
-                "sources_processed": []
-            }
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "news_ingestion", {
+            "task_id": task_id,
+            "tickers_requested": tickers,
+            "sources_processed": [],
+        })
         
         # Get tickers to process
         if tickers is None:

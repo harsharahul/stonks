@@ -17,6 +17,7 @@ from app.models.price import Price
 from app.services.anomaly_detector import AnomalyDetectionOrchestrator
 from app.services.alert_engine import AlertEngine
 from app.services.signal_generator import SignalGenerator
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 logger = logging.getLogger(__name__)
 
@@ -213,15 +214,11 @@ def continuous_anomaly_monitoring_task(self) -> Dict:
     try:
         print("🔄 Running continuous anomaly monitoring")
 
-        # Create ETL job run
-        job_run = ETLJobRun(
-            job_name="anomaly_detection",
-            started_at=datetime.utcnow(),
-            status="running",
-            details={"task_id": task_id, "monitoring_type": "continuous"}
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "anomaly_detection", {
+            "task_id": task_id,
+            "monitoring_type": "continuous",
+        })
 
         # Get most active stocks (those with recent price updates)
         from sqlalchemy import desc

@@ -20,6 +20,7 @@ from app.models.article import Article
 from app.models.data_source import DataSource
 from app.models.etl_job_run import ETLJobRun
 from app.models.stock import Stock
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 
 class EarningsCalendarError(Exception):
@@ -92,19 +93,12 @@ def fetch_nasdaq_earnings_calendar(self, days_ahead: int = 7, days_back: int = 3
             db.add(data_source)
             db.flush()
         
-        # Create ETL job run
-        job_run = ETLJobRun(
-            job_name="earnings_calendar",
-            started_at=datetime.utcnow(),
-            status="running",
-            details={
-                "task_id": task_id,
-                "start_date": start_date,
-                "end_date": end_date
-            }
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "earnings_calendar", {
+            "task_id": task_id,
+            "start_date": start_date,
+            "end_date": end_date,
+        })
         
         # Try Alpha Vantage earnings calendar first
         alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY')

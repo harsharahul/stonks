@@ -22,6 +22,7 @@ from app.models.article import Article
 from app.models.etl_job_run import ETLJobRun
 from app.models.stock import Stock
 from app.tasks.feature_calculation import calculate_features_for_ticker
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 
 class PostIngestError(Exception):
@@ -107,15 +108,12 @@ def process_new_articles(self, hours_back: int = 1, batch_size: int = 100) -> Di
     try:
         print(f"🔄 Processing new articles (last {hours_back} hours)")
 
-        # Create ETL job run
-        job_run = ETLJobRun(
-            job_name="post_ingest_processing",
-            started_at=datetime.utcnow(),
-            status="running",
-            details={"task_id": task_id, "hours_back": hours_back, "batch_size": batch_size}
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "post_ingest_processing", {
+            "task_id": task_id,
+            "hours_back": hours_back,
+            "batch_size": batch_size,
+        })
 
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
 

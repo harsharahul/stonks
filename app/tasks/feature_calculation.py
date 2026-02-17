@@ -10,6 +10,7 @@ from app.core.database import SessionLocal
 from app.features import FeatureAggregator
 from app.models.stock import Stock
 from app.models.etl_job_run import ETLJobRun
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 
 def _calculate_daily_features_impl(db, target_date_obj, tickers: List[str]) -> dict:
@@ -63,19 +64,12 @@ def calculate_daily_features(
         else:
             target_date_obj = date.today()
 
-        # Create ETL job run record
-        job_run = ETLJobRun(
-            job_name="feature_calculation",
-            started_at=datetime.utcnow(),
-            status="running",
-            details={
-                "task_id": task_id,
-                "target_date": target_date_obj.isoformat(),
-                "tickers_filter": tickers
-            }
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "feature_calculation", {
+            "task_id": task_id,
+            "target_date": target_date_obj.isoformat(),
+            "tickers_filter": tickers,
+        })
 
         # Get tickers to process
         if tickers is None:

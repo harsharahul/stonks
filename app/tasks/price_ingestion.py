@@ -13,6 +13,7 @@ import requests
 
 from app.core.database import SessionLocal
 from app.models import Stock, Price, ETLJobRun
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 
 class PriceIngestionError(Exception):
@@ -222,19 +223,12 @@ def fetch_prices_for_all_stocks(
 
         print(f"🔄 Starting price ingestion for {len(symbols)} stocks (period: {period})")
 
-        # Create parent-level ETLJobRun
-        job_run = ETLJobRun(
-            job_name="price_ingestion",
-            started_at=datetime.utcnow(),
-            status="running",
-            details={
-                "task_id": task_id,
-                "period": period,
-                "total_stocks": len(symbols),
-            }
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "price_ingestion", {
+            "task_id": task_id,
+            "period": period,
+            "total_stocks": len(symbols),
+        })
 
         results = {
             "total_stocks": len(symbols),

@@ -21,6 +21,7 @@ from app.models.article import Article
 from app.models.data_source import DataSource
 from app.models.etl_job_run import ETLJobRun
 from app.models.stock import Stock
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 
 class RedditParser:
@@ -280,19 +281,12 @@ def fetch_wsb_enhanced(self, limit: int = 100, sort: str = 'hot') -> Dict:
     try:
         print(f"🦍 Enhanced WSB ingestion: {sort} posts (limit: {limit})")
         
-        # Create ETL job run
-        job_run = ETLJobRun(
-            job_name="wsb_ingestion",
-            status="running",
-            started_at=datetime.utcnow(),
-            details={
-                "task_id": task_id,
-                "limit": limit,
-                "sort": sort
-            }
-        )
-        db.add(job_run)
-        db.commit()
+        # Get or reuse admin-created ETLJobRun
+        job_run = get_or_create_etl_job(db, task_id, "wsb_ingestion", {
+            "task_id": task_id,
+            "limit": limit,
+            "sort": sort,
+        })
         
         # Get or create data source
         data_source = db.query(DataSource).filter(
