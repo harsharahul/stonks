@@ -27,14 +27,17 @@ class Settings(BaseSettings):
         """Construct database URL from components"""
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
-    # Redis Configuration  
+    # Redis Configuration
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
-    
+    REDIS_PASSWORD: Optional[str] = os.getenv("REDIS_PASSWORD")
+
     @property
     def REDIS_URL(self) -> str:
         """Construct Redis URL from components"""
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
     
     # Celery Configuration
