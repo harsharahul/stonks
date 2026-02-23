@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { marketAnalysisApi, recommendationsApi, formatApiError } from '../api/client';
+import { marketAnalysisApi, recommendationsApi, stocksApi, formatApiError } from '../api/client';
 
 export const intelligenceKeys = {
   all: ['intelligence'] as const,
@@ -7,6 +7,8 @@ export const intelligenceKeys = {
   overview: () => ['intelligence', 'overview'] as const,
   pressureTest: () => ['intelligence', 'pressure-test'] as const,
   recommendations: () => ['intelligence', 'recommendations'] as const,
+  morningBrief: () => ['intelligence', 'morning-brief'] as const,
+  stockKnowledge: (ticker: string) => ['intelligence', 'knowledge', ticker] as const,
 };
 
 export const useTomorrowOutlook = () => {
@@ -57,6 +59,32 @@ export const useDailyRecommendations = () => {
     retry: 1,
     onError: (error: any) => {
       console.error('Error fetching recommendations:', formatApiError(error));
+    },
+  });
+};
+
+export const useMorningBrief = () => {
+  return useQuery({
+    queryKey: intelligenceKeys.morningBrief(),
+    queryFn: () => marketAnalysisApi.getMorningBrief(),
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    retry: 1,
+    onError: (error: any) => {
+      console.error('Error fetching morning brief:', formatApiError(error));
+    },
+  });
+};
+
+export const useStockKnowledge = (ticker: string) => {
+  return useQuery({
+    queryKey: intelligenceKeys.stockKnowledge(ticker),
+    queryFn: () => stocksApi.getStockKnowledge(ticker),
+    staleTime: 30 * 60 * 1000,
+    retry: 0,
+    enabled: !!ticker,
+    onError: () => {
+      // 404 is expected when knowledge hasn't been generated yet — suppress error
     },
   });
 };

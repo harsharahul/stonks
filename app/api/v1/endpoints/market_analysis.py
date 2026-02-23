@@ -13,6 +13,8 @@ from app.models.ticker_features_daily import TickerFeaturesDaily
 from app.models.stock import Stock
 from app.models.signal import Signal
 from app.models.alert import Alert
+from app.models.article import Article
+from app.models.stock_knowledge import StockKnowledge
 from app.llm import enhance_analytics_with_llm_sync
 from app.api.dependencies import verify_api_key, enforce_rate_limit
 import logging
@@ -242,20 +244,35 @@ async def get_ai_insights_for_stock(
             }
         }
         
-        # Sample articles (in production, would come from real sources)
+        # Fetch real articles from DB (last 7 days, limit 10)
+        week_ago = datetime.now() - timedelta(days=7)
+        real_articles = db.query(Article).filter(
+            Article.tickers.any(ticker.upper()),
+            Article.published_at >= week_ago,
+        ).order_by(Article.published_at.desc()).limit(10).all()
+
         sample_articles = [
             {
-                'title': f'{ticker} market analysis and performance review',
-                'sentiment': features['sentiment']['mean_7d'],
-                'url': f'https://example.com/{ticker.lower()}-analysis'
-            },
-            {
-                'title': f'Investment outlook for {ticker}',
-                'sentiment': min(features['sentiment']['mean_7d'] + 0.1, 1.0),
-                'url': f'https://example.com/{ticker.lower()}-outlook'
+                'title': a.title or f'{ticker} article',
+                'sentiment': float(a.sentiment) if a.sentiment is not None else 0.5,
+                'url': a.url or '',
+                'published_at': a.published_at.isoformat() if a.published_at else None,
             }
+            for a in real_articles
         ]
-        
+
+        # Also inject StockKnowledge narrative as synthetic article if available
+        knowledge = db.query(StockKnowledge).filter(
+            StockKnowledge.ticker == ticker.upper()
+        ).first()
+        if knowledge and knowledge.narrative:
+            sample_articles.insert(0, {
+                'title': f'[Analyst Note] {knowledge.narrative[:200]}',
+                'sentiment': features['sentiment']['mean_7d'],
+                'url': '',
+                'published_at': knowledge.last_updated.isoformat() if knowledge.last_updated else None,
+            })
+
         # Generate AI insights
         try:
             ai_result = enhance_analytics_with_llm_sync(ticker.upper(), features, sample_articles)
@@ -441,3 +458,84 @@ async def get_pressure_test_summary(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error getting pressure test summary: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get test summary: {str(e)}")
+
+
+@router.get("/morning-brief")
+async def get_morning_brief(db: Session = Depends(get_db)):
+    """
+    Get a structured morning brief with per-ticker knowledge summaries.
+    Returns LLM-generated market_summary (if LLM configured) plus per-stock narratives.
+    """
+    try:
+        # Fetch all stock knowledge records
+        all_knowledge = db.query(StockKnowledge).order_by(StockKnowledge.ticker).all()
+
+        stocks_output = []
+        for k in all_knowledge:
+            # Determine sentiment trend direction from weekly data
+            trend_direction = "flat"
+            sentiment_current = None
+            if k.sentiment_trend and k.sentiment_trend.get("weekly"):
+                weekly = k.sentiment_trend["weekly"]
+                if len(weekly) >= 2:
+                    recent = weekly[-1].get("avg_sentiment", 0.5)
+                    prev = weekly[-2].get("avg_sentiment", 0.5)
+                    sentiment_current = recent
+                    if recent - prev > 0.03:
+                        trend_direction = "improving"
+                    elif prev - recent > 0.03:
+                        trend_direction = "declining"
+                elif len(weekly) == 1:
+                    sentiment_current = weekly[0].get("avg_sentiment", 0.5)
+
+            # Top event: most recent from key_events
+            top_event = None
+            recent_event_count = 0
+            if k.key_events and k.key_events.get("events"):
+                events = k.key_events["events"]
+                recent_event_count = len(events)
+                if events:
+                    top_event = events[-1].get("title")
+
+            stocks_output.append({
+                "ticker": k.ticker,
+                "narrative": k.narrative,
+                "sentiment_current": sentiment_current,
+                "sentiment_trend_direction": trend_direction,
+                "recent_event_count": recent_event_count,
+                "top_event": top_event,
+                "last_updated": k.last_updated.isoformat() if k.last_updated else None,
+            })
+
+        # Optionally generate a 2-3 sentence market summary via LLM
+        market_summary = None
+        if stocks_output:
+            try:
+                from app.llm.analytics_agent import get_llm
+                llm = get_llm()
+                if llm:
+                    from langchain_core.messages import HumanMessage
+                    narratives_text = "\n".join(
+                        f"- {s['ticker']}: {s['narrative'][:300] if s['narrative'] else 'No narrative yet'}"
+                        for s in stocks_output[:10]
+                    )
+                    msg = HumanMessage(content=(
+                        "You are a concise financial analyst. Based on these per-stock analyst notes, "
+                        "write a 2-3 sentence market overview for this morning's brief. "
+                        "Focus on broad trends and notable developments. Be direct and factual.\n\n"
+                        f"{narratives_text}"
+                    ))
+                    response = llm.invoke([msg])
+                    market_summary = response.content.strip()
+            except Exception as llm_err:
+                logger.warning(f"LLM market summary failed: {llm_err}")
+
+        return {
+            "generated_at": datetime.now().isoformat(),
+            "market_summary": market_summary,
+            "stocks": stocks_output,
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating morning brief: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate morning brief: {str(e)}")

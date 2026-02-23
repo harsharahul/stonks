@@ -1,14 +1,14 @@
 import React, { useCallback, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Brain, Calendar, Shield, Target, RefreshCw, AlertTriangle,
   TrendingUp, Activity, Zap, ArrowUpRight,
-  ArrowDownRight, CheckCircle, ChevronRight,
+  ArrowDownRight, CheckCircle, ChevronRight, Clock,
 } from 'lucide-react';
 
 import {
   useTomorrowOutlook, useIntelMarketOverview,
-  usePressureTest, useDailyRecommendations,
+  usePressureTest, useDailyRecommendations, useMorningBrief,
 } from '../hooks/useMarketIntelligence';
 import {
   useSentimentAnalysis, useLatestAlerts, useMarketAnomalies,
@@ -17,7 +17,7 @@ import { useFeaturesSummary } from '../hooks/useFeatures';
 
 import {
   cn, formatNumber, formatPercent, formatRelativeTime,
-  getSentimentColor, getSentimentLabel, getReturnColor,
+  getSentimentColor, getReturnColor,
 } from '../utils/format';
 
 import type { Alert, Anomaly, Recommendation } from '../types/api';
@@ -109,8 +109,6 @@ const StatusDot: React.FC<{ status: string }> = ({ status }) => {
 // ---------------------------------------------------------------------------
 
 const MarketIntelligence: React.FC = () => {
-  const navigate = useNavigate();
-
   // Data hooks — each panel loads independently
   const outlook = useTomorrowOutlook();
   const overview = useIntelMarketOverview();
@@ -119,21 +117,31 @@ const MarketIntelligence: React.FC = () => {
   const anomalies = useMarketAnomalies();
   const recommendations = useDailyRecommendations();
   const pressureTest = usePressureTest();
+  const morningBrief = useMorningBrief();
   const featuresSummary = useFeaturesSummary(undefined, 50);
 
-  // Enriched stock data: cross-reference overview stocks with features
+  // Enriched stock data: cross-reference overview stocks with features + morning brief
   const enrichedStocks = useMemo(() => {
     const stocks = overview.data?.recent_stocks;
     if (!stocks) return [];
     const featureMap = new Map(
       (featuresSummary.data?.features || []).map(f => [f.ticker, f]),
     );
-    return stocks.map(s => ({
-      ...s,
-      vol_z: featureMap.get(s.ticker)?.vol_z ?? s.volume_z,
-      article_count_7d: featureMap.get(s.ticker)?.article_count_7d ?? s.articles,
-    }));
-  }, [overview.data, featuresSummary.data]);
+    const briefMap = new Map(
+      (morningBrief.data?.stocks || []).map((s: any) => [s.ticker, s]),
+    );
+    return stocks.map(s => {
+      const brief = briefMap.get(s.ticker);
+      return {
+        ...s,
+        vol_z: featureMap.get(s.ticker)?.vol_z ?? s.volume_z,
+        article_count_7d: featureMap.get(s.ticker)?.article_count_7d ?? s.articles,
+        sentiment_trend_direction: brief?.sentiment_trend_direction ?? null,
+        top_event: brief?.top_event ?? null,
+        narrative: brief?.narrative ?? null,
+      };
+    });
+  }, [overview.data, featuresSummary.data, morningBrief.data]);
 
   // Refresh all panels
   const handleRefreshAll = useCallback(() => {
@@ -145,7 +153,8 @@ const MarketIntelligence: React.FC = () => {
     recommendations.refetch();
     pressureTest.refetch();
     featuresSummary.refetch();
-  }, [outlook, overview, sentiment, alerts, anomalies, recommendations, pressureTest, featuresSummary]);
+    morningBrief.refetch();
+  }, [outlook, overview, sentiment, alerts, anomalies, recommendations, pressureTest, featuresSummary, morningBrief]);
 
   // Helpers
   const sentimentBarColor = (s: number) => {
@@ -330,10 +339,26 @@ const MarketIntelligence: React.FC = () => {
                 <Target className="w-5 h-5 text-blue-600" />
                 Stock Intelligence
               </h2>
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                {enrichedStocks.length} stocks
-              </span>
+              <div className="flex items-center gap-2">
+                {morningBrief.data?.generated_at && (
+                  <span className="flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+                    <Clock className="w-3 h-3" />
+                    {new Date(morningBrief.data.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {enrichedStocks.length} stocks
+                </span>
+              </div>
             </div>
+
+            {/* Market summary banner (LLM-generated, if available) */}
+            {morningBrief.data?.market_summary && (
+              <div className="mx-1 mb-4 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg text-xs text-neutral-700 dark:text-neutral-300 italic">
+                <Brain className="w-3 h-3 inline-block mr-1.5 text-purple-500 shrink-0 relative top-[-1px]" />
+                {morningBrief.data.market_summary}
+              </div>
+            )}
 
             {overview.isLoading ? (
               <div className="space-y-2">
@@ -363,93 +388,73 @@ const MarketIntelligence: React.FC = () => {
                       <th className="px-3 py-2">5d Return</th>
                       <th className="px-3 py-2">Vol Z</th>
                       <th className="px-3 py-2">Articles</th>
+                      <th className="px-3 py-2 hidden md:table-cell">Insight</th>
                       <th className="px-3 py-2 hidden sm:table-cell">Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700">
-                    {enrichedStocks.map(s => (
-                      <tr key={s.ticker} className="hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
-                        <td className="px-6 py-2.5">
-                          <Link to={`/stocks/${s.ticker}`} className="font-bold text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                            ${s.ticker}
-                          </Link>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                              <div
-                                className={cn('h-full rounded-full bg-gradient-to-r', sentimentBarColor(s.sentiment))}
-                                style={{ width: `${Math.max(s.sentiment * 100, 5)}%` }}
-                              />
+                    {enrichedStocks.map(s => {
+                      const arrow = s.sentiment_trend_direction === 'improving' ? '↑'
+                        : s.sentiment_trend_direction === 'declining' ? '↓' : null;
+                      const arrowColor = s.sentiment_trend_direction === 'improving'
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-red-600 dark:text-red-400';
+                      const insightText = s.top_event || (s.narrative ? s.narrative.slice(0, 60) + (s.narrative.length > 60 ? '…' : '') : null);
+                      return (
+                        <tr key={s.ticker} className="hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                          <td className="px-6 py-2.5">
+                            <Link to={`/stocks/${s.ticker}`} className="font-bold text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                              {s.ticker}
+                            </Link>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                <div
+                                  className={cn('h-full rounded-full bg-gradient-to-r', sentimentBarColor(s.sentiment))}
+                                  style={{ width: `${Math.max(s.sentiment * 100, 5)}%` }}
+                                />
+                              </div>
+                              <span className={cn('text-xs font-medium', getSentimentColor(s.sentiment))}>
+                                {formatNumber(s.sentiment, 2)}
+                              </span>
                             </div>
-                            <span className={cn('text-xs font-medium', getSentimentColor(s.sentiment))}>
-                              {formatNumber(s.sentiment, 2)}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span className={cn('flex items-center gap-0.5 font-medium text-xs', getReturnColor(s.returns))}>
+                              {s.returns > 0 ? <ArrowUpRight className="w-3 h-3" /> : s.returns < 0 ? <ArrowDownRight className="w-3 h-3" /> : null}
+                              {formatPercent(s.returns, 1)}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <span className={cn('flex items-center gap-0.5 font-medium text-xs', getReturnColor(s.returns))}>
-                            {s.returns > 0 ? <ArrowUpRight className="w-3 h-3" /> : s.returns < 0 ? <ArrowDownRight className="w-3 h-3" /> : null}
-                            {formatPercent(s.returns, 1)}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <span className={cn(
-                            'text-xs font-medium',
-                            s.vol_z !== null && Math.abs(s.vol_z) > 2 ? 'text-red-600 dark:text-red-400' :
-                            s.vol_z !== null && Math.abs(s.vol_z) > 1 ? 'text-yellow-600 dark:text-yellow-400' :
-                            'text-neutral-600 dark:text-neutral-400',
-                          )}>
-                            {s.vol_z !== null ? formatNumber(s.vol_z, 1) : '—'}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2.5 text-neutral-600 dark:text-neutral-400 text-xs">{s.article_count_7d}</td>
-                        <td className="px-3 py-2.5 text-neutral-400 dark:text-neutral-500 text-xs hidden sm:table-cell">{s.date}</td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span className={cn(
+                              'text-xs font-medium',
+                              s.vol_z !== null && Math.abs(s.vol_z) > 2 ? 'text-red-600 dark:text-red-400' :
+                              s.vol_z !== null && Math.abs(s.vol_z) > 1 ? 'text-yellow-600 dark:text-yellow-400' :
+                              'text-neutral-600 dark:text-neutral-400',
+                            )}>
+                              {s.vol_z !== null ? formatNumber(s.vol_z, 1) : '—'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-neutral-600 dark:text-neutral-400 text-xs">{s.article_count_7d}</td>
+                          <td className="px-3 py-2.5 hidden md:table-cell max-w-[180px]">
+                            {(arrow || insightText) ? (
+                              <div className="flex items-start gap-1">
+                                {arrow && <span className={cn('font-bold text-sm shrink-0', arrowColor)}>{arrow}</span>}
+                                {insightText && (
+                                  <span className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-tight line-clamp-2">{insightText}</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-neutral-300 dark:text-neutral-600 text-xs">—</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 text-neutral-400 dark:text-neutral-500 text-xs hidden sm:table-cell">{s.date}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
-              </div>
-            )}
-          </div>
-
-          {/* -- SENTIMENT HEATMAP -- */}
-          <div className="card">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-600" />
-              Sentiment Heatmap
-            </h2>
-
-            {sentiment.isLoading ? (
-              <div className="flex flex-wrap gap-2">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="h-8 w-20 bg-neutral-100 dark:bg-neutral-700 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            ) : sentiment.error ? (
-              <p className="text-xs text-red-500 dark:text-red-400 py-4 text-center">Failed to load sentiment data</p>
-            ) : !sentiment.data?.stock_breakdown?.length ? (
-              <p className="text-xs text-neutral-400 dark:text-neutral-500 py-6 text-center">No sentiment data available</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {sentiment.data.stock_breakdown.map(s => {
-                  const bg = s.sentiment >= 0.6 ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-400'
-                    : s.sentiment >= 0.4 ? 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-400'
-                    : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400';
-                  return (
-                    <button
-                      key={s.ticker}
-                      onClick={() => navigate(`/stocks/${s.ticker}`)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all hover:shadow-sm hover:scale-105',
-                        bg,
-                      )}
-                      title={`${s.ticker}: ${getSentimentLabel(s.sentiment)} (${formatNumber(s.sentiment, 2)})`}
-                    >
-                      {s.ticker} <span className="font-normal">{formatNumber(s.sentiment, 2)}</span>
-                    </button>
-                  );
-                })}
               </div>
             )}
           </div>

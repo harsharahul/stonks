@@ -65,6 +65,33 @@ if (import.meta.env.DEV) {
 
 // API Functions
 
+// Types for stock knowledge and morning brief (not in shared types file)
+export interface StockKnowledge {
+  ticker: string;
+  narrative: string | null;
+  key_events: { events: Array<{ date: string; title: string; sentiment: number; url: string }> } | null;
+  sentiment_trend: { weekly: Array<{ week: string; avg_sentiment: number; count: number }> } | null;
+  article_count_processed: number;
+  last_updated: string | null;
+  created_at: string | null;
+}
+
+export interface MorningBriefStock {
+  ticker: string;
+  narrative: string | null;
+  sentiment_current: number | null;
+  sentiment_trend_direction: 'improving' | 'declining' | 'flat';
+  recent_event_count: number;
+  top_event: string | null;
+  last_updated: string | null;
+}
+
+export interface MorningBriefResponse {
+  generated_at: string;
+  market_summary: string | null;
+  stocks: MorningBriefStock[];
+}
+
 // Stocks API
 export const stocksApi = {
   async getStocks(params?: {
@@ -81,7 +108,12 @@ export const stocksApi = {
   async getStock(symbol: string): Promise<Stock> {
     const response: AxiosResponse<Stock> = await apiClient.get(`/stocks/${symbol}`);
     return response.data;
-  }
+  },
+
+  async getStockKnowledge(symbol: string): Promise<StockKnowledge> {
+    const response: AxiosResponse<StockKnowledge> = await apiClient.get(`/stocks/${symbol}/knowledge`);
+    return response.data;
+  },
 };
 
 // Prices API
@@ -301,6 +333,11 @@ export const marketAnalysisApi = {
 
   async getPressureTestSummary(): Promise<PressureTestSummary> {
     const response: AxiosResponse<PressureTestSummary> = await apiClient.get('/market-analysis/pressure-test-summary');
+    return response.data;
+  },
+
+  async getMorningBrief(): Promise<MorningBriefResponse> {
+    const response: AxiosResponse<MorningBriefResponse> = await apiClient.get('/market-analysis/morning-brief');
     return response.data;
   },
 };

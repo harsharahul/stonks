@@ -336,55 +336,98 @@ def update_source_reliability(self) -> Dict:
 
 
 @shared_task(bind=True)
-def cleanup_old_articles(self, days_to_keep: int = 30) -> Dict:
+def cleanup_old_articles(self, archive_days: int = 30, delete_days: int = 90) -> Dict:
     """
-    Clean up old articles to manage database size.
-    Keeps summary statistics before deletion.
-    
+    Tiered cleanup of old articles to manage database size.
+
+    Phase 1 (archive_days to delete_days): Null out raw_content — keeps title,
+    tickers, sentiment, url for reference.
+    Phase 2 (delete_days+): Full delete.
+
     Args:
-        days_to_keep: Number of days of articles to retain
-        
+        archive_days: Days after which raw_content is nulled
+        delete_days: Days after which articles are fully deleted
+
     Returns:
         Dict with cleanup statistics
     """
     db = SessionLocal()
-    
+
     try:
-        print(f"🧹 Cleaning up articles older than {days_to_keep} days")
-        
-        cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
-        
-        # Count articles to delete
-        to_delete = db.query(func.count(Article.id)).filter(
-            Article.published_at < cutoff_date
-        ).scalar()
-        
-        if to_delete == 0:
-            print("   No articles to clean up")
-            return {"status": "no_cleanup", "deleted": 0}
-        
-        # Store summary statistics before deletion
-        # In production, you might want to archive to cold storage instead
-        
-        # Delete old articles
-        db.query(Article).filter(
-            Article.published_at < cutoff_date
+        print(f"🧹 Tiered article cleanup: null content >{archive_days}d, delete >{delete_days}d")
+
+        archive_cutoff = datetime.utcnow() - timedelta(days=archive_days)
+        delete_cutoff = datetime.utcnow() - timedelta(days=delete_days)
+
+        # Phase 1: Null raw_content for articles in the archive window (30–90 days old)
+        archived = db.query(Article).filter(
+            Article.published_at < archive_cutoff,
+            Article.published_at >= delete_cutoff,
+            Article.raw_content != None
+        ).update({"raw_content": None})
+
+        # Phase 2: Full delete for articles older than delete_cutoff (90+ days)
+        deleted = db.query(Article).filter(
+            Article.published_at < delete_cutoff
         ).delete()
-        
+
         db.commit()
-        
-        print(f"✅ Cleaned up {to_delete} old articles")
-        
+
+        print(f"✅ Archived {archived} articles (nulled raw_content), deleted {deleted} articles")
+
         return {
             "status": "success",
-            "deleted": to_delete,
-            "cutoff_date": cutoff_date.isoformat()
+            "archived": archived,
+            "deleted": deleted,
+            "archive_cutoff": archive_cutoff.isoformat(),
+            "delete_cutoff": delete_cutoff.isoformat(),
         }
-        
+
     except Exception as e:
         print(f"❌ Error cleaning up articles: {e}")
         db.rollback()
         raise
-        
+
+    finally:
+        db.close()
+
+
+@shared_task(bind=True)
+def cleanup_old_etl_runs(self, days_to_keep: int = 30) -> Dict:
+    """
+    Delete old ETL job run records to keep the table from growing unbounded.
+
+    Args:
+        days_to_keep: Retain records from the last N days
+
+    Returns:
+        Dict with cleanup statistics
+    """
+    db = SessionLocal()
+
+    try:
+        print(f"🧹 Cleaning up ETL job runs older than {days_to_keep} days")
+
+        cutoff = datetime.utcnow() - timedelta(days=days_to_keep)
+
+        deleted = db.query(ETLJobRun).filter(
+            ETLJobRun.started_at < cutoff
+        ).delete()
+
+        db.commit()
+
+        print(f"✅ Deleted {deleted} old ETL job run records")
+
+        return {
+            "status": "success",
+            "deleted": deleted,
+            "cutoff_date": cutoff.isoformat(),
+        }
+
+    except Exception as e:
+        print(f"❌ Error cleaning up ETL job runs: {e}")
+        db.rollback()
+        raise
+
     finally:
         db.close()

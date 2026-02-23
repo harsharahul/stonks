@@ -15,6 +15,7 @@ from celery import shared_task
 from app.core.database import SessionLocal
 from app.models import Stock, Signal, Recommendation, ETLJobRun
 from app.models.ticker_features_daily import TickerFeaturesDaily
+from app.models.stock_knowledge import StockKnowledge
 from app.tasks.etl_helpers import get_or_create_etl_job
 
 logger = logging.getLogger(__name__)
@@ -167,12 +168,51 @@ def _build_rationale(
     }
 
 
+def _enrich_notes_with_knowledge(notes: str, knowledge: Optional[StockKnowledge]) -> str:
+    """Append key event and sentiment trend context from StockKnowledge to rationale notes."""
+    if not knowledge:
+        return notes
+
+    additions = []
+
+    # Top 2 most recent key events
+    if knowledge.key_events and knowledge.key_events.get("events"):
+        events = knowledge.key_events["events"]
+        for event in events[-2:]:
+            title = event.get("title", "")
+            date_str = event.get("date", "")
+            sentiment = event.get("sentiment")
+            if title:
+                sent_label = ""
+                if sentiment is not None:
+                    sent_label = f" (sentiment: {sentiment:.2f})"
+                additions.append(f"Recent: '{title}' {date_str}{sent_label}".strip())
+
+    # Sentiment trend vs 4-week average
+    if knowledge.sentiment_trend and knowledge.sentiment_trend.get("weekly"):
+        weekly = knowledge.sentiment_trend["weekly"]
+        if len(weekly) >= 4:
+            current = weekly[-1].get("avg_sentiment", 0.5)
+            four_week_avg = sum(w.get("avg_sentiment", 0.5) for w in weekly[-4:]) / 4
+            diff = current - four_week_avg
+            if diff > 0.05:
+                additions.append("Sentiment improving vs 4-week average")
+            elif diff < -0.05:
+                additions.append("Sentiment declining vs 4-week average")
+
+    if additions:
+        notes = notes + ". " + "; ".join(additions)
+
+    return notes
+
+
 def generate_recommendation_for_ticker(
     db,
     stock: Stock,
     features: TickerFeaturesDaily,
     signals: List[Signal],
     today: date_type,
+    knowledge: Optional[StockKnowledge] = None,
 ) -> Optional[Recommendation]:
     """Generate a single recommendation for a stock."""
     # Compute individual components
@@ -197,6 +237,7 @@ def generate_recommendation_for_ticker(
         action = "HOLD"
 
     rationale = _build_rationale(features, signals, components)
+    rationale["notes"] = _enrich_notes_with_knowledge(rationale["notes"], knowledge)
 
     # Upsert: check if recommendation already exists for this stock+date+version
     existing = db.query(Recommendation).filter(
@@ -274,6 +315,10 @@ def generate_daily_recommendations_task(self) -> Dict:
         for sig in active_signals:
             signals_by_ticker.setdefault(sig.ticker, []).append(sig)
 
+        # Pre-fetch all stock knowledge records for enrichment
+        knowledge_rows = db.query(StockKnowledge).all()
+        knowledge_by_ticker = {k.ticker: k for k in knowledge_rows}
+
         # Generate recommendations
         recs_created = 0
         recs_updated = 0
@@ -293,7 +338,8 @@ def generate_daily_recommendations_task(self) -> Dict:
                 ).count()
 
                 rec = generate_recommendation_for_ticker(
-                    db, stock, features, signals, today
+                    db, stock, features, signals, today,
+                    knowledge=knowledge_by_ticker.get(ticker),
                 )
 
                 if rec:

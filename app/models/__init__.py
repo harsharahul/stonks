@@ -14,3 +14,4 @@ from .alert import Alert, AlertSubscription
 from .doc_entity import DocEntity
 from .ticker_features_daily import TickerFeaturesDaily
 from .doc_embedding import DocEmbedding
+from .stock_knowledge import StockKnowledge

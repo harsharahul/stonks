@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useFeaturesSummary, useFeatureStats } from './useFeatures';
-import { useTomorrowOutlook, useDailyRecommendations } from './useMarketIntelligence';
+import { useTomorrowOutlook, useDailyRecommendations, useMorningBrief } from './useMarketIntelligence';
 import {
   useLatestAlerts, useMarketAnomalies, useWSBTrending, useSentimentAnalysis,
 } from './useWSBDashboard';
@@ -19,6 +19,7 @@ export const useDashboard = () => {
   const anomalies = useMarketAnomalies();
   const wsbTrending = useWSBTrending(7, 5);
   const sentiment = useSentimentAnalysis();
+  const morningBrief = useMorningBrief();
   const articles = useQuery({
     queryKey: ['dashboard-articles'],
     queryFn: () => feedApi.getArticles({ page_size: 8 }),
@@ -62,7 +63,8 @@ export const useDashboard = () => {
     wsbTrending.refetch();
     sentiment.refetch();
     articles.refetch();
-  }, [featuresSummary, featureStats, outlook, recommendations, alerts, anomalies, wsbTrending, sentiment, articles]);
+    morningBrief.refetch();
+  }, [featuresSummary, featureStats, outlook, recommendations, alerts, anomalies, wsbTrending, sentiment, articles, morningBrief]);
 
   return {
     featuresSummary,
@@ -74,6 +76,7 @@ export const useDashboard = () => {
     wsbTrending,
     sentiment,
     articles,
+    morningBrief,
     topGainers,
     topLosers,
     sentimentLeaders,

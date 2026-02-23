@@ -11,6 +11,7 @@ from math import ceil
 from app.core.database import get_db
 from app.models.stock import Stock
 from app.models.price import Price
+from app.models.stock_knowledge import StockKnowledge
 
 router = APIRouter()
 
@@ -117,4 +118,44 @@ async def get_stock(
         "exchange": stock.exchange,
         "is_active": stock.is_active,
         "latest_price": latest_price,
+    }
+
+
+@router.get("/{symbol}/knowledge")
+async def get_stock_knowledge(
+    symbol: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Return the evolving analytical knowledge record for a stock ticker.
+
+    Populated nightly by the update_stock_knowledge_task Celery task.
+    Returns 404 if the stock doesn't exist or knowledge hasn't been generated yet.
+    """
+    stock = db.query(Stock).filter(
+        Stock.symbol == symbol.upper(),
+        Stock.is_active == True
+    ).first()
+
+    if not stock:
+        raise HTTPException(status_code=404, detail="Stock not found")
+
+    knowledge = db.query(StockKnowledge).filter(
+        StockKnowledge.ticker == symbol.upper()
+    ).first()
+
+    if not knowledge:
+        raise HTTPException(
+            status_code=404,
+            detail="No knowledge record yet — run update_stock_knowledge_task to generate one"
+        )
+
+    return {
+        "ticker": knowledge.ticker,
+        "narrative": knowledge.narrative,
+        "key_events": knowledge.key_events,
+        "sentiment_trend": knowledge.sentiment_trend,
+        "article_count_processed": knowledge.article_count_processed,
+        "last_updated": knowledge.last_updated.isoformat() if knowledge.last_updated else None,
+        "created_at": knowledge.created_at.isoformat() if knowledge.created_at else None,
     }

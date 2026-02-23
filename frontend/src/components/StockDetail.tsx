@@ -2,9 +2,11 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { feedApi } from '../api/client';
 import { useParams } from 'react-router-dom';
-import { BarChart3, Zap, RefreshCw, Star } from 'lucide-react';
+import { BarChart3, Zap, RefreshCw, Star, Brain, Clock, ExternalLink } from 'lucide-react';
+import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useDailyFeatures, useFeatureHistory, useCalculateFeatures, useEnhancedAnalytics } from '../hooks/useFeatures';
 import { useWSBTrending } from '../hooks/useWSBDashboard';
+import { useStockKnowledge } from '../hooks/useMarketIntelligence';
 import { useToast } from '../hooks/useToast';
 import ToastManager from './ToastManager';
 import FeatureCard from './FeatureCard';
@@ -26,6 +28,7 @@ const StockDetail: React.FC = () => {
   const { data: history, isLoading: historyLoading } = useFeatureHistory(ticker, 30);
   const calculateFeatures = useCalculateFeatures();
   const { data: enhanced, isLoading: enhancedLoading } = useEnhancedAnalytics(ticker);
+  const { data: knowledge } = useStockKnowledge(ticker);
 
   // Fetch WSB trending data as fallback (filter from shared hook)
   const { data: wsbTrendingAll, isLoading: wsbLoading } = useWSBTrending(7, 50);
@@ -356,6 +359,112 @@ const StockDetail: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Stock Intelligence Section — only render if knowledge data exists */}
+      {knowledge && (
+        <div className="card mb-8">
+          <div className="flex items-center gap-2 mb-5">
+            <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Stock Intelligence</h2>
+            {knowledge.last_updated && (
+              <span className="ml-auto flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+                <Clock className="w-3 h-3" />
+                Updated {new Date(knowledge.last_updated).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+
+          {/* Analyst Note */}
+          <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-xl">
+            <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-2">
+              Analyst Note &middot; {knowledge.article_count_processed} articles analyzed
+            </div>
+            {knowledge.narrative ? (
+              <p className="text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed italic">
+                &ldquo;{knowledge.narrative}&rdquo;
+              </p>
+            ) : (
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 italic">
+                Structured intelligence only — LLM narrative not configured
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Key Events Timeline */}
+            {knowledge.key_events?.events && knowledge.key_events.events.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">Key Events</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {knowledge.key_events.events.slice(-10).reverse().map((event, idx) => {
+                    const s = event.sentiment ?? 0.5;
+                    const sentColor = s > 0.6
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-700'
+                      : s < 0.4
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-700'
+                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-700';
+                    const sentLabel = s > 0.6 ? 'Pos' : s < 0.4 ? 'Neg' : 'Neu';
+                    return (
+                      <div key={idx} className="flex items-start gap-2 text-sm">
+                        <span className="text-neutral-400 dark:text-neutral-500 text-xs mt-0.5 shrink-0 w-20">
+                          {event.date || '—'}
+                        </span>
+                        <span className={cn('px-1.5 py-0.5 text-[10px] font-semibold rounded border shrink-0', sentColor)}>
+                          {sentLabel}
+                        </span>
+                        {event.url ? (
+                          <a href={event.url} target="_blank" rel="noopener noreferrer"
+                            className="text-neutral-700 dark:text-neutral-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 leading-snug">
+                            {event.title}
+                            <ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
+                          </a>
+                        ) : (
+                          <span className="text-neutral-700 dark:text-neutral-300 leading-snug">{event.title}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Sentiment Trajectory Sparkline */}
+            {knowledge.sentiment_trend?.weekly && knowledge.sentiment_trend.weekly.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">Sentiment Trajectory</h3>
+                <ResponsiveContainer width="100%" height={120}>
+                  <LineChart data={knowledge.sentiment_trend.weekly.slice(-12)}>
+                    <XAxis dataKey="week" hide />
+                    <YAxis domain={[0, 1]} hide />
+                    <Tooltip
+                      formatter={(val: number) => [val.toFixed(2), 'Sentiment']}
+                      labelFormatter={(label) => `Week: ${label}`}
+                      contentStyle={{
+                        fontSize: '11px',
+                        backgroundColor: 'var(--tooltip-bg, #1f2937)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: '#e5e7eb',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="avg_sentiment"
+                      stroke="#7c3aed"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="flex justify-between text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                  <span>12 weeks ago</span>
+                  <span>Now</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Feature Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

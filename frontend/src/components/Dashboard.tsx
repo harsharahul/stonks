@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   TrendingUp, TrendingDown, Target, Activity, Zap, RefreshCw,
-  AlertTriangle, Calendar, ChevronRight, Shield, Newspaper,
+  AlertTriangle, Calendar, ChevronRight, Shield, Newspaper, Brain, Clock,
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
 import FreshnessIndicator from './FreshnessIndicator';
@@ -68,7 +68,7 @@ const anomalyTypeLabel = (t: string) => t.replace(/_/g, ' ').replace(/\b\w/g, c 
 const Dashboard: React.FC = () => {
   const {
     featuresSummary, featureStats, outlook, recommendations, alerts,
-    anomalies, wsbTrending, sentiment, articles,
+    anomalies, wsbTrending, sentiment, articles, morningBrief,
     topGainers, topLosers, refreshAll,
   } = useDashboard();
 
@@ -236,6 +236,68 @@ const Dashboard: React.FC = () => {
 
         {/* ---------- LEFT COLUMN (8/12) ---------- */}
         <div className="lg:col-span-8 space-y-6">
+
+          {/* -- MORNING BRIEF -- */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-600" />
+                Morning Brief
+              </h2>
+              {morningBrief.data?.generated_at && (
+                <span className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  <Clock className="w-3 h-3" />
+                  {new Date(morningBrief.data.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
+
+            {morningBrief.isLoading ? (
+              <SkeletonLines lines={4} />
+            ) : morningBrief.error ? (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Intelligence gathering in progress — check back tomorrow</p>
+            ) : !morningBrief.data?.stocks?.length ? (
+              <div className="text-center py-6">
+                <Brain className="w-8 h-8 text-purple-300 dark:text-purple-600 mx-auto mb-2" />
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">Intelligence gathering in progress — check back tomorrow</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* LLM market summary */}
+                {morningBrief.data.market_summary && (
+                  <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg text-sm text-neutral-800 dark:text-neutral-200 italic">
+                    &ldquo;{morningBrief.data.market_summary}&rdquo;
+                  </div>
+                )}
+                {/* Per-stock bullets */}
+                <div className="space-y-2">
+                  {morningBrief.data.stocks.slice(0, 6).map((s) => {
+                    const arrow = s.sentiment_trend_direction === 'improving' ? '↑' : s.sentiment_trend_direction === 'declining' ? '↓' : '→';
+                    const arrowColor = s.sentiment_trend_direction === 'improving'
+                      ? 'text-green-600 dark:text-green-400'
+                      : s.sentiment_trend_direction === 'declining'
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-neutral-500 dark:text-neutral-400';
+                    return (
+                      <div key={s.ticker} className="flex items-start gap-2 text-sm">
+                        <Link to={`/stocks/${s.ticker}`}
+                          className="font-semibold text-blue-600 dark:text-blue-400 hover:underline shrink-0 w-12">
+                          {s.ticker}
+                        </Link>
+                        <span className={cn('font-bold shrink-0', arrowColor)}>{arrow}</span>
+                        <span className="text-neutral-600 dark:text-neutral-400 leading-snug line-clamp-2">
+                          {s.top_event || s.narrative?.slice(0, 100) || 'No recent events'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="text-right">
+                  <Link to="/intelligence" className="text-xs text-blue-600 hover:underline">Full Brief &rarr;</Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* -- RECOMMENDATIONS -- */}
           <div className="card">

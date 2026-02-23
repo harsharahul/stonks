@@ -14,6 +14,7 @@ from app.features import FeatureAggregator
 from app.tasks.feature_calculation import calculate_daily_features, calculate_features_for_ticker
 from app.llm import enhance_analytics_with_llm_sync
 from app.models.article import Article
+from app.models.stock_knowledge import StockKnowledge
 from app.api.dependencies import verify_api_key, enforce_rate_limit
 import logging
 
@@ -442,6 +443,19 @@ def get_enhanced_features(
             for r in rows
         ]
         
+        # Inject StockKnowledge narrative as synthetic article if available
+        knowledge = db.query(StockKnowledge).filter(
+            StockKnowledge.ticker == ticker.upper()
+        ).first()
+        if knowledge and knowledge.narrative:
+            articles.insert(0, {
+                'title': f'[Analyst Note] {knowledge.narrative[:200]}',
+                'sentiment': None,
+                'url': '',
+                'published_at': knowledge.last_updated.isoformat() if knowledge.last_updated else None,
+                'raw_content': None,
+            })
+
         # Enhance with LLM
         enhanced_result = enhance_analytics_with_llm_sync(
             ticker=ticker,

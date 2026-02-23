@@ -78,6 +78,24 @@ TASK_CATALOG = {
         "description": "Post-processing for newly ingested articles",
         "schedule": "Every 15 min",
     },
+    "stock_knowledge": {
+        "task": "app.tasks.stock_knowledge.update_stock_knowledge_task",
+        "queue": "compute",
+        "description": "Update evolving per-ticker intelligence",
+        "schedule": "Daily 02:30 UTC",
+    },
+    "cleanup_articles": {
+        "task": "app.tasks.post_ingest_hooks.cleanup_old_articles",
+        "queue": "compute",
+        "description": "Archive/delete old articles (tiered)",
+        "schedule": "Daily 03:00 UTC",
+    },
+    "cleanup_etl_runs": {
+        "task": "app.tasks.post_ingest_hooks.cleanup_old_etl_runs",
+        "queue": "compute",
+        "description": "Delete old ETL job run records",
+        "schedule": "Daily 03:15 UTC",
+    },
 }
 
 

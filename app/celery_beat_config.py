@@ -121,7 +121,29 @@ beat_schedule = {
         'options': {
             'expires': 3600,  # Task expires after 1 hour
         }
-    }
+    },
+
+    # Article cleanup (tiered): null content 30–90d, full delete 90d+ — daily at 3 AM
+    'cleanup-old-articles': {
+        'task': 'app.tasks.post_ingest_hooks.cleanup_old_articles',
+        'schedule': crontab(hour=3, minute=0),
+        'options': {'expires': 3600},
+    },
+
+    # ETL job run cleanup: delete rows older than 30 days — daily at 3:15 AM
+    'cleanup-old-etl-runs': {
+        'task': 'app.tasks.post_ingest_hooks.cleanup_old_etl_runs',
+        'schedule': crontab(hour=3, minute=15),
+        'options': {'expires': 1800},
+    },
+
+    # Stock knowledge update: evolving per-ticker intelligence — daily at 2:30 AM
+    # Runs BEFORE cleanup (3:00 AM) so articles are distilled before deletion
+    'update-stock-knowledge': {
+        'task': 'app.tasks.stock_knowledge.update_stock_knowledge_task',
+        'schedule': crontab(hour=2, minute=30),
+        'options': {'expires': 7200},
+    },
 }
 
 # Timezone for scheduled tasks
@@ -141,4 +163,5 @@ task_routes = {
     'app.tasks.sec_edgar_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.earnings_calendar.*': {'queue': 'ingestion'},
     'app.tasks.post_ingest_hooks.*': {'queue': 'compute'},
+    'app.tasks.stock_knowledge.*': {'queue': 'compute'},
 }
