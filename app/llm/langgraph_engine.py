@@ -8,6 +8,7 @@ Provides self-correcting writes, intelligent routing, and quality assurance.
 import asyncio
 import json
 import logging
+import os
 from typing import Dict, List, Any, Optional, TypedDict, Annotated
 from datetime import datetime
 from dataclasses import dataclass
@@ -123,7 +124,7 @@ class LangGraphEngine:
             from langchain_community.llms import Ollama
             return Ollama(
                 model=self.llm_config.model,
-                base_url=self.llm_config.base_url or "http://localhost:11434"
+                base_url=self.llm_config.base_url or os.getenv("OLLAMA_HOST", "http://localhost:11434")
             )
         else:
             raise ValueError(f"Unsupported LLM provider: {self.llm_config.provider}")

@@ -10,47 +10,35 @@ from langchain_core.prompts import ChatPromptTemplate
 import json
 import os
 
-# Initialize LLM with fallback to Ollama
+# Initialize LLM based on ANALYTICS_LLM_PROVIDER config
 def get_llm():
-    """Get LLM instance with fallback to Ollama if OpenAI not available"""
+    """Get LLM instance based on configured provider"""
+    provider = os.getenv("ANALYTICS_LLM_PROVIDER", "none")
+
+    if provider == "none":
+        return None
+
     try:
-        # Try OpenAI first
-        api_key = os.getenv("OPENAI_API_KEY")
-        if api_key and api_key != "your_openai_api_key_here":
-            return ChatOpenAI(
-                model="gpt-4o-mini",  # Cost-effective for production
-                temperature=0.1,  # Low temperature for consistent financial analysis
-                max_tokens=1000
-            )
-        
-        # Fallback to Ollama
-        try:
-            import ollama
-            # Test if Ollama is running
-            available_models = ollama.list()
-            
-            # Prefer smaller, faster models for financial analysis
-            preferred_models = ["llama3.1:latest", "qwen3:30b", "gpt-oss:20b"]
-            selected_model = None
-            
-            for model_name in preferred_models:
-                if any(model['name'] == model_name for model in available_models['models']):
-                    selected_model = model_name
-                    break
-            
-            if selected_model:
-                print(f"Using Ollama model: {selected_model}")
-                return OllamaLLM(model=selected_model)
-            else:
-                # Use first available model
-                first_model = available_models['models'][0]['name']
-                print(f"Using available Ollama model: {first_model}")
-                return OllamaLLM(model=first_model)
-                
-        except Exception as e:
-            print(f"Ollama fallback failed: {e}")
+        if provider == "openai":
+            api_key = os.getenv("OPENAI_API_KEY")
+            if api_key and api_key != "your_openai_api_key_here":
+                return ChatOpenAI(
+                    model="gpt-4o-mini",
+                    temperature=0.1,
+                    max_tokens=1000
+                )
+            print("OpenAI provider configured but no valid API key found")
             return None
-            
+
+        if provider == "ollama":
+            ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+            ollama_model = os.getenv("OLLAMA_MODEL", "qwen3:14b")
+            print(f"Using Ollama model: {ollama_model} at {ollama_host}")
+            return OllamaLLM(model=ollama_model, host=ollama_host)
+
+        print(f"Unknown LLM provider: {provider}")
+        return None
+
     except Exception as e:
         print(f"LLM initialization error: {e}")
         return None
@@ -59,13 +47,16 @@ def get_llm():
 class OllamaLLM:
     """Wrapper for Ollama to make it compatible with LangChain"""
     
-    def __init__(self, model: str = "llama3.2:3b", temperature: float = 0.1):
+    def __init__(self, model: str = "qwen3:14b", temperature: float = 0.1, host: str = None):
         self.model = model
         self.temperature = temperature
         self.client = None
         try:
             import ollama
-            self.client = ollama
+            if host:
+                self.client = ollama.Client(host=host)
+            else:
+                self.client = ollama.Client()
         except ImportError:
             raise ImportError("Ollama package not available")
     
