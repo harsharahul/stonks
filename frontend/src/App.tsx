@@ -15,6 +15,7 @@ import StatusBar from './components/StatusBar';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import SystemStatus from './components/SystemStatus';
 import AdminDashboard from './components/AdminDashboard';
+import AITradingDesk from './components/AITradingDesk';
 import { TrendingUp, Brain, AlertTriangle, Zap, Menu, X, Search, Monitor, Shield } from 'lucide-react';
 import { cn } from './utils/format';
 
@@ -32,6 +33,7 @@ const queryClient = new QueryClient({
 const navLinks = [
   { to: '/', label: 'Dashboard', match: (p: string) => p === '/', activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
   { to: '/stocks', label: 'Stocks', match: (p: string) => p.startsWith('/stocks'), activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
+  { to: '/desk', label: 'AI Desk', icon: <Brain className="w-4 h-4 inline mr-1" />, match: (p: string) => p.startsWith('/desk'), activeClass: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
   { to: '/intelligence', label: 'AI Intelligence', icon: <Brain className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/intelligence', activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
   { to: '/signals', label: 'Signals', icon: <Zap className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/signals', activeClass: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' },
   { to: '/anomalies', label: 'Anomalies', icon: <AlertTriangle className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/anomalies', activeClass: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' },
@@ -159,6 +161,8 @@ const AppContent: React.FC = () => {
         <Route path="/" element={<Dashboard />} />
         <Route path="/stocks" element={<EnhancedStocksList />} />
         <Route path="/stocks/:symbol" element={<StockDetail />} />
+        <Route path="/desk" element={<AITradingDesk />} />
+        <Route path="/desk/:ticker" element={<AITradingDesk />} />
         <Route path="/intelligence" element={<MarketIntelligence />} />
         <Route path="/signals" element={<SignalsExplorer />} />
         <Route path="/anomalies" element={<AnomalyExplorer />} />

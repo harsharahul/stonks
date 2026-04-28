@@ -15,3 +15,12 @@ from .doc_entity import DocEntity
 from .ticker_features_daily import TickerFeaturesDaily
 from .doc_embedding import DocEmbedding
 from .stock_knowledge import StockKnowledge
+
+# AI Trading Desk
+from .agent_run import AgentRun
+from .agent_brief import AgentBrief
+from .agent_decision import AgentDecision
+from .agent_decision_outcome import AgentDecisionOutcome
+from .agent_decision_embedding import AgentDecisionEmbedding
+from .agent_brief_embedding import AgentBriefEmbedding
+from .agent_universe_membership import AgentUniverseMembership

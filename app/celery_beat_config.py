@@ -144,6 +144,29 @@ beat_schedule = {
         'schedule': crontab(hour=2, minute=30),
         'options': {'expires': 7200},
     },
+
+    # AI Trading Desk — Phase 1 schedule.
+    # Universe refresh: every Sunday at 00:00 UTC.
+    'desk-refresh-universe': {
+        'task': 'app.tasks.agent_pipeline.refresh_universe_membership_task',
+        'schedule': crontab(hour=0, minute=0, day_of_week='sun'),
+        'options': {'expires': 3600},
+    },
+
+    # Nightly desk batch: 7:15 AM UTC, after features (5am), signals (6am),
+    # and recommendations (6:30am).
+    'desk-nightly-batch': {
+        'task': 'app.tasks.agent_pipeline.run_desk_universe_nightly_task',
+        'schedule': crontab(hour=7, minute=15),
+        'options': {'expires': 6 * 3600},
+    },
+
+    # Retrospective scoring: 23:00 UTC daily (after market close).
+    'desk-score-outcomes': {
+        'task': 'app.tasks.agent_pipeline.score_past_decisions_task',
+        'schedule': crontab(hour=23, minute=0),
+        'options': {'expires': 3600},
+    },
 }
 
 # Timezone for scheduled tasks
@@ -164,4 +187,5 @@ task_routes = {
     'app.tasks.earnings_calendar.*': {'queue': 'ingestion'},
     'app.tasks.post_ingest_hooks.*': {'queue': 'compute'},
     'app.tasks.stock_knowledge.*': {'queue': 'compute'},
+    'app.tasks.agent_pipeline.*': {'queue': 'analytics'},
 }

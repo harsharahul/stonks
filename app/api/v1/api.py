@@ -4,7 +4,7 @@ Main router that includes all API endpoints
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import stocks, feed, recommendations, signals, admin, features, metrics, anomalies, websockets, intelligent_signals, market_analysis, stocks_enhanced, prices
+from app.api.v1.endpoints import stocks, feed, recommendations, signals, admin, features, metrics, anomalies, websockets, intelligent_signals, market_analysis, stocks_enhanced, prices, desk
 
 # Create API router
 api_router = APIRouter()
@@ -23,6 +23,7 @@ api_router.include_router(intelligent_signals.router, prefix="/intelligent-signa
 api_router.include_router(market_analysis.router, prefix="/market-analysis", tags=["market-analysis"])
 api_router.include_router(stocks_enhanced.router, prefix="/stocks-enhanced", tags=["stocks-enhanced"])
 api_router.include_router(prices.router, prefix="/prices", tags=["prices"])
+api_router.include_router(desk.router, prefix="/desk", tags=["ai-trading-desk"])
 
 
 # Health/ready endpoints (duplicated from root so they're reachable via /api/v1/ in k3s ingress)
