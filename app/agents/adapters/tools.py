@@ -87,59 +87,103 @@ def _stock_knowledge_excerpt(ticker: str, db) -> str:
 # Core stock data
 # ---------------------------------------------------------------------------
 
-def get_stock_data(symbol: str, start_date: str, end_date: str) -> str:
-    """OHLCV summary from our `Price` table for the [start_date, end_date] window."""
+def fetch_daily_bars(symbol: str, start: date, end: date) -> list:
+    """Daily OHLCV bars for `symbol` from the `prices` table.
+
+    The Price model stores `symbol` + `timestamp` (DateTime) with OHLCV in
+    `open_price`/`high`/`low`/`close`/`volume`; intraday snapshots may coexist
+    with daily bars, so we keep the LAST row per calendar day that has a
+    close. Returns a list of objects with .date/.open/.high/.low/.close/.volume.
+    """
+    from dataclasses import dataclass as _dc
+
     from app.models.price import Price
 
-    sd = _parse_date(start_date) or (date.today() - timedelta(days=90))
-    ed = _parse_date(end_date) or date.today()
-    sym = symbol.upper()
+    @_dc
+    class Bar:
+        date: date
+        open: Optional[float]
+        high: Optional[float]
+        low: Optional[float]
+        close: float
+        volume: Optional[int]
+
+    start_dt = datetime.combine(start, datetime.min.time())
+    end_dt = datetime.combine(end, datetime.max.time())
 
     with SessionLocal() as db:
         rows = (
             db.execute(
                 select(Price)
-                .where(Price.ticker == sym, Price.date >= sd, Price.date <= ed)
-                .order_by(Price.date.asc())
+                .where(
+                    Price.symbol == symbol.upper(),
+                    Price.timestamp >= start_dt,
+                    Price.timestamp <= end_dt,
+                )
+                .order_by(Price.timestamp.asc())
             )
             .scalars()
             .all()
         )
-        if not rows:
-            return f"# {sym} — OHLCV ({start_date} → {end_date})\n\n{_NOT_AVAILABLE}"
 
-        first = rows[0]
-        last = rows[-1]
-        try:
-            ret = (float(last.close) - float(first.close)) / float(first.close)
-        except Exception:
-            ret = None
-        highs = [float(r.high) for r in rows if r.high is not None]
-        lows = [float(r.low) for r in rows if r.low is not None]
-        vols = [float(r.volume) for r in rows if r.volume is not None]
-        avg_vol = sum(vols) / len(vols) if vols else None
+    by_day: dict = {}
+    for r in rows:
+        close = r.close if r.close is not None else r.price
+        if close is None:
+            continue
+        day = r.timestamp.date()
+        by_day[day] = Bar(
+            date=day,
+            open=float(r.open_price) if r.open_price is not None else None,
+            high=float(r.high) if r.high is not None else None,
+            low=float(r.low) if r.low is not None else None,
+            close=float(close),
+            volume=int(r.volume) if r.volume is not None else None,
+        )
+    return [by_day[d] for d in sorted(by_day)]
 
-        lines = [
-            f"# {sym} — OHLCV ({start_date} → {end_date})",
-            "",
-            f"- Bars: {len(rows)}",
-            f"- First close ({first.date}): {float(first.close):.4f}",
-            f"- Last close ({last.date}):  {float(last.close):.4f}",
-            f"- Period return: {ret:+.2%}" if ret is not None else "- Period return: n/a",
-            f"- High over period: {max(highs):.4f}" if highs else "- High over period: n/a",
-            f"- Low over period: {min(lows):.4f}" if lows else "- Low over period: n/a",
-            f"- Avg daily volume: {avg_vol:,.0f}" if avg_vol else "- Avg daily volume: n/a",
-            "",
-            "| date | open | high | low | close | volume |",
-            "|------|------|------|-----|-------|--------|",
-        ]
-        # Show the last 15 bars to keep the prompt compact
-        for r in rows[-15:]:
-            lines.append(
-                f"| {r.date} | {float(r.open):.2f} | {float(r.high):.2f} | "
-                f"{float(r.low):.2f} | {float(r.close):.2f} | {int(r.volume or 0):,} |"
-            )
-        return "\n".join(lines)
+
+def get_stock_data(symbol: str, start_date: str, end_date: str) -> str:
+    """OHLCV summary from our `prices` table for the [start_date, end_date] window."""
+    sd = _parse_date(start_date) or (date.today() - timedelta(days=90))
+    ed = _parse_date(end_date) or date.today()
+    sym = symbol.upper()
+
+    rows = fetch_daily_bars(sym, sd, ed)
+    if not rows:
+        return f"# {sym} — OHLCV ({start_date} → {end_date})\n\n{_NOT_AVAILABLE}"
+
+    first = rows[0]
+    last = rows[-1]
+    ret = (last.close - first.close) / first.close if first.close else None
+    highs = [r.high for r in rows if r.high is not None]
+    lows = [r.low for r in rows if r.low is not None]
+    vols = [r.volume for r in rows if r.volume is not None]
+    avg_vol = sum(vols) / len(vols) if vols else None
+
+    lines = [
+        f"# {sym} — OHLCV ({start_date} → {end_date})",
+        "",
+        f"- Bars: {len(rows)}",
+        f"- First close ({first.date}): {first.close:.4f}",
+        f"- Last close ({last.date}):  {last.close:.4f}",
+        f"- Period return: {ret:+.2%}" if ret is not None else "- Period return: n/a",
+        f"- High over period: {max(highs):.4f}" if highs else "- High over period: n/a",
+        f"- Low over period: {min(lows):.4f}" if lows else "- Low over period: n/a",
+        f"- Avg daily volume: {avg_vol:,.0f}" if avg_vol else "- Avg daily volume: n/a",
+        "",
+        "| date | open | high | low | close | volume |",
+        "|------|------|------|-----|-------|--------|",
+    ]
+    # Show the last 15 bars to keep the prompt compact
+    for r in rows[-15:]:
+        def _fmt(v: Optional[float]) -> str:
+            return f"{v:.2f}" if v is not None else "n/a"
+        lines.append(
+            f"| {r.date} | {_fmt(r.open)} | {_fmt(r.high)} | "
+            f"{_fmt(r.low)} | {r.close:.2f} | {r.volume or 0:,} |"
+        )
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -179,46 +223,35 @@ def get_indicators(
     look_back_days: int = 30,
 ) -> str:
     """RSI / SMA / momentum summary for a ticker over a look-back window."""
-    from app.models.price import Price
-
     end = _parse_date(curr_date) or date.today()
     start = end - timedelta(days=max(look_back_days, 60))
     sym = symbol.upper()
 
-    with SessionLocal() as db:
-        rows = (
-            db.execute(
-                select(Price)
-                .where(Price.ticker == sym, Price.date >= start, Price.date <= end)
-                .order_by(Price.date.asc())
-            )
-            .scalars()
-            .all()
-        )
-        if len(rows) < 5:
-            return f"# {sym} — Indicators ({indicator})\n\n{_NOT_AVAILABLE}"
+    rows = fetch_daily_bars(sym, start, end)
+    if len(rows) < 5:
+        return f"# {sym} — Indicators ({indicator})\n\n{_NOT_AVAILABLE}"
 
-        closes = [float(r.close) for r in rows if r.close is not None]
-        sma_20 = _sma(closes, 20)
-        sma_50 = _sma(closes, 50)
-        rsi_14 = _rsi(closes, 14)
-        last = closes[-1]
-        first = closes[0]
-        period_return = (last - first) / first if first else None
+    closes = [r.close for r in rows]
+    sma_20 = _sma(closes, 20)
+    sma_50 = _sma(closes, 50)
+    rsi_14 = _rsi(closes, 14)
+    last = closes[-1]
+    first = closes[0]
+    period_return = (last - first) / first if first else None
 
-        lines = [
-            f"# {sym} — Indicators ({indicator}, look_back={look_back_days}d)",
-            "",
-            f"- Last close: {last:.4f} on {rows[-1].date}",
-            f"- Period return: {period_return:+.2%}" if period_return is not None else "- Period return: n/a",
-            f"- SMA(20): {sma_20:.4f}" if sma_20 is not None else "- SMA(20): n/a",
-            f"- SMA(50): {sma_50:.4f}" if sma_50 is not None else "- SMA(50): n/a",
-            f"- RSI(14): {rsi_14:.2f}" if rsi_14 is not None else "- RSI(14): n/a",
-        ]
-        if sma_20 is not None and sma_50 is not None:
-            trend = "bullish" if sma_20 > sma_50 else "bearish" if sma_20 < sma_50 else "neutral"
-            lines.append(f"- 20/50 trend: {trend}")
-        return "\n".join(lines)
+    lines = [
+        f"# {sym} — Indicators ({indicator}, look_back={look_back_days}d)",
+        "",
+        f"- Last close: {last:.4f} on {rows[-1].date}",
+        f"- Period return: {period_return:+.2%}" if period_return is not None else "- Period return: n/a",
+        f"- SMA(20): {sma_20:.4f}" if sma_20 is not None else "- SMA(20): n/a",
+        f"- SMA(50): {sma_50:.4f}" if sma_50 is not None else "- SMA(50): n/a",
+        f"- RSI(14): {rsi_14:.2f}" if rsi_14 is not None else "- RSI(14): n/a",
+    ]
+    if sma_20 is not None and sma_50 is not None:
+        trend = "bullish" if sma_20 > sma_50 else "bearish" if sma_20 < sma_50 else "neutral"
+        lines.append(f"- 20/50 trend: {trend}")
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------

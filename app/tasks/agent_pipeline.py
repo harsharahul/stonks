@@ -111,7 +111,7 @@ def _scoring_for_decision(
     decision: AgentDecision,
 ) -> Optional[Dict[str, Optional[float]]]:
     """Compute realized return + alpha vs SPY for one decision; None if too soon."""
-    from app.models.price import Price
+    from app.agents.adapters.tools import fetch_daily_bars
 
     sym = decision.ticker
     as_of = decision.as_of_date
@@ -122,27 +122,13 @@ def _scoring_for_decision(
     if today < as_of + timedelta(days=5):
         return None  # not enough days to score 5d yet
 
-    sym_rows = (
-        db.execute(
-            select(Price.date, Price.close)
-            .where(Price.ticker == sym, Price.date >= as_of, Price.date <= end_window)
-            .order_by(Price.date.asc())
-        )
-        .all()
-    )
-    spy_rows = (
-        db.execute(
-            select(Price.date, Price.close)
-            .where(Price.ticker == "SPY", Price.date >= as_of, Price.date <= end_window)
-            .order_by(Price.date.asc())
-        )
-        .all()
-    )
-    if not sym_rows or not spy_rows:
+    sym_bars = fetch_daily_bars(sym, as_of, end_window)
+    spy_bars = fetch_daily_bars("SPY", as_of, end_window)
+    if not sym_bars or not spy_bars:
         return None
 
-    sym_dict = {r.date: float(r.close) for r in sym_rows if r.close is not None}
-    spy_dict = {r.date: float(r.close) for r in spy_rows if r.close is not None}
+    sym_dict = {b.date: b.close for b in sym_bars}
+    spy_dict = {b.date: b.close for b in spy_bars}
     if not sym_dict or not spy_dict:
         return None
 
