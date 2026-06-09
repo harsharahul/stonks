@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import StockDetail from './components/StockDetail';
-import RealTimeAlerts from './components/RealTimeAlerts';
+import NotificationBell from './components/NotificationBell';
 import MarketIntelligence from './components/MarketIntelligence';
 import EnhancedStocksList from './components/EnhancedStocksList';
 import WSBTrendingDashboard from './components/WSBTrendingDashboard';
@@ -134,12 +134,16 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
                 Ctrl+K
               </kbd>
             </button>
+            {/* Notifications */}
+            <div className="ml-1">
+              <NotificationBell />
+            </div>
             {/* User menu */}
-            <div className="ml-2">
+            <div className="ml-1">
               <UserMenu />
             </div>
           </div>
-          {/* Mobile: search + user + hamburger */}
+          {/* Mobile: search + notifications + user + hamburger */}
           <div className="md:hidden flex items-center gap-1">
             <button
               className="flex items-center p-2 rounded-md text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -148,6 +152,7 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
             >
               <Search className="w-5 h-5" />
             </button>
+            <NotificationBell />
             <UserMenu />
             <button
               className="flex items-center p-2 rounded-md text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -233,9 +238,6 @@ const AppContent: React.FC = () => {
         {/* Admin route */}
         <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
       </Routes>
-
-      {/* Real-time alerts overlay */}
-      <RealTimeAlerts maxAlerts={15} autoAcknowledge={false} />
 
       {/* Command palette & keyboard shortcuts */}
       <CommandPalette
