@@ -76,6 +76,13 @@ class Settings(BaseSettings):
     OIDC_AUDIENCE: str = os.getenv("OIDC_AUDIENCE", "")  # defaults to OIDC_CLIENT_ID if empty
     # Comma-separated list of emails that receive admin role on first login
     ADMIN_EMAILS: str = os.getenv("ADMIN_EMAILS", "")
+
+    # Brokerage (per-user Alpaca accounts)
+    # Fernet key for encrypting user broker API credentials at rest.
+    # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    BROKER_CREDS_ENCRYPTION_KEY: Optional[str] = os.getenv("BROKER_CREDS_ENCRYPTION_KEY")
+    # Global trading halt: when true, all order placement is rejected regardless of per-user settings.
+    BROKER_TRADING_HALTED: bool = os.getenv("BROKER_TRADING_HALTED", "false").lower() == "true"
     
     # Application Configuration
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"

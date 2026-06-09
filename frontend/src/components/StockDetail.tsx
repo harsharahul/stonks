@@ -2,7 +2,8 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { feedApi } from '../api/client';
 import { useParams } from 'react-router-dom';
-import { BarChart3, Zap, RefreshCw, Star, Brain, Clock, ExternalLink } from 'lucide-react';
+import { BarChart3, Zap, RefreshCw, Star, Brain, Clock, ExternalLink, TrendingUp } from 'lucide-react';
+import TradeTicket from './broker/TradeTicket';
 import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useDailyFeatures, useFeatureHistory, useCalculateFeatures, useEnhancedAnalytics } from '../hooks/useFeatures';
 import { useWSBTrending } from '../hooks/useWSBDashboard';
@@ -50,6 +51,7 @@ const StockDetail: React.FC = () => {
   });
   const isTracked = trackedStocks.data?.includes(ticker) ?? false;
   const [starLoading, setStarLoading] = useState(false);
+  const [tradeOpen, setTradeOpen] = useState(false);
 
   const toggleTracked = async () => {
     setStarLoading(true);
@@ -214,6 +216,12 @@ const StockDetail: React.FC = () => {
             </div>
           )}
           <button
+            onClick={() => setTradeOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+          >
+            <TrendingUp className="w-4 h-4" /> Trade
+          </button>
+          <button
             onClick={handleRefreshFeatures}
             disabled={calculateFeatures.isLoading}
             className="btn-primary"
@@ -222,6 +230,14 @@ const StockDetail: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {symbol && (
+        <TradeTicket
+          symbol={symbol.toUpperCase()}
+          open={tradeOpen}
+          onClose={() => setTradeOpen(false)}
+        />
+      )}
 
       {/* Data Coverage Strip */}
       {features && (

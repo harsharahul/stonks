@@ -20,9 +20,10 @@ coverage.xml
 .idea/
 .vscode/
 
-# Env
+# Env (the template ships; real env files never do)
 .env
 .env.*
+!.env.example
 
 # Logs
 .uvicorn.log

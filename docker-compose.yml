@@ -39,7 +39,13 @@ services:
       # Override localhost values from .env with Docker service names
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
-      OLLAMA_HOST: http://ollama:11434
+      # Ollama: set OLLAMA_DOCKER_HOST in .env to use a remote Ollama for real
+      # LLM features in local dev; falls back to the optional local container.
+      OLLAMA_HOST: ${OLLAMA_DOCKER_HOST:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_DOCKER_MODEL:-qwen3:14b}
+      ANALYTICS_LLM_PROVIDER: ${ANALYTICS_LLM_PROVIDER_DOCKER:-ollama}
+      # Brokerage credential encryption — generate per environment (see .env.example)
+      BROKER_CREDS_ENCRYPTION_KEY: ${BROKER_CREDS_ENCRYPTION_KEY:-}
       # OIDC comes from .env via env_file above
     depends_on:
       postgres:
@@ -52,8 +58,9 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        VITE_OIDC_AUTHORITY: "https://auth.example.com/application/o/stonks/"
-        VITE_OIDC_CLIENT_ID: "R2TuyGZE9ST1bfSDz2qWQfhdS4MofWLV3TEUhMuS"
+        # Set in .env — leave empty to build with OIDC disabled (anonymous mode)
+        VITE_OIDC_AUTHORITY: "${VITE_OIDC_AUTHORITY:-}"
+        VITE_OIDC_CLIENT_ID: "${VITE_OIDC_CLIENT_ID:-}"
     restart: unless-stopped
     ports:
       - "3000:80"

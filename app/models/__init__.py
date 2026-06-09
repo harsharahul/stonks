@@ -20,6 +20,10 @@ from .stock_knowledge import StockKnowledge
 from .user import User
 from .watchlist import WatchlistItem
 
+# Brokerage (Alpaca)
+from .user_broker_account import UserBrokerAccount
+from .broker_order import BrokerOrder
+
 # AI Trading Desk
 from .agent_run import AgentRun
 from .agent_brief import AgentBrief

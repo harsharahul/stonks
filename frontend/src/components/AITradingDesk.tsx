@@ -7,6 +7,7 @@ import {
 
 import { useDeskUniverse, useDeskForTicker } from '../hooks/useAITradingDesk';
 import type { DeskBrief, DeskDecisionRow, DeskUniverseRow } from '../api/desk';
+import TradeTicket from './broker/TradeTicket';
 import { cn, formatRelativeTime } from '../utils/format';
 
 // ---------------------------------------------------------------------------
@@ -140,6 +141,7 @@ const DecisionHeader: React.FC<{ decision: DeskDecisionRow; runStartedAt: string
 }) => {
   const tone = classifyDecision(decision.decision);
   const conviction = Number(decision.conviction || 0);
+  const [tradeOpen, setTradeOpen] = useState(false);
   return (
     <div
       className={cn(
@@ -182,6 +184,17 @@ const DecisionHeader: React.FC<{ decision: DeskDecisionRow; runStartedAt: string
           </div>
         </div>
         <div className="text-right min-w-[180px]">
+          <div className="flex items-center justify-end gap-2 mb-2">
+            <button
+              onClick={() => setTradeOpen(true)}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider text-white transition-colors',
+                tone === 'sell' ? 'bg-red-700 hover:bg-red-800' : 'bg-emerald-600 hover:bg-emerald-700',
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Trade
+            </button>
+          </div>
           <div className="text-xs uppercase tracking-wider text-neutral-500 mb-1">Conviction</div>
           <div className="font-mono text-lg font-semibold">
             {(conviction * 100).toFixed(0)}%
@@ -206,6 +219,14 @@ const DecisionHeader: React.FC<{ decision: DeskDecisionRow; runStartedAt: string
           {decision.thesis_text.split('\n').slice(0, 12).join('\n')}
         </div>
       ) : null}
+      <TradeTicket
+        symbol={decision.ticker}
+        open={tradeOpen}
+        onClose={() => setTradeOpen(false)}
+        source="desk"
+        sourceRef={decision.id}
+        initialSide={tone === 'sell' ? 'sell' : 'buy'}
+      />
     </div>
   );
 };

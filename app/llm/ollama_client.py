@@ -71,6 +71,12 @@ def get_chat_model(
         temperature=temperature,
         max_tokens=max_tokens,
         timeout=timeout,
+        # Streaming is REQUIRED when Ollama sits behind a reverse proxy with an
+        # idle-connection timeout (Cloudflare cuts non-streaming requests at
+        # ~100s; qwen3 generations regularly exceed that). With streaming the
+        # connection carries bytes continuously and never looks idle.
+        streaming=True,
+        max_retries=2,
     )
 
 

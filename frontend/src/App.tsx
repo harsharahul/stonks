@@ -19,9 +19,10 @@ import WatchlistPage from './components/WatchlistPage';
 import ProfilePage from './components/ProfilePage';
 import UserMenu from './components/UserMenu';
 import AITradingDesk from './components/AITradingDesk';
+import PortfolioPage from './components/broker/PortfolioPage';
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './hooks/useAuth';
-import { TrendingUp, Brain, AlertTriangle, Zap, Menu, X, Search, Monitor, Shield, Star } from 'lucide-react';
+import { TrendingUp, Brain, AlertTriangle, Zap, Menu, X, Search, Monitor, Shield, Star, Briefcase } from 'lucide-react';
 import { cn } from './utils/format';
 
 // Create a client
@@ -87,6 +88,7 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
     { to: '/anomalies', label: 'Anomalies', icon: <AlertTriangle className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/anomalies', activeClass: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' },
     { to: '/wsb-trending', label: '\u{1F412} WSB', match: (p: string) => p === '/wsb-trending', activeClass: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
     ...(isAuthenticated ? [
+      { to: '/portfolio', label: 'Portfolio', icon: <Briefcase className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/portfolio', activeClass: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
       { to: '/watchlist', label: 'Watchlist', icon: <Star className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/watchlist', activeClass: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
     ] : []),
     { to: '/system', label: 'System', icon: <Monitor className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/system', activeClass: 'bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200' },
@@ -224,6 +226,7 @@ const AppContent: React.FC = () => {
         <Route path="/callback" element={<OidcCallback />} />
 
         {/* Authenticated routes */}
+        <Route path="/portfolio" element={<RequireAuth><PortfolioPage /></RequireAuth>} />
         <Route path="/watchlist" element={<RequireAuth><WatchlistPage /></RequireAuth>} />
         <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
 
