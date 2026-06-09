@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     # Comma-separated list of emails that receive admin role on first login
     ADMIN_EMAILS: str = os.getenv("ADMIN_EMAILS", "")
 
+    # CORS: comma-separated production origins (e.g. "https://stonks.example.com")
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "")
+
     # Brokerage (per-user Alpaca accounts)
     # Fernet key for encrypting user broker API credentials at rest.
     # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
@@ -92,7 +95,11 @@ class Settings(BaseSettings):
     API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
     API_PORT: int = int(os.getenv("API_PORT", "8080"))
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True)
+    # extra="ignore": .env also carries docker-compose/frontend-only variables
+    # (VITE_*, OLLAMA_DOCKER_*) that aren't backend settings.
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
+    )
 
 
 # Global settings instance

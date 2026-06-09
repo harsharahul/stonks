@@ -25,13 +25,19 @@ app = FastAPI(
 # Setup enhanced error handling
 setup_error_handlers(app)
 
-# CORS — restrict to known origins in production
+# CORS — restrict to known origins in production.
+# Deployment origin(s) come from CORS_ORIGINS (comma-separated env var, set in
+# the k8s ConfigMap) so no deployment-specific domain lives in code.
 _cors_origins = [
-    "https://stonks.internal.example.com",
     "http://localhost:3000",
     "http://localhost:5173",  # Vite dev server
     "http://localhost:8080",
 ]
+_cors_origins.extend(
+    origin.strip()
+    for origin in (settings.CORS_ORIGINS or "").split(",")
+    if origin.strip()
+)
 # In development, allow all origins for convenience
 _cors_allow_all = settings.ENVIRONMENT == "development"
 
