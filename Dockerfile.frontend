@@ -11,6 +11,13 @@ RUN npm install
 # Copy source code
 COPY frontend/ .
 
+# OIDC env vars — baked into the JS bundle at build time.
+# Override these via --build-arg in CI or docker build.
+ARG VITE_OIDC_AUTHORITY=""
+ARG VITE_OIDC_CLIENT_ID=""
+ENV VITE_OIDC_AUTHORITY=$VITE_OIDC_AUTHORITY
+ENV VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIENT_ID
+
 # Build the application
 RUN npm run build
 

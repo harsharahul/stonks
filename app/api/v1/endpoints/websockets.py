@@ -27,17 +27,32 @@ router = APIRouter()
 @router.websocket("/alerts")
 async def websocket_alerts(
     websocket: WebSocket,
-    user_id: Optional[str] = Query(None, description="User ID for personalized alerts"),
+    token: Optional[str] = Query(None, description="OIDC access token for authenticated channel"),
+    user_id: Optional[str] = Query(None, description="Legacy user ID (deprecated, use token)"),
     db: Session = Depends(get_db)
 ):
     """
     WebSocket endpoint for real-time alerts
-    
+
     Channels:
     - alerts:global - System-wide alerts
-    - alerts:{user_id} - User-specific alerts
+    - alerts:{user_id} - User-specific alerts (requires valid token)
     """
-    channel = f"alerts:{user_id}" if user_id else "alerts:global"
+    # Per-user channels require a VALID token — the bare user_id query param is
+    # never trusted on its own (it would let any client subscribe to any user's
+    # alert stream). No token / invalid token ⇒ global channel only.
+    resolved_user_id = None
+    if token:
+        try:
+            from app.core.auth import validate_token, extract_user_info
+            claims = await validate_token(token)
+            resolved_user_id = extract_user_info(claims).get("provider_user_id")
+        except Exception as e:
+            # M3: Log invalid tokens for monitoring
+            logger.warning(f"WebSocket token validation failed: {e}")
+            # Fall back to global channel for invalid tokens
+
+    channel = f"alerts:{resolved_user_id}" if resolved_user_id else "alerts:global"
     
     try:
         await connection_manager.connect(websocket, channel, user_id)

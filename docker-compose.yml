@@ -40,6 +40,7 @@ services:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
       OLLAMA_HOST: http://ollama:11434
+      # OIDC comes from .env via env_file above
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,6 +51,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        VITE_OIDC_AUTHORITY: "https://auth.example.com/application/o/stonks/"
+        VITE_OIDC_CLIENT_ID: "R2TuyGZE9ST1bfSDz2qWQfhdS4MofWLV3TEUhMuS"
     restart: unless-stopped
     ports:
       - "3000:80"

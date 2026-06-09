@@ -11,7 +11,8 @@ from sqlalchemy import func, String
 from app.core.database import get_db
 from app.worker import worker
 from app.features.retail_sentiment import RetailSentimentFeatures
-from app.api.dependencies import verify_api_key
+from app.api.dependencies import verify_api_key, require_admin
+from app.core.config import settings
 from app.models.etl_job_run import ETLJobRun
 from app.models.article import Article
 
@@ -331,7 +332,9 @@ async def debug_articles(
     db: Session = Depends(get_db),
     limit: int = Query(10, ge=1, le=100, description="Number of articles to return")
 ):
-    """Debug endpoint to check articles in database"""
+    """Debug endpoint to check articles in database (development only)"""
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
     try:
         articles = db.query(Article).order_by(Article.created_at.desc()).limit(limit).all()
         
@@ -356,7 +359,7 @@ async def debug_articles(
         raise HTTPException(status_code=500, detail=f"Failed to get debug articles: {str(e)}")
 
 
-@router.get("/ingest/status")
+@router.get("/ingest/status", dependencies=[Depends(require_admin)])
 async def get_ingestion_status(
     db: Session = Depends(get_db)
 ):

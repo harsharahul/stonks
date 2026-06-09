@@ -16,7 +16,7 @@ from app.services.signal_generator import SignalGenerator
 from app.services.alert_engine import AlertEngine
 from app.tasks.signal_generation import generate_signals_task, generate_alerts_task
 from app.services.websocket_manager import event_broadcaster
-from app.api.dependencies import verify_api_key
+from app.api.dependencies import verify_api_key, get_optional_user
 
 router = APIRouter()
 
@@ -149,9 +149,12 @@ async def get_alert(
 @router.post("/alerts/{alert_id}/acknowledge")
 async def acknowledge_alert(
     alert_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user=Depends(get_optional_user),
 ):
     """Mark an alert as acknowledged"""
+    import logging
+    _logger = logging.getLogger(__name__)
 
     alert_engine = AlertEngine(db)
     success = alert_engine.acknowledge_alert(alert_id)
@@ -159,10 +162,14 @@ async def acknowledge_alert(
     if not success:
         raise HTTPException(status_code=404, detail="Alert not found")
 
+    who = user.email if user else "anonymous"
+    _logger.info(f"Alert {alert_id} acknowledged by {who}")
+
     return {
         "message": "Alert acknowledged successfully",
         "alert_id": alert_id,
-        "acknowledged_at": datetime.utcnow().isoformat()
+        "acknowledged_at": datetime.utcnow().isoformat(),
+        "acknowledged_by": who,
     }
 
 

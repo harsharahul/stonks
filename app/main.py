@@ -25,13 +25,22 @@ app = FastAPI(
 # Setup enhanced error handling
 setup_error_handlers(app)
 
-# Add CORS middleware
+# CORS — restrict to known origins in production
+_cors_origins = [
+    "https://stonks.internal.example.com",
+    "http://localhost:3000",
+    "http://localhost:5173",  # Vite dev server
+    "http://localhost:8080",
+]
+# In development, allow all origins for convenience
+_cors_allow_all = settings.ENVIRONMENT == "development"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure this properly for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"] if _cors_allow_all else _cors_origins,
+    allow_credentials=not _cors_allow_all,  # credentials + wildcard origins is invalid
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-API-Key"],
 )
 
 # Request ID middleware for error tracking
@@ -75,8 +84,31 @@ async def metrics_middleware(request: Request, call_next):
     
     return response
 
+# M2: Validate ENVIRONMENT is a known value
+_VALID_ENVIRONMENTS = {"development", "staging", "production"}
+if settings.ENVIRONMENT not in _VALID_ENVIRONMENTS:
+    raise ValueError(
+        f"ENVIRONMENT={settings.ENVIRONMENT!r} is not valid. "
+        f"Must be one of: {', '.join(sorted(_VALID_ENVIRONMENTS))}"
+    )
+
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+# H5: Validate OIDC config at startup to catch partial config early
+@app.on_event("startup")
+async def _validate_oidc_config():
+    from app.api.dependencies import is_oidc_configured
+    try:
+        configured = is_oidc_configured()
+        if configured:
+            logging.getLogger(__name__).info("OIDC configured: issuer=%s", settings.OIDC_ISSUER_URL)
+        else:
+            logging.getLogger(__name__).info("OIDC not configured — running without authentication")
+    except ValueError as e:
+        logging.getLogger(__name__).error("OIDC config error: %s", e)
+        raise
 
 
 @app.get("/health")

@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from app.core.database import get_db
 from app.worker import worker
 from app.models.etl_job_run import ETLJobRun
+from app.api.dependencies import require_admin
 
 router = APIRouter()
 
@@ -106,7 +107,7 @@ class ReindexRequest(BaseModel):
 
 
 @router.get("/task-catalog")
-async def get_task_catalog():
+async def get_task_catalog(admin=Depends(require_admin)):
     """Return the catalog of available tasks."""
     return {
         "tasks": {
@@ -125,6 +126,7 @@ async def get_task_catalog():
 async def trigger_reindex(
     request: ReindexRequest,
     db: Session = Depends(get_db),
+    admin=Depends(require_admin),
 ):
     """Dispatch a Celery task by job name."""
     if request.job_name not in TASK_CATALOG:
@@ -177,6 +179,7 @@ async def list_recent_jobs(
     job_name: Optional[str] = Query(default=None),
     status: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
+    admin=Depends(require_admin),
 ):
     """List recent ETL job runs with optional filters."""
     query = db.query(ETLJobRun).order_by(desc(ETLJobRun.started_at))

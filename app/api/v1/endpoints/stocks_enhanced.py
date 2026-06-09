@@ -14,7 +14,7 @@ from app.models.stock import Stock
 from app.models.ticker_features_daily import TickerFeaturesDaily
 from app.models.signal import Signal
 from app.models.alert import Alert
-from app.api.dependencies import verify_api_key, enforce_rate_limit
+from app.api.dependencies import verify_api_key, enforce_rate_limit, require_admin
 import logging
 
 logger = logging.getLogger(__name__)
@@ -146,7 +146,7 @@ async def get_comprehensive_stocks(
         raise HTTPException(status_code=500, detail=f"Failed to get stocks: {str(e)}")
 
 
-@router.post("/add")
+@router.post("/add", dependencies=[Depends(require_admin)])
 async def add_stock_to_tracking(
     stock_request: StockCreateRequest,
     db: Session = Depends(get_db),
@@ -227,7 +227,7 @@ async def add_stock_to_tracking(
         raise HTTPException(status_code=500, detail=f"Failed to add stock: {str(e)}")
 
 
-@router.delete("/remove/{symbol}")
+@router.delete("/remove/{symbol}", dependencies=[Depends(require_admin)])
 async def remove_stock_from_tracking(
     symbol: str,
     db: Session = Depends(get_db)
@@ -271,7 +271,7 @@ async def remove_stock_from_tracking(
         raise HTTPException(status_code=500, detail=f"Failed to remove stock: {str(e)}")
 
 
-@router.put("/{symbol}")
+@router.put("/{symbol}", dependencies=[Depends(require_admin)])
 async def update_stock(
     symbol: str,
     stock_update: StockUpdateRequest,

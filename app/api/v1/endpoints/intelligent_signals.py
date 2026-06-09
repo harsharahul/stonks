@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.core.database import get_db
+from app.api.dependencies import require_admin
 from app.core.exceptions import create_http_exception, SignalProcessingException
 from app.services.intelligent_signal_service import (
     IntelligentSignalService, IntelligentSignalConfig, 
@@ -106,7 +107,7 @@ _intelligent_service: Optional[IntelligentSignalService] = None
 
 # API Endpoints
 
-@router.post("/configure")
+@router.post("/configure", dependencies=[Depends(require_admin)])
 async def configure_intelligent_signals(
     config_request: IntelligentSignalConfigRequest,
     db: Session = Depends(get_db)
@@ -183,7 +184,7 @@ async def list_signal_sources() -> Dict[str, Any]:
         )
 
 
-@router.post("/sources/{source_id}/configure")
+@router.post("/sources/{source_id}/configure", dependencies=[Depends(require_admin)])
 async def configure_signal_source(
     source_id: str,
     config_request: SignalSourceConfigRequest,
@@ -216,7 +217,7 @@ async def configure_signal_source(
         )
 
 
-@router.post("/process")
+@router.post("/process", dependencies=[Depends(require_admin)])
 async def process_signal(
     signal_request: ProcessSignalRequest,
     background_tasks: BackgroundTasks,
@@ -425,7 +426,7 @@ async def get_processing_stats(db: Session = Depends(get_db)) -> Dict[str, Any]:
         )
 
 
-@router.post("/signals/{signal_id}/reprocess")
+@router.post("/signals/{signal_id}/reprocess", dependencies=[Depends(require_admin)])
 async def reprocess_signal(
     signal_id: str,
     background_tasks: BackgroundTasks,

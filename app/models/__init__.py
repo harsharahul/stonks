@@ -16,6 +16,10 @@ from .ticker_features_daily import TickerFeaturesDaily
 from .doc_embedding import DocEmbedding
 from .stock_knowledge import StockKnowledge
 
+# User management
+from .user import User
+from .watchlist import WatchlistItem
+
 # AI Trading Desk
 from .agent_run import AgentRun
 from .agent_brief import AgentBrief

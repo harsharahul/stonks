@@ -69,6 +69,13 @@ class Settings(BaseSettings):
     API_KEY: Optional[str] = os.getenv("API_KEY")
     ENABLE_RATE_LIMIT: bool = os.getenv("ENABLE_RATE_LIMIT", "true").lower() == "true"
     RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
+
+    # OIDC / Authentik configuration (Public client with PKCE — no client secret needed)
+    OIDC_ISSUER_URL: Optional[str] = os.getenv("OIDC_ISSUER_URL")  # e.g. https://auth.example.com/application/o/stonks/
+    OIDC_CLIENT_ID: Optional[str] = os.getenv("OIDC_CLIENT_ID")
+    OIDC_AUDIENCE: str = os.getenv("OIDC_AUDIENCE", "")  # defaults to OIDC_CLIENT_ID if empty
+    # Comma-separated list of emails that receive admin role on first login
+    ADMIN_EMAILS: str = os.getenv("ADMIN_EMAILS", "")
     
     # Application Configuration
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"

@@ -44,20 +44,43 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor for logging in development
+// ---------------------------------------------------------------------------
+// Auth interceptor — attaches Bearer token when available
+// ---------------------------------------------------------------------------
+let _accessTokenGetter: (() => string | null) | null = null;
+
+/** Called by AuthProvider on mount to wire up the token source. */
+export function setAccessTokenGetter(getter: () => string | null) {
+  _accessTokenGetter = getter;
+}
+
+apiClient.interceptors.request.use((config) => {
+  if (_accessTokenGetter) {
+    const token = _accessTokenGetter();
+    // H3: Only attach Bearer token for relative URLs (our own API)
+    if (token && config.url && !config.url.startsWith('http')) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// ---------------------------------------------------------------------------
+// Dev logging
+// ---------------------------------------------------------------------------
 if (import.meta.env.DEV) {
   apiClient.interceptors.request.use((config) => {
-    console.log(`🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   });
 
   apiClient.interceptors.response.use(
     (response) => {
-      console.log(`✅ API Response: ${response.status} ${response.config.url}`);
+      console.log(`API Response: ${response.status} ${response.config.url}`);
       return response;
     },
     (error) => {
-      console.error(`❌ API Error: ${error.response?.status} ${error.config?.url}`, error.response?.data);
+      console.error(`API Error: ${error.response?.status} ${error.config?.url}`, error.response?.data);
       throw error;
     }
   );
@@ -373,6 +396,68 @@ export const adminApi = {
     limit?: number;
   }): Promise<JobHistoryResponse> {
     const response: AxiosResponse<JobHistoryResponse> = await apiClient.get('/admin/jobs', { params });
+    return response.data;
+  },
+};
+
+// Auth API
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url: string | null;
+  role: 'user' | 'admin';
+  preferences: Record<string, any>;
+  created_at: string | null;
+  last_login_at: string | null;
+}
+
+export const authApi = {
+  async getMe(): Promise<UserProfile> {
+    const response: AxiosResponse<UserProfile> = await apiClient.get('/auth/me');
+    return response.data;
+  },
+
+  async updateMe(data: { name?: string; preferences?: Record<string, any> }): Promise<UserProfile> {
+    const response: AxiosResponse<UserProfile> = await apiClient.put('/auth/me', data);
+    return response.data;
+  },
+};
+
+// Watchlist API
+export interface WatchlistItem {
+  id: string;
+  user_id: string;
+  stock_id: string;
+  notes: string | null;
+  added_at: string | null;
+  symbol: string | null;
+  company_name: string | null;
+}
+
+export interface WatchlistResponse {
+  watchlist: WatchlistItem[];
+  count: number;
+}
+
+export const watchlistApi = {
+  async getWatchlist(): Promise<WatchlistResponse> {
+    const response: AxiosResponse<WatchlistResponse> = await apiClient.get('/users/me/watchlist');
+    return response.data;
+  },
+
+  async addToWatchlist(symbol: string, notes?: string): Promise<WatchlistItem> {
+    const response: AxiosResponse<WatchlistItem> = await apiClient.post('/users/me/watchlist', { symbol, notes });
+    return response.data;
+  },
+
+  async removeFromWatchlist(symbol: string): Promise<{ removed: boolean; symbol: string }> {
+    const response = await apiClient.delete(`/users/me/watchlist/${symbol}`);
+    return response.data;
+  },
+
+  async updateNotes(symbol: string, notes: string | null): Promise<WatchlistItem> {
+    const response: AxiosResponse<WatchlistItem> = await apiClient.patch(`/users/me/watchlist/${symbol}`, { notes });
     return response.data;
   },
 };

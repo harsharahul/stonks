@@ -16,6 +16,7 @@ from app.llm import enhance_analytics_with_llm_sync
 from app.models.article import Article
 from app.models.stock_knowledge import StockKnowledge
 from app.api.dependencies import verify_api_key, enforce_rate_limit
+from app.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -278,7 +279,7 @@ async def trigger_daily_calculation(
     }
 
 
-@router.get("/calculate/immediate/{ticker}", dependencies=[Depends(enforce_rate_limit)])
+@router.get("/calculate/immediate/{ticker}", dependencies=[Depends(verify_api_key), Depends(enforce_rate_limit)])
 async def calculate_features_immediate(
     ticker: str,
     target_date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
@@ -286,7 +287,6 @@ async def calculate_features_immediate(
 ):
     """
     Calculate features immediately (synchronous) for testing/debugging
-    Note: API key auth removed for easier access in dev/testing
     """
     # Auto-create stock if it doesn't exist (e.g. discovered via WSB trending)
     stock = db.query(Stock).filter(Stock.symbol == ticker.upper()).first()
@@ -490,8 +490,11 @@ def get_enhanced_features(
 @router.get("/test/llm")
 def test_llm_integration():
     """
-    Test endpoint for LLM integration
+    Test endpoint for LLM integration (development only)
     """
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
+
     try:
         # Test with mock data
         mock_features = {
@@ -500,25 +503,27 @@ def test_llm_integration():
             "returns": {"ret_5d": 0.05},
             "context": {"article_count_7d": 5}
         }
-        
+
         mock_articles = [
             {"title": "Test Article", "sentiment": 0.7}
         ]
-        
+
         # Test LLM enhancement
         result = enhance_analytics_with_llm_sync(
             ticker="TEST",
             features=mock_features,
             articles=mock_articles
         )
-        
+
         return {
             "status": "success",
             "llm_available": result['success'],
             "enhanced_analytics": result.get('enhanced_analytics', {}),
             "errors": result.get('errors', [])
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         return {
             "status": "error",
@@ -529,17 +534,20 @@ def test_llm_integration():
 @router.get("/test/basic")
 def test_basic():
     """
-    Basic test endpoint
+    Basic test endpoint (development only)
     """
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
     return {"message": "Basic endpoint working", "status": "ok"}
 
 @router.get("/test/features")
 def test_features_basic():
     """
-    Test basic features without LLM
+    Test basic features without LLM (development only)
     """
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
     try:
-        # Just return a simple response
         return {
             "message": "Features test working",
             "status": "ok",

@@ -4,12 +4,16 @@ Main router that includes all API endpoints
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import stocks, feed, recommendations, signals, admin, features, metrics, anomalies, websockets, intelligent_signals, market_analysis, stocks_enhanced, prices, desk
+from app.api.v1.endpoints import (
+    stocks, feed, recommendations, signals, admin, features, metrics,
+    anomalies, websockets, intelligent_signals, market_analysis,
+    stocks_enhanced, prices, auth, users, desk,
+)
 
 # Create API router
 api_router = APIRouter()
 
-# Include endpoint routers
+# Public endpoints
 api_router.include_router(stocks.router, prefix="/stocks", tags=["stocks"])
 api_router.include_router(feed.router, prefix="/feed", tags=["feed"])
 api_router.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
@@ -17,13 +21,19 @@ api_router.include_router(signals.router, prefix="/signals", tags=["signals"])
 api_router.include_router(anomalies.router, prefix="/anomalies", tags=["anomalies"])
 api_router.include_router(websockets.router, prefix="/ws", tags=["websockets"])
 api_router.include_router(features.router, prefix="/features", tags=["features"])
-api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
 api_router.include_router(intelligent_signals.router, prefix="/intelligent-signals", tags=["intelligent-signals"])
 api_router.include_router(market_analysis.router, prefix="/market-analysis", tags=["market-analysis"])
 api_router.include_router(stocks_enhanced.router, prefix="/stocks-enhanced", tags=["stocks-enhanced"])
 api_router.include_router(prices.router, prefix="/prices", tags=["prices"])
 api_router.include_router(desk.router, prefix="/desk", tags=["ai-trading-desk"])
+
+# Authenticated endpoints
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(users.router, prefix="/users", tags=["users"])
+
+# Admin-only endpoints (protected via require_admin dependency inside admin.py)
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 
 
 # Health/ready endpoints (duplicated from root so they're reachable via /api/v1/ in k3s ingress)

@@ -17,6 +17,7 @@ from app.models.article import Article
 from app.models.stock_knowledge import StockKnowledge
 from app.llm import enhance_analytics_with_llm_sync
 from app.api.dependencies import verify_api_key, enforce_rate_limit
+from app.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -410,7 +411,9 @@ async def get_tomorrow_market_outlook(
 
 @router.get("/pressure-test-summary")
 async def get_pressure_test_summary(db: Session = Depends(get_db)):
-    """Get summary of latest pressure test results"""
+    """Get summary of latest pressure test results (development only)"""
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
     try:
         # System health metrics
         stock_count = db.query(Stock).count()
