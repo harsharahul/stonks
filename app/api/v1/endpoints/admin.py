@@ -115,6 +115,12 @@ TASK_CATALOG = {
         "description": "Score past desk decisions against realized prices",
         "schedule": "Daily 23:00 UTC",
     },
+    "desk_run_ticker": {
+        "task": "app.tasks.agent_pipeline.run_desk_for_ticker_task",
+        "queue": "analytics",
+        "description": "Run the AI desk for one ticker (params: {\"ticker\": \"AAPL\"}, optional trigger/trade_date)",
+        "schedule": "On demand",
+    },
 }
 
 

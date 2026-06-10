@@ -31,11 +31,17 @@ function formatDuration(start: string | null, end: string | null): string {
   return `${Math.floor(secs / 60)}m ${secs % 60}s`;
 }
 
+// Tasks that need a parameter typed in before Run Now can dispatch them.
+const PARAM_TASKS: Record<string, { key: string; placeholder: string }> = {
+  desk_run_ticker: { key: 'ticker', placeholder: 'AAPL' },
+};
+
 const AdminDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const catalog = useTaskCatalog();
   const triggerTask = useTriggerTask();
   const [jobFilter, setJobFilter] = useState<string>('');
+  const [taskParams, setTaskParams] = useState<Record<string, string>>({});
   const jobHistory = useJobHistory(jobFilter || undefined);
   const { toasts, showSuccess, showError: showErrorToast, removeToast } = useToast();
 
@@ -53,9 +59,19 @@ const AdminDashboard: React.FC = () => {
   }, [jobs]);
 
   const handleTrigger = async (jobName: string) => {
+    const paramSpec = PARAM_TASKS[jobName];
+    let params: Record<string, unknown> | undefined;
+    if (paramSpec) {
+      const value = (taskParams[jobName] || '').trim().toUpperCase();
+      if (!value) {
+        showErrorToast('Missing Parameter', `Enter a ${paramSpec.key} before running ${jobName.replace(/_/g, ' ')}`);
+        return;
+      }
+      params = { [paramSpec.key]: value };
+    }
     if (!window.confirm(`Run "${jobName.replace(/_/g, ' ')}" now?`)) return;
     try {
-      const result = await triggerTask.mutateAsync(jobName);
+      const result = await triggerTask.mutateAsync({ jobName, params });
       showSuccess('Task Dispatched', result.message);
     } catch (err: any) {
       showErrorToast('Dispatch Failed', err?.response?.data?.detail || 'Failed to dispatch task');
@@ -139,6 +155,15 @@ const AdminDashboard: React.FC = () => {
                       </span>
                     ) : (
                       <span className="text-[10px] text-neutral-400 dark:text-neutral-500">No runs recorded</span>
+                    )}
+                    {PARAM_TASKS[name] && (
+                      <input
+                        type="text"
+                        value={taskParams[name] || ''}
+                        onChange={e => setTaskParams(prev => ({ ...prev, [name]: e.target.value }))}
+                        placeholder={PARAM_TASKS[name].placeholder}
+                        className="w-20 px-2 py-1.5 text-xs uppercase bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
                     )}
                     <button
                       onClick={() => handleTrigger(name)}

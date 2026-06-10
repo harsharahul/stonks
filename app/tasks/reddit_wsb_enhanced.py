@@ -28,34 +28,70 @@ class RedditParser:
     """
     Enhanced Reddit parser based on parse.py logic
     Handles Reddit API responses and extracts structured data
+
+    When REDDIT_CLIENT_ID/SECRET are configured, uses Reddit's OAuth app-only
+    flow against oauth.reddit.com. The anonymous www.reddit.com JSON endpoint
+    is kept as a dev fallback only — Reddit 403-blocks it from datacenter IPs.
     """
-    
+
     def __init__(self):
+        from app.core.config import settings
+
+        self.client_id = settings.REDDIT_CLIENT_ID
+        self.client_secret = settings.REDDIT_CLIENT_SECRET
+        self._token: Optional[str] = None
+        self._token_expires_at: float = 0.0
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Stonks-Analytics/1.0 (Educational Research)'
-        })
-    
+        self.session.headers.update({'User-Agent': settings.REDDIT_USER_AGENT})
+
+    def _get_oauth_token(self) -> Optional[str]:
+        """App-only (client_credentials) bearer token, cached until ~expiry."""
+        if not (self.client_id and self.client_secret):
+            return None
+        if self._token and time.time() < self._token_expires_at:
+            return self._token
+        try:
+            resp = self.session.post(
+                "https://www.reddit.com/api/v1/access_token",
+                auth=(self.client_id, self.client_secret),
+                data={"grant_type": "client_credentials"},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+            self._token = payload["access_token"]
+            self._token_expires_at = time.time() + int(payload.get("expires_in", 3600)) - 60
+            return self._token
+        except Exception as e:
+            print(f"❌ Reddit OAuth token request failed: {e}")
+            return None
+
     def parse_subreddit(self, subreddit: str, sort: str = 'hot', limit: int = 100) -> List[Dict]:
         """
         Parse subreddit posts using Reddit's JSON API
-        
+
         Args:
             subreddit: Subreddit name (e.g., 'wallstreetbets')
             sort: Sort method ('hot', 'new', 'top', 'rising')
             limit: Number of posts to fetch
-            
+
         Returns:
             List of parsed post dictionaries
         """
-        url = f"https://www.reddit.com/r/{subreddit}/{sort}.json"
+        token = self._get_oauth_token()
+        if token:
+            url = f"https://oauth.reddit.com/r/{subreddit}/{sort}"
+            headers = {"Authorization": f"Bearer {token}"}
+        else:
+            url = f"https://www.reddit.com/r/{subreddit}/{sort}.json"
+            headers = None
         params = {
             'limit': min(limit, 100),
             't': 'day'  # Time filter
         }
-        
+
         try:
-            response = self.session.get(url, params=params, timeout=30)
+            response = self.session.get(url, params=params, headers=headers, timeout=30)
             response.raise_for_status()
             data = response.json()
             

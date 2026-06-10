@@ -29,8 +29,21 @@ from app.agents.service import (
 from app.core.database import SessionLocal
 from app.models.agent_decision import AgentDecision
 from app.models.agent_decision_outcome import AgentDecisionOutcome
+from app.models.etl_job_run import ETLJobRun
+from app.tasks.etl_helpers import get_or_create_etl_job
 
 logger = logging.getLogger(__name__)
+
+
+def _finish_job(db, job_run, *, status: str, items: Optional[int] = None, **details) -> None:
+    """Close out an ETLJobRun row so admin job history reflects reality."""
+    job_run.status = status
+    job_run.finished_at = datetime.utcnow()
+    if items is not None:
+        job_run.items_processed = items
+    if details:
+        job_run.details = {**(job_run.details or {}), **details}
+    db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -38,11 +51,17 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-@shared_task(bind=True, queue="analytics")
+@shared_task(bind=True, queue="analytics", acks_late=True, reject_on_worker_lost=True)
 def refresh_universe_membership_task(self) -> Dict:
     """Refresh the AI Trading Desk's coverage universe."""
     with SessionLocal() as db:
-        inserted = refresh_universe_membership(db)
+        job_run = get_or_create_etl_job(db, self.request.id, "desk_universe_refresh", {"task_id": self.request.id})
+        try:
+            inserted = refresh_universe_membership(db)
+            _finish_job(db, job_run, status="success", items=inserted)
+        except Exception as e:
+            _finish_job(db, job_run, status="error", error=str(e), error_type=type(e).__name__)
+            raise
     logger.info("refresh_universe_membership_task: inserted %d active rows", inserted)
     return {"task": "refresh_universe_membership", "inserted": inserted}
 
@@ -52,7 +71,16 @@ def refresh_universe_membership_task(self) -> Dict:
 # ---------------------------------------------------------------------------
 
 
-@shared_task(bind=True, queue="analytics", soft_time_limit=900, time_limit=1200)
+# acks_late: a deploy restart (SIGKILL) must not eat an in-flight 10-min LLM run —
+# the unacked message is redelivered to the new worker (lost AAPL/DOCU 2026-06-10).
+@shared_task(
+    bind=True,
+    queue="analytics",
+    soft_time_limit=900,
+    time_limit=1200,
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
 def run_desk_for_ticker_task(
     self,
     ticker: str,
@@ -69,7 +97,28 @@ def run_desk_for_ticker_task(
                 "run_desk_for_ticker_task: bad trade_date=%s (using today)", trade_date
             )
 
-    run_id = run_for_ticker(ticker, trigger=trigger, trade_date=parsed_date)
+    with SessionLocal() as db:
+        job_run = get_or_create_etl_job(
+            db,
+            self.request.id,
+            "desk_run_ticker",
+            {"task_id": self.request.id, "ticker": ticker.upper(), "trigger": trigger},
+        )
+        job_run_id = job_run.id
+
+    try:
+        run_id = run_for_ticker(ticker, trigger=trigger, trade_date=parsed_date)
+    except Exception as e:
+        with SessionLocal() as db:
+            job_run = db.get(ETLJobRun, job_run_id)
+            if job_run is not None:
+                _finish_job(db, job_run, status="error", error=str(e), error_type=type(e).__name__)
+        raise
+
+    with SessionLocal() as db:
+        job_run = db.get(ETLJobRun, job_run_id)
+        if job_run is not None:
+            _finish_job(db, job_run, status="success", items=1, run_id=str(run_id))
     return {"task": "run_desk_for_ticker", "ticker": ticker.upper(), "run_id": str(run_id)}
 
 
@@ -78,19 +127,25 @@ def run_desk_for_ticker_task(
 # ---------------------------------------------------------------------------
 
 
-@shared_task(bind=True, queue="analytics")
+@shared_task(bind=True, queue="analytics", acks_late=True, reject_on_worker_lost=True)
 def run_desk_universe_nightly_task(self) -> Dict:
     """Enqueue one ``run_desk_for_ticker_task`` per ticker in the active universe."""
     with SessionLocal() as db:
+        job_run = get_or_create_etl_job(db, self.request.id, "desk_nightly_batch", {"task_id": self.request.id})
         members = get_active_universe(db)
-    enqueued = 0
-    for membership in members:
-        run_desk_for_ticker_task.apply_async(
-            args=(membership.ticker, "nightly"),
-            queue="analytics",
-            expires=3 * 3600,  # if not picked up in 3h, drop — next batch supersedes
-        )
-        enqueued += 1
+        enqueued = 0
+        try:
+            for membership in members:
+                run_desk_for_ticker_task.apply_async(
+                    args=(membership.ticker, "nightly"),
+                    queue="analytics",
+                    expires=3 * 3600,  # if not picked up in 3h, drop — next batch supersedes
+                )
+                enqueued += 1
+            _finish_job(db, job_run, status="success", items=enqueued)
+        except Exception as e:
+            _finish_job(db, job_run, status="error", items=enqueued, error=str(e), error_type=type(e).__name__)
+            raise
     logger.info("run_desk_universe_nightly_task: enqueued %d ticker runs", enqueued)
     return {"task": "run_desk_universe_nightly", "enqueued": enqueued}
 
@@ -168,7 +223,7 @@ def _scoring_for_decision(
     }
 
 
-@shared_task(bind=True, queue="analytics")
+@shared_task(bind=True, queue="analytics", acks_late=True, reject_on_worker_lost=True)
 def score_past_decisions_task(self) -> Dict:
     """Compute realized returns + alpha vs SPY for decisions whose 5d/30d windows have closed."""
     scored = 0
@@ -177,47 +232,54 @@ def score_past_decisions_task(self) -> Dict:
     threshold = today - timedelta(days=5)
 
     with SessionLocal() as db:
-        pending = (
-            db.execute(
-                select(AgentDecision)
-                .where(AgentDecision.pending.is_(True), AgentDecision.as_of_date <= threshold)
-                .order_by(AgentDecision.as_of_date.asc())
-                .limit(500)
-            )
-            .scalars()
-            .all()
-        )
-        for dec in pending:
-            existing = (
+        job_run = get_or_create_etl_job(db, self.request.id, "desk_score_outcomes", {"task_id": self.request.id})
+        try:
+            pending = (
                 db.execute(
-                    select(AgentDecisionOutcome).where(AgentDecisionOutcome.agent_decision_id == dec.id)
+                    select(AgentDecision)
+                    .where(AgentDecision.pending.is_(True), AgentDecision.as_of_date <= threshold)
+                    .order_by(AgentDecision.as_of_date.asc())
+                    .limit(500)
                 )
-                .scalar_one_or_none()
+                .scalars()
+                .all()
             )
-            scoring = _scoring_for_decision(db, dec)
-            if scoring is None:
-                skipped += 1
-                continue
-            if existing:
-                existing.realized_return_5d = scoring["realized_return_5d"]
-                existing.realized_return_30d = scoring["realized_return_30d"]
-                existing.spy_return_5d = scoring["spy_return_5d"]
-                existing.spy_return_30d = scoring["spy_return_30d"]
-                existing.alpha_5d = scoring["alpha_5d"]
-                existing.alpha_30d = scoring["alpha_30d"]
-                existing.evaluated_at = datetime.utcnow()
-            else:
-                db.add(
-                    AgentDecisionOutcome(
-                        agent_decision_id=dec.id,
-                        **scoring,
+            for dec in pending:
+                existing = (
+                    db.execute(
+                        select(AgentDecisionOutcome).where(AgentDecisionOutcome.agent_decision_id == dec.id)
                     )
+                    .scalar_one_or_none()
                 )
-            # Flip pending to false only when 30d data is also available
-            if scoring["realized_return_30d"] is not None:
-                dec.pending = False
-            scored += 1
-        db.commit()
+                scoring = _scoring_for_decision(db, dec)
+                if scoring is None:
+                    skipped += 1
+                    continue
+                if existing:
+                    existing.realized_return_5d = scoring["realized_return_5d"]
+                    existing.realized_return_30d = scoring["realized_return_30d"]
+                    existing.spy_return_5d = scoring["spy_return_5d"]
+                    existing.spy_return_30d = scoring["spy_return_30d"]
+                    existing.alpha_5d = scoring["alpha_5d"]
+                    existing.alpha_30d = scoring["alpha_30d"]
+                    existing.evaluated_at = datetime.utcnow()
+                else:
+                    db.add(
+                        AgentDecisionOutcome(
+                            agent_decision_id=dec.id,
+                            **scoring,
+                        )
+                    )
+                # Flip pending to false only when 30d data is also available
+                if scoring["realized_return_30d"] is not None:
+                    dec.pending = False
+                scored += 1
+            db.commit()
+            _finish_job(db, job_run, status="success", items=scored, skipped=skipped)
+        except Exception as e:
+            db.rollback()
+            _finish_job(db, job_run, status="error", error=str(e), error_type=type(e).__name__)
+            raise
 
     logger.info("score_past_decisions_task: scored=%d skipped=%d", scored, skipped)
     return {"task": "score_past_decisions", "scored": scored, "skipped": skipped}

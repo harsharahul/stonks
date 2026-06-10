@@ -393,9 +393,10 @@ export const adminApi = {
     return response.data;
   },
 
-  async triggerTask(jobName: string): Promise<TriggerTaskResponse> {
+  async triggerTask(jobName: string, params?: Record<string, unknown>): Promise<TriggerTaskResponse> {
     const response: AxiosResponse<TriggerTaskResponse> = await apiClient.post('/admin/reindex', {
       job_name: jobName,
+      ...(params && Object.keys(params).length > 0 ? { params } : {}),
     });
     return response.data;
   },

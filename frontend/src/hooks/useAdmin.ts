@@ -20,7 +20,8 @@ export function useJobHistory(jobName?: string) {
 export function useTriggerTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (jobName: string) => adminApi.triggerTask(jobName),
+    mutationFn: ({ jobName, params }: { jobName: string; params?: Record<string, unknown> }) =>
+      adminApi.triggerTask(jobName, params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'jobs'] });
     },

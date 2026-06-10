@@ -68,6 +68,13 @@ class Settings(BaseSettings):
     ALPHA_VANTAGE_API_KEY: Optional[str] = os.getenv("ALPHA_VANTAGE_API_KEY")
     POLYGON_API_KEY: Optional[str] = os.getenv("POLYGON_API_KEY")
 
+    # Reddit OAuth (app-only / client-credentials). Without these the WSB
+    # ingestion falls back to the public JSON endpoint, which Reddit 403-blocks
+    # from datacenter IPs — fine for local dev, dead in k8s.
+    REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", "")
+    REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", "")
+    REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", "Stonks-Analytics/1.0 (Educational Research)")
+
     # Security / Auth
     API_KEY: Optional[str] = os.getenv("API_KEY")
     ENABLE_RATE_LIMIT: bool = os.getenv("ENABLE_RATE_LIMIT", "true").lower() == "true"
