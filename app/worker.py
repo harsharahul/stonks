@@ -52,6 +52,7 @@ import app.tasks.stock_knowledge
 import app.tasks.agent_pipeline
 import app.tasks.signal_dispatch
 import app.tasks.strategy_performance
+import app.tasks.strategy_mirror
 
 # Verify task registration
 print("🔧 Celery worker initialized with tasks:")

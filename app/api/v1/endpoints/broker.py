@@ -192,6 +192,30 @@ async def get_account(user=Depends(get_current_user), db: Session = Depends(get_
     }
 
 
+class AccountSettingsRequest(BaseModel):
+    auto_execute: Optional[bool] = None
+
+
+@router.patch("/account")
+async def update_account_settings(
+    body: AccountSettingsRequest,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update account settings. auto_execute (the copy-trading opt-in) can only
+    be enabled on PAPER accounts — live auto-execution is not offered."""
+    account = _get_account_or_404(user, db)
+    if body.auto_execute is not None:
+        if body.auto_execute and not account.paper:
+            raise HTTPException(
+                status_code=403,
+                detail="auto_execute is available on PAPER accounts only.",
+            )
+        account.auto_execute = body.auto_execute
+        db.commit()
+    return {"account": account.to_dict()}
+
+
 @router.delete("/account")
 async def unlink_account(user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Unlink the user's Alpaca account (orders history is preserved)."""
@@ -399,7 +423,16 @@ async def place_order(
         user.id, body.side, symbol, body.qty, body.notional, account.paper, ledger.status,
     )
 
-    # Social layer: publish public-strategy trades to the live alerts channel.
+    # Social layer: fan out to paper_auto followers (idempotent Celery task on
+    # the fast queue) and publish to the live alerts channel.
+    if strategy is not None:
+        try:
+            from app.tasks.strategy_mirror import mirror_strategy_trade_task
+
+            mirror_strategy_trade_task.apply_async(args=(str(ledger.id),), queue="compute")
+        except Exception:
+            logger.warning("mirror dispatch failed (non-fatal)", exc_info=True)
+
     # Privacy: side/symbol/strategy only — never qty, notional, or identities.
     if strategy is not None and strategy.visibility == "public":
         try:

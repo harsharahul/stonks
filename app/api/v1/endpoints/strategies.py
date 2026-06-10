@@ -49,7 +49,33 @@ class StrategyUpdateRequest(BaseModel):
 
 
 class FollowRequest(BaseModel):
-    copy_mode: str = Field("notify", pattern="^notify$")  # paper_auto = Phase 3; live_auto = RIA-gated
+    # live_auto is intentionally NOT accepted: live auto-copy requires RIA
+    # registration or a BD/RIA partner (see plan's legal table).
+    copy_mode: str = Field("notify", pattern="^(notify|paper_auto)$")
+    risk_config: Optional[Dict[str, Any]] = None  # e.g. {"copy_position_pct": 0.02}
+
+
+def _validate_paper_auto(db: Session, user: User) -> None:
+    """paper_auto requires an active PAPER account with explicit auto_execute opt-in."""
+    from app.models.user_broker_account import UserBrokerAccount
+
+    account = (
+        db.query(UserBrokerAccount)
+        .filter(UserBrokerAccount.user_id == user.id, UserBrokerAccount.is_active.is_(True))
+        .first()
+    )
+    if account is None:
+        raise HTTPException(status_code=400, detail="Link a brokerage account before enabling auto-copy.")
+    if not account.paper:
+        raise HTTPException(
+            status_code=403,
+            detail="Auto-copy is available on PAPER accounts only. Live auto-copy is not offered.",
+        )
+    if not account.auto_execute:
+        raise HTTPException(
+            status_code=400,
+            detail="Enable auto-execute on your paper account first (PATCH /broker/account).",
+        )
 
 
 def _require_disclosure_for_public(visibility: str, disclosure: Optional[str]) -> None:
@@ -295,6 +321,9 @@ async def follow_strategy(
     strategy = _get_visible_strategy(db, slug, user)
     if strategy.owner_user_id == user.id:
         raise HTTPException(status_code=400, detail="You can't follow your own strategy.")
+    if body.copy_mode == "paper_auto":
+        _validate_paper_auto(db, user)
+
     existing = (
         db.query(StrategyFollow)
         .filter(
@@ -304,12 +333,18 @@ async def follow_strategy(
         .first()
     )
     if existing:
-        return {"following": existing.to_dict()}
+        # Re-POST updates the copy mode / risk config in place.
+        existing.copy_mode = body.copy_mode
+        if body.risk_config is not None:
+            existing.risk_config = body.risk_config
+        db.commit()
+        return {"following": existing.to_dict(), "disclaimer": DISCLAIMER}
 
     follow = StrategyFollow(
         strategy_id=strategy.id,
         follower_user_id=user.id,
         copy_mode=body.copy_mode,
+        risk_config=body.risk_config,
     )
     db.add(follow)
     db.commit()

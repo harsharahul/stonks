@@ -198,6 +198,7 @@ task_routes = {
     'app.tasks.reddit_wsb_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.signal_dispatch.*': {'queue': 'ingestion'},
     'app.tasks.strategy_performance.*': {'queue': 'analytics'},
+    'app.tasks.strategy_mirror.*': {'queue': 'compute'},
     'app.tasks.sec_edgar_enhanced.*': {'queue': 'ingestion'},
     'app.tasks.reddit_wsb_enhanced.*': {'queue': 'ingestion'},
     'app.tasks.sec_edgar_ingestion.*': {'queue': 'ingestion'},
