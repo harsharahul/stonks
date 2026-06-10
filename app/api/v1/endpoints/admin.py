@@ -97,6 +97,24 @@ TASK_CATALOG = {
         "description": "Delete old ETL job run records",
         "schedule": "Daily 03:15 UTC",
     },
+    "desk_universe_refresh": {
+        "task": "app.tasks.agent_pipeline.refresh_universe_membership_task",
+        "queue": "analytics",
+        "description": "Refresh the AI Trading Desk coverage universe",
+        "schedule": "Weekly Sun 00:00 UTC",
+    },
+    "desk_nightly_batch": {
+        "task": "app.tasks.agent_pipeline.run_desk_universe_nightly_task",
+        "queue": "analytics",
+        "description": "Run the AI desk for every ticker in the active universe (LLM-heavy)",
+        "schedule": "Daily 07:15 UTC",
+    },
+    "desk_score_outcomes": {
+        "task": "app.tasks.agent_pipeline.score_past_decisions_task",
+        "queue": "analytics",
+        "description": "Score past desk decisions against realized prices",
+        "schedule": "Daily 23:00 UTC",
+    },
 }
 
 
@@ -152,7 +170,7 @@ async def trigger_reindex(
 
     # Dispatch to Celery
     try:
-        result = worker.send_task(task_path, queue=queue)
+        result = worker.send_task(task_path, queue=queue, kwargs=request.params or {})
         # Update with Celery task ID
         job.details = {**(job.details or {}), "celery_task_id": result.id}
         db.commit()
