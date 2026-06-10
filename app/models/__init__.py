@@ -27,6 +27,11 @@ from .broker_order import BrokerOrder
 # Signal plugin SDK
 from .signal_source_state import SignalSourceState
 
+# Social layer (strategies / copy trading)
+from .strategy import Strategy
+from .strategy_follow import StrategyFollow
+from .strategy_performance import StrategyPerformanceDaily
+
 # AI Trading Desk
 from .agent_run import AgentRun
 from .agent_brief import AgentBrief

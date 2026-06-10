@@ -57,6 +57,11 @@ class BrokerOrder(Base):
 
     source: Mapped[str] = mapped_column(String, nullable=False, default="manual")  # manual | desk | signal
     source_ref: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    # Social layer: orders tagged to a strategy form its public trade feed
+    # and verified track record (see app/models/strategy.py).
+    strategy_id: Mapped[Optional[PG_UUID]] = mapped_column(
+        PG_UUID, ForeignKey("strategies.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     raw_response: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
@@ -100,6 +105,7 @@ class BrokerOrder(Base):
             "filled_avg_price": _f(self.filled_avg_price),
             "source": self.source,
             "source_ref": self.source_ref,
+            "strategy_id": str(self.strategy_id) if self.strategy_id else None,
             "error": self.error,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "submitted_at": self.submitted_at.isoformat() if self.submitted_at else None,

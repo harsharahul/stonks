@@ -127,6 +127,12 @@ TASK_CATALOG = {
         "description": "Run all enabled signal source plugins (registry-driven)",
         "schedule": "Every 30 min",
     },
+    "strategy_performance": {
+        "task": "app.tasks.strategy_performance.compute_strategy_performance_task",
+        "queue": "analytics",
+        "description": "Compute verified strategy track records from broker fills",
+        "schedule": "Daily 23:30 UTC",
+    },
 }
 
 

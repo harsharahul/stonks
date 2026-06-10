@@ -110,6 +110,13 @@ beat_schedule = {
         'options': {'expires': 1500},
     },
 
+    # Strategy verified track records — nightly after desk outcome scoring (23:00)
+    'strategy-performance': {
+        'task': 'app.tasks.strategy_performance.compute_strategy_performance_task',
+        'schedule': crontab(hour=23, minute=30),
+        'options': {'expires': 3600},
+    },
+
     # SEC EDGAR Enhanced - DISABLED: sec-downloader/sec-parser dependencies
     # are commented out in requirements.txt. Re-enable when restored.
     # 'sec-edgar-enhanced-ingestion': {
@@ -190,6 +197,7 @@ task_routes = {
     'app.tasks.price_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.reddit_wsb_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.signal_dispatch.*': {'queue': 'ingestion'},
+    'app.tasks.strategy_performance.*': {'queue': 'analytics'},
     'app.tasks.sec_edgar_enhanced.*': {'queue': 'ingestion'},
     'app.tasks.reddit_wsb_enhanced.*': {'queue': 'ingestion'},
     'app.tasks.sec_edgar_ingestion.*': {'queue': 'ingestion'},

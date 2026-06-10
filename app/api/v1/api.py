@@ -7,7 +7,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     stocks, feed, recommendations, signals, admin, features, metrics,
     anomalies, websockets, intelligent_signals, market_analysis,
-    stocks_enhanced, prices, auth, users, desk, broker,
+    stocks_enhanced, prices, auth, users, desk, broker, strategies,
 )
 
 # Create API router
@@ -32,6 +32,7 @@ api_router.include_router(desk.router, prefix="/desk", tags=["ai-trading-desk"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(broker.router, prefix="/broker", tags=["broker"])
+api_router.include_router(strategies.router, prefix="/strategies", tags=["strategies"])
 
 # Admin-only endpoints (protected via require_admin dependency inside admin.py)
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])

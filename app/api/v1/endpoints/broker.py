@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel, Field
@@ -22,6 +23,7 @@ from app.api.dependencies import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.broker_order import BrokerOrder
+from app.models.strategy import Strategy
 from app.models.user_broker_account import UserBrokerAccount
 from app.services.broker.client import (
     get_trading_client,
@@ -73,6 +75,9 @@ class PlaceOrderRequest(BaseModel):
     # Provenance: what drove this trade (audit trail)
     source: str = Field("manual", pattern="^(manual|desk|signal)$")
     source_ref: Optional[str] = Field(None, max_length=64)
+    # Social layer: tag the order to one of the caller's strategies so it
+    # appears in the strategy's public trade feed + verified track record.
+    strategy_id: Optional[UUID] = None
     # Live-account orders must re-confirm per order.
     confirm_live: bool = False
 
@@ -319,6 +324,20 @@ async def place_order(
             detail=f"Pre-trade check rejected {symbol}: {sanity.get('reason', 'unknown')}",
         )
 
+    # Strategy tagging: must be the caller's own active strategy. Desk-driven
+    # orders auto-attach to the platform's desk strategy when one exists.
+    strategy = None
+    if body.strategy_id is not None:
+        strategy = (
+            db.query(Strategy)
+            .filter(Strategy.id == body.strategy_id, Strategy.owner_user_id == user.id, Strategy.is_active.is_(True))
+            .first()
+        )
+        if strategy is None:
+            raise HTTPException(status_code=404, detail="Strategy not found (must be your own, active strategy).")
+    elif body.source == "desk":
+        strategy = db.query(Strategy).filter(Strategy.kind == "desk", Strategy.is_active.is_(True)).first()
+
     client_order_id = make_client_order_id(user.id)
     ledger = BrokerOrder(
         user_id=user.id,
@@ -337,6 +356,7 @@ async def place_order(
         client_order_id=client_order_id,
         source=body.source,
         source_ref=body.source_ref,
+        strategy_id=strategy.id if strategy is not None else None,
     )
     db.add(ledger)
     db.commit()  # persist BEFORE submit — submit retries stay idempotent
@@ -378,6 +398,25 @@ async def place_order(
         "order placed: user=%s %s %s qty=%s notional=%s paper=%s status=%s",
         user.id, body.side, symbol, body.qty, body.notional, account.paper, ledger.status,
     )
+
+    # Social layer: publish public-strategy trades to the live alerts channel.
+    # Privacy: side/symbol/strategy only — never qty, notional, or identities.
+    if strategy is not None and strategy.visibility == "public":
+        try:
+            from app.services.websocket_manager import event_broadcaster
+
+            await event_broadcaster.broadcast_alert({
+                "alert_type": "strategy_trade",
+                "strategy_slug": strategy.slug,
+                "strategy_name": strategy.name,
+                "symbol": symbol,
+                "side": body.side,
+                "paper": account.paper,
+                "message": f"{strategy.name}: {body.side.upper()} {symbol}",
+            })
+        except Exception:
+            logger.warning("strategy trade broadcast failed (non-fatal)", exc_info=True)
+
     return {"order": ledger.to_dict(), "market_open": is_market_open(client)}
 
 

@@ -5,6 +5,7 @@ Provides access to trading signals, alert management, and real-time market insig
 """
 
 from typing import List, Optional
+from uuid import UUID
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -134,7 +135,7 @@ async def get_alert_stats(
 
 @router.get("/alerts/{alert_id}")
 async def get_alert(
-    alert_id: str,
+    alert_id: UUID,
     db: Session = Depends(get_db)
 ):
     """Get a specific alert by ID"""
@@ -376,7 +377,7 @@ async def trigger_bulk_signal_generation(
 
 @router.get("/{signal_id}")
 async def get_signal(
-    signal_id: str,
+    signal_id: UUID,
     db: Session = Depends(get_db)
 ):
     """Get a specific signal by ID"""
