@@ -102,7 +102,17 @@ export function useAuth(): AuthState {
     user,
     accessToken,
     login: () => oidc.signinRedirect(),
-    logout: () => oidc.signoutRedirect(),
+    // NOT signoutRedirect(): oidc-client-ts appends id_token_hint +
+    // post_logout_redirect_uri, and Authentik 400s ("request is otherwise
+    // malformed") when the post-logout URI isn't registered on the provider.
+    // Clearing the local session and visiting the bare end-session flow URL
+    // logs out reliably on every host the app is served from.
+    logout: () => {
+      const authority = ((import.meta.env.VITE_OIDC_AUTHORITY as string) || '').replace(/\/?$/, '/');
+      void oidc.removeUser().finally(() => {
+        if (authority) window.location.href = `${authority}end-session/`;
+      });
+    },
     isOidcEnabled: true,
   };
 }
