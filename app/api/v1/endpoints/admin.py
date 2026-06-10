@@ -121,6 +121,12 @@ TASK_CATALOG = {
         "description": "Run the AI desk for one ticker (params: {\"ticker\": \"AAPL\"}, optional trigger/trade_date)",
         "schedule": "On demand",
     },
+    "signal_dispatch": {
+        "task": "app.tasks.signal_dispatch.dispatch_signal_sources_task",
+        "queue": "ingestion",
+        "description": "Run all enabled signal source plugins (registry-driven)",
+        "schedule": "Every 30 min",
+    },
 }
 
 
@@ -230,3 +236,63 @@ async def list_recent_jobs(
         ],
         "total": len(jobs),
     }
+
+
+# ── Signal plugin SDK ─────────────────────────────────────────────────────────
+
+
+@router.get("/signal-sources")
+async def list_signal_sources(
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """List every registered signal plugin with metadata + per-deployment state."""
+    from app.core.signal_framework import register_default_sources, signal_registry
+    from app.models.signal_source_state import SignalSourceState
+
+    register_default_sources()
+    sources = []
+    for source_id in signal_registry.list_available_sources():
+        source_cls = signal_registry._sources[source_id]
+        meta = source_cls({}).get_metadata()
+        state = db.query(SignalSourceState).filter_by(source_id=source_id).first()
+        sources.append({
+            "source_id": source_id,
+            "name": meta.name,
+            "description": meta.description,
+            "source_type": meta.source_type.value,
+            "signal_types": [t.value for t in meta.supported_signal_types],
+            "update_frequency_seconds": int(meta.update_frequency.total_seconds()),
+            "required_config": meta.required_config,
+            "enabled": state.enabled if state else getattr(source_cls, "default_enabled", True),
+            "state": state.to_dict() if state else None,
+        })
+    return {"sources": sources, "total": len(sources)}
+
+
+@router.post("/signal-sources/{source_id}/toggle")
+async def toggle_signal_source(
+    source_id: str,
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """Flip a signal plugin's enabled state for this deployment."""
+    from app.core.signal_framework import register_default_sources, signal_registry
+    from app.models.signal_source_state import SignalSourceState
+
+    register_default_sources()
+    if source_id not in signal_registry.list_available_sources():
+        raise HTTPException(status_code=404, detail=f"Unknown signal source '{source_id}'")
+
+    state = db.query(SignalSourceState).filter_by(source_id=source_id).first()
+    if state is None:
+        source_cls = signal_registry._sources[source_id]
+        state = SignalSourceState(
+            source_id=source_id,
+            enabled=not getattr(source_cls, "default_enabled", True),
+        )
+        db.add(state)
+    else:
+        state.enabled = not state.enabled
+    db.commit()
+    return {"source_id": source_id, "enabled": state.enabled}

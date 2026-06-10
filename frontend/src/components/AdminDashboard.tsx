@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Shield, Play, RefreshCw, Clock, CheckCircle, XCircle, Loader2, Filter } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useTaskCatalog, useJobHistory, useTriggerTask } from '../hooks/useAdmin';
+import { useTaskCatalog, useJobHistory, useTriggerTask, useSignalSources, useToggleSignalSource } from '../hooks/useAdmin';
 import { useToast } from '../hooks/useToast';
 import ToastManager from './ToastManager';
 import { cn, formatRelativeTime } from '../utils/format';
@@ -40,6 +40,8 @@ const AdminDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const catalog = useTaskCatalog();
   const triggerTask = useTriggerTask();
+  const signalSources = useSignalSources();
+  const toggleSource = useToggleSignalSource();
   const [jobFilter, setJobFilter] = useState<string>('');
   const [taskParams, setTaskParams] = useState<Record<string, string>>({});
   const jobHistory = useJobHistory(jobFilter || undefined);
@@ -181,6 +183,66 @@ const AdminDashboard: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Signal Sources (plugin SDK) */}
+      <div>
+        <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">Signal Sources</h2>
+        {signalSources.isLoading ? (
+          <div className="h-24 bg-neutral-100 dark:bg-neutral-800 rounded-xl animate-pulse" />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {(signalSources.data?.sources ?? []).map(src => (
+              <div
+                key={src.source_id}
+                className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-4"
+              >
+                <div className="flex items-start justify-between mb-1.5">
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{src.name}</h3>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const r = await toggleSource.mutateAsync(src.source_id);
+                        showSuccess('Source Updated', `${src.name} is now ${r.enabled ? 'enabled' : 'disabled'}`);
+                      } catch (err: any) {
+                        showErrorToast('Toggle Failed', err?.response?.data?.detail || 'Failed to toggle source');
+                      }
+                    }}
+                    disabled={toggleSource.isLoading}
+                    className={cn(
+                      'text-[10px] font-medium px-2 py-1 rounded-full transition-colors',
+                      src.enabled
+                        ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100'
+                        : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 hover:bg-neutral-200'
+                    )}
+                  >
+                    {src.enabled ? 'Enabled' : 'Disabled'}
+                  </button>
+                </div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2 line-clamp-2">{src.description}</p>
+                <div className="flex items-center gap-2 text-[10px] text-neutral-400 dark:text-neutral-500">
+                  <span>{src.signal_types.join(', ')}</span>
+                  <span>·</span>
+                  <span>every {Math.round(src.update_frequency_seconds / 60)}m</span>
+                  {src.state?.last_status && (
+                    <>
+                      <span>·</span>
+                      <span className={cn(src.state.last_status === 'error' && 'text-red-500')}>
+                        {src.state.last_status}
+                      </span>
+                    </>
+                  )}
+                  {src.state != null && (
+                    <>
+                      <span>·</span>
+                      <span>{src.state.signals_emitted_total} emitted</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

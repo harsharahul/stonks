@@ -24,6 +24,9 @@ from .watchlist import WatchlistItem
 from .user_broker_account import UserBrokerAccount
 from .broker_order import BrokerOrder
 
+# Signal plugin SDK
+from .signal_source_state import SignalSourceState
+
 # AI Trading Desk
 from .agent_run import AgentRun
 from .agent_brief import AgentBrief

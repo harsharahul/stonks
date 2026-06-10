@@ -102,6 +102,14 @@ beat_schedule = {
         }
     },
 
+    # Signal plugin dispatcher — runs every enabled SignalSource plugin
+    # (registry-driven; per-source enable/config in signal_source_states)
+    'signal-source-dispatch': {
+        'task': 'app.tasks.signal_dispatch.dispatch_signal_sources_task',
+        'schedule': 1800.0,  # 30 minutes
+        'options': {'expires': 1500},
+    },
+
     # SEC EDGAR Enhanced - DISABLED: sec-downloader/sec-parser dependencies
     # are commented out in requirements.txt. Re-enable when restored.
     # 'sec-edgar-enhanced-ingestion': {
@@ -181,6 +189,7 @@ task_routes = {
     'app.tasks.data_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.price_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.reddit_wsb_ingestion.*': {'queue': 'ingestion'},
+    'app.tasks.signal_dispatch.*': {'queue': 'ingestion'},
     'app.tasks.sec_edgar_enhanced.*': {'queue': 'ingestion'},
     'app.tasks.reddit_wsb_enhanced.*': {'queue': 'ingestion'},
     'app.tasks.sec_edgar_ingestion.*': {'queue': 'ingestion'},

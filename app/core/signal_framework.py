@@ -84,6 +84,15 @@ class RawSignal(BaseModel):
     ticker: Optional[str] = None
     priority: int = 5  # 1-10, higher is more urgent
 
+    # Optional trading-signal hints. When a plugin sets these, the Celery
+    # dispatcher persists the signal into the `signals` table; raw signals
+    # without direction/strength are treated as informational and skipped.
+    signal_type_hint: Optional[str] = None  # e.g. "social_momentum"
+    direction: Optional[str] = None         # bullish | bearish | neutral
+    strength: Optional[float] = None        # -1.0 .. 1.0
+    confidence: Optional[float] = None      # 0.0 .. 1.0
+    timeframe: str = "daily"                # intraday | daily | weekly
+
 
 class ProcessedSignal(BaseModel):
     """Processed signal with LLM analysis"""
@@ -396,6 +405,22 @@ class SignalOrchestrator:
 signal_registry = SignalRegistry()
 
 
+def register_signal_source(source_id: str, *, default_enabled: bool = True):
+    """Class decorator: register a SignalSource plugin under ``source_id``.
+
+    ``default_enabled`` seeds the admin toggle for deployments that have
+    never seen this source (mock/experimental sources should pass False).
+    Contributors: decorate your SignalSource subclass with this — see
+    CONTRIBUTING-SIGNALS.md for the full plugin contract.
+    """
+    def _wrap(cls):
+        cls.source_id = source_id
+        cls.default_enabled = default_enabled
+        signal_registry.register_source(source_id, cls)
+        return cls
+    return _wrap
+
+
 @asynccontextmanager
 async def signal_orchestrator_context(db_session: Session):
     """Context manager for signal orchestrator"""
@@ -409,10 +434,8 @@ async def signal_orchestrator_context(db_session: Session):
 
 # Utility functions for signal management
 def register_default_sources():
-    """Register default signal sources"""
-    # This will be called during app startup
-    # Register built-in signal sources
-    pass
+    """Import the plugins package so @register_signal_source decorators run."""
+    import app.signals  # noqa: F401  (importing registers every bundled plugin)
 
 
 def initialize_signal_framework():

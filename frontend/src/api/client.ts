@@ -386,10 +386,45 @@ export const recommendationsApi = {
   },
 };
 
+// Signal plugin SDK (admin)
+export interface SignalSourceInfo {
+  source_id: string;
+  name: string;
+  description: string;
+  source_type: string;
+  signal_types: string[];
+  update_frequency_seconds: number;
+  required_config: string[];
+  enabled: boolean;
+  state: {
+    last_run_at: string | null;
+    last_status: string | null;
+    last_error: string | null;
+    signals_emitted_total: number;
+  } | null;
+}
+
+export interface SignalSourcesResponse {
+  sources: SignalSourceInfo[];
+  total: number;
+}
+
 // Admin API
 export const adminApi = {
   async getTaskCatalog(): Promise<TaskCatalogResponse> {
     const response: AxiosResponse<TaskCatalogResponse> = await apiClient.get('/admin/task-catalog');
+    return response.data;
+  },
+
+  async getSignalSources(): Promise<SignalSourcesResponse> {
+    const response: AxiosResponse<SignalSourcesResponse> = await apiClient.get('/admin/signal-sources');
+    return response.data;
+  },
+
+  async toggleSignalSource(sourceId: string): Promise<{ source_id: string; enabled: boolean }> {
+    const response: AxiosResponse<{ source_id: string; enabled: boolean }> = await apiClient.post(
+      `/admin/signal-sources/${sourceId}/toggle`
+    );
     return response.data;
   },
 

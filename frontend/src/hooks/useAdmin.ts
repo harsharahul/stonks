@@ -17,6 +17,24 @@ export function useJobHistory(jobName?: string) {
   });
 }
 
+export function useSignalSources() {
+  return useQuery({
+    queryKey: ['admin', 'signal-sources'],
+    queryFn: () => adminApi.getSignalSources(),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useToggleSignalSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sourceId: string) => adminApi.toggleSignalSource(sourceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'signal-sources'] });
+    },
+  });
+}
+
 export function useTriggerTask() {
   const queryClient = useQueryClient();
   return useMutation({
