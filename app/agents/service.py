@@ -66,15 +66,15 @@ def select_universe(db: Session) -> List[Tuple[str, float, str]]:
     cutoff = date.today() - timedelta(days=COMPOSITE_BASELINE_DAYS)
 
     # Pull the latest row per ticker to score against; assumes
-    # ticker_features_daily has one row per (ticker, feature_date).
+    # ticker_features_daily has one row per (ticker, date).
     latest_per_ticker = (
         db.execute(
             select(
                 TickerFeaturesDaily.ticker,
-                func.max(TickerFeaturesDaily.feature_date).label("max_date"),
+                func.max(TickerFeaturesDaily.date).label("max_date"),
                 func.count().label("days_count"),
             )
-            .where(TickerFeaturesDaily.feature_date >= cutoff)
+            .where(TickerFeaturesDaily.date >= cutoff)
             .group_by(TickerFeaturesDaily.ticker)
         )
         .all()
@@ -86,7 +86,7 @@ def select_universe(db: Session) -> List[Tuple[str, float, str]]:
             select(TickerFeaturesDaily)
             .where(
                 TickerFeaturesDaily.ticker.in_(candidate_tickers),
-                TickerFeaturesDaily.feature_date >= cutoff,
+                TickerFeaturesDaily.date >= cutoff,
             )
         )
         .scalars()
@@ -153,7 +153,7 @@ def select_universe(db: Session) -> List[Tuple[str, float, str]]:
     movers_today = (
         db.execute(
             select(TickerFeaturesDaily.ticker, TickerFeaturesDaily.ret_1d)
-            .where(TickerFeaturesDaily.feature_date == func.current_date())
+            .where(TickerFeaturesDaily.date == func.current_date())
             .where(TickerFeaturesDaily.ret_1d.isnot(None))
         )
         .all()
@@ -436,7 +436,7 @@ def _features_snapshot(ticker: str, db: Session) -> Optional[Dict[str, Any]]:
             db.execute(
                 select(TickerFeaturesDaily)
                 .where(TickerFeaturesDaily.ticker == ticker)
-                .order_by(desc(TickerFeaturesDaily.feature_date))
+                .order_by(desc(TickerFeaturesDaily.date))
                 .limit(1)
             )
             .scalar_one_or_none()
@@ -445,7 +445,7 @@ def _features_snapshot(ticker: str, db: Session) -> Optional[Dict[str, Any]]:
             return None
         snap = {}
         for col in (
-            "feature_date", "sent_mean_7d", "sent_shock", "novelty_mean_3d",
+            "date", "sent_mean_7d", "sent_shock", "novelty_mean_3d",
             "ret_1d", "ret_5d", "momentum_14d", "vol_z", "article_count_7d",
             "wsb_mention_count_7d", "wsb_sentiment_7d", "retail_buzz_score",
             "meme_stock_indicator",
@@ -462,6 +462,7 @@ def _features_snapshot(ticker: str, db: Session) -> Optional[Dict[str, Any]]:
                     snap[col] = str(v)
         return snap
     except Exception:
+        logger.exception("_features_snapshot failed for %s", ticker)
         return None
 
 
