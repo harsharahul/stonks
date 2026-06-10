@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { feedApi } from '../api/client';
-import { useParams } from 'react-router-dom';
+import apiClient, { feedApi } from '../api/client';
+import { useAuth } from '../hooks/useAuth';
+import { useParams, Link } from 'react-router-dom';
 import { BarChart3, Zap, RefreshCw, Star, Brain, Clock, ExternalLink, TrendingUp } from 'lucide-react';
 import TradeTicket from './broker/TradeTicket';
 import { LineChart, Line, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
@@ -28,7 +29,8 @@ const StockDetail: React.FC = () => {
   const { data: features, isLoading: featuresLoading, error: featuresError } = useDailyFeatures(ticker);
   const { data: history, isLoading: historyLoading } = useFeatureHistory(ticker, 30);
   const calculateFeatures = useCalculateFeatures();
-  const { data: enhanced, isLoading: enhancedLoading } = useEnhancedAnalytics(ticker);
+  const [generateInsights, setGenerateInsights] = useState(false);
+  const { data: enhanced, isLoading: enhancedLoading } = useEnhancedAnalytics(ticker, generateInsights);
   const { data: knowledge } = useStockKnowledge(ticker);
 
   // Fetch WSB trending data as fallback (filter from shared hook)
@@ -39,36 +41,39 @@ const StockDetail: React.FC = () => {
   );
   const { toasts, showSuccess, showError: showErrorToast, removeToast } = useToast();
 
-  // Track whether this stock is in the watchlist
-  const trackedStocks = useQuery({
-    queryKey: ['tracked-stocks'],
+  // The star is the USER's watchlist (per-account), not the legacy global
+  // tracked-stocks list — the two were conflated before, so the star showed the wrong state.
+  const { isAuthenticated } = useAuth();
+  const watchlist = useQuery({
+    queryKey: ['my-watchlist'],
     queryFn: async () => {
-      const res = await fetch(`${baseUrl}/stocks-enhanced/comprehensive?page_size=100`);
-      const data = await res.json();
-      return (data.stocks?.map((s: any) => s.symbol) as string[]) || [];
+      const res = await apiClient.get('/users/me/watchlist');
+      return (res.data.watchlist?.map((w: any) => w.symbol || w.stock?.symbol) as string[]) || [];
     },
+    enabled: isAuthenticated,
     staleTime: 60_000,
   });
-  const isTracked = trackedStocks.data?.includes(ticker) ?? false;
+  const isTracked = watchlist.data?.includes(ticker) ?? false;
   const [starLoading, setStarLoading] = useState(false);
   const [tradeOpen, setTradeOpen] = useState(false);
 
   const toggleTracked = async () => {
+    if (!isAuthenticated) {
+      showErrorToast('Sign in required', 'Sign in to keep a personal watchlist.');
+      return;
+    }
     setStarLoading(true);
     try {
       if (isTracked) {
-        await fetch(`${baseUrl}/stocks-enhanced/remove/${ticker}`, { method: 'DELETE' });
+        await apiClient.delete(`/users/me/watchlist/${ticker}`);
       } else {
-        await fetch(`${baseUrl}/stocks-enhanced/add`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol: ticker, name: ticker, priority_level: 'normal', added_by: 'user' }),
-        });
+        await apiClient.post('/users/me/watchlist', { symbol: ticker });
       }
-      queryClient.invalidateQueries({ queryKey: ['tracked-stocks'] });
-      showSuccess(isTracked ? 'Removed' : 'Added', `${ticker} ${isTracked ? 'removed from' : 'added to'} watchlist.`);
-    } catch (err) {
-      showErrorToast('Watchlist Error', `Failed to update ${ticker}.`);
+      queryClient.invalidateQueries({ queryKey: ['my-watchlist'] });
+      showSuccess(isTracked ? 'Removed' : 'Added', `${ticker} ${isTracked ? 'removed from' : 'added to'} your watchlist.`);
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || `Failed to update ${ticker}.`;
+      showErrorToast('Watchlist Error', detail);
     } finally {
       setStarLoading(false);
     }
@@ -564,9 +569,17 @@ const StockDetail: React.FC = () => {
         />
       </div>
 
-      {/* AI Insights */}
+      {/* AI Insights — pre-computed by the AI Trading Desk; on-demand legacy generation */}
       <div className="card mb-8">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">AI Insights</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">AI Insights</h2>
+          <Link
+            to={`/desk/${ticker}`}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+          >
+            <Brain className="w-4 h-4" /> Open AI Trading Desk →
+          </Link>
+        </div>
         {enhancedLoading ? (
           <div className="space-y-2 animate-pulse">
             <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-1/3" />
@@ -603,7 +616,19 @@ const StockDetail: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="text-sm text-neutral-500 dark:text-neutral-400">No AI insights available.</div>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              The AI Trading Desk pre-computes a full multi-agent analysis nightly — check the
+              desk for {ticker}'s latest verdict, or generate a quick insight now (slow: ~60s).
+            </p>
+            <button
+              onClick={() => setGenerateInsights(true)}
+              disabled={generateInsights}
+              className="text-sm px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
+            >
+              {generateInsights ? 'Generating…' : 'Generate now'}
+            </button>
+          </div>
         )}
       </div>
 

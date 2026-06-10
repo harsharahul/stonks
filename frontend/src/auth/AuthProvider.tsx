@@ -16,7 +16,10 @@ const oidcConfig = {
   client_id: import.meta.env.VITE_OIDC_CLIENT_ID as string,
   redirect_uri: `${window.location.origin}/callback`,
   post_logout_redirect_uri: window.location.origin,
-  scope: 'openid profile email',
+  // offline_access: Authentik issues a refresh token so oidc-client-ts can
+  // renew expired access tokens in the background. Without it, sessions died
+  // ~5-10 min after login (access-token lifetime) with no recovery path.
+  scope: 'openid profile email offline_access',
   response_type: 'code',
   automaticSilentRenew: true,
   userStore: undefined as any,
@@ -31,6 +34,20 @@ function TokenBridge({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setAccessTokenGetter(() => auth.user?.access_token ?? null);
   }, [auth.user?.access_token]);
+
+  // Industry-standard failure path: background renewal almost never fails
+  // (rotating refresh tokens), but when it does (refresh token revoked, IdP
+  // session expired) bounce through the IdP — instant and invisible if the
+  // SSO session is alive, otherwise the user correctly lands on login.
+  useEffect(() => {
+    if (!auth.events) return;
+    const onRenewError = () => {
+      console.warn('OIDC silent renew failed — redirecting through IdP');
+      auth.signinRedirect().catch(() => {/* user stays anonymous */});
+    };
+    auth.events.addSilentRenewError(onRenewError);
+    return () => auth.events.removeSilentRenewError(onRenewError);
+  }, [auth.events, auth.signinRedirect]);
 
   return <>{children}</>;
 }

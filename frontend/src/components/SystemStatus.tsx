@@ -6,16 +6,22 @@ import { useIngestionStatus } from '../hooks/useWSBDashboard';
 import FreshnessIndicator from './FreshnessIndicator';
 import { cn } from '../utils/format';
 
+// Keep in sync with app/celery_beat_config.py (the source of truth).
 const BEAT_TASKS = [
   { name: 'News Ingestion (RSS)', schedule: 'Every 10 min', sourceKey: 'News RSS' },
   { name: 'WSB Reddit Enhanced', schedule: 'Every 30 min', sourceKey: 'WSB Enhanced' },
-  { name: 'WSB Hot Posts', schedule: 'Every 30 min', sourceKey: null },
-  { name: 'Price Ingestion', schedule: 'Every 4 hours', sourceKey: null },
+  { name: 'Post-Ingest Processing', schedule: 'Every 15 min', sourceKey: null },
+  { name: 'Price Ingestion', schedule: 'Hourly', sourceKey: null },
   { name: 'Feature Calculation', schedule: 'Daily 05:00 UTC', sourceKey: null },
   { name: 'Signal Generation', schedule: 'Daily 06:00 UTC', sourceKey: null },
+  { name: 'Recommendations', schedule: 'Daily 06:30 UTC', sourceKey: null },
   { name: 'Alert Generation', schedule: 'Every 5 min', sourceKey: null },
   { name: 'Anomaly Detection', schedule: 'Every 15 min', sourceKey: null },
   { name: 'Earnings Calendar', schedule: 'Daily 07:00 UTC', sourceKey: 'Earnings Calendar' },
+  { name: 'Stock Knowledge (LLM)', schedule: 'Daily 02:30 UTC', sourceKey: null },
+  { name: 'AI Desk — Universe Refresh', schedule: 'Sunday 00:00 UTC', sourceKey: null },
+  { name: 'AI Desk — Nightly Batch', schedule: 'Daily 07:15 UTC', sourceKey: null },
+  { name: 'AI Desk — Outcome Scoring', schedule: 'Daily 23:00 UTC', sourceKey: null },
 ];
 
 const StatusDot: React.FC<{ ok: boolean | undefined; loading?: boolean }> = ({ ok, loading }) => {

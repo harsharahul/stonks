@@ -86,5 +86,10 @@ def get_quick_thinking_llm(model: Optional[str] = None) -> ChatOpenAI:
 
 
 def get_deep_thinking_llm(model: Optional[str] = None) -> ChatOpenAI:
-    """Lower-temperature tier for research manager, trader, portfolio manager."""
-    return get_chat_model(model=model, temperature=DEEP_THINK_TEMPERATURE)
+    """Lower-temperature tier for research manager, trader, portfolio manager.
+
+    Uses OLLAMA_DEEP_MODEL when configured so decisions can run on a stronger
+    model than the analyst/debate tier without code changes.
+    """
+    resolved = model or settings.OLLAMA_DEEP_MODEL or None
+    return get_chat_model(model=resolved, temperature=DEEP_THINK_TEMPERATURE)

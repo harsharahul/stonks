@@ -70,7 +70,7 @@ class StatisticalAnomalyDetector:
         
         prices = self.db.query(Price).filter(
             and_(
-                Price.ticker == ticker.upper(),
+                Price.symbol == ticker.upper(),
                 func.date(Price.timestamp) >= start_date,
                 func.date(Price.timestamp) <= end_date
             )
@@ -585,7 +585,7 @@ class TimeSeriesAnomalyDetector:
         
         prices = self.db.query(Price).filter(
             and_(
-                Price.ticker == ticker.upper(),
+                Price.symbol == ticker.upper(),
                 func.date(Price.timestamp) >= start_date,
                 func.date(Price.timestamp) <= end_date,
                 Price.close.isnot(None)
@@ -707,13 +707,10 @@ class TimeSeriesAnomalyDetector:
         return []
 
 
-class TimeSeriesAnomalyDetector:
-    """
-    Detect anomalies in time series patterns using statistical methods
-    """
-    
-    def __init__(self, db: Session):
-        self.db = db
+# NOTE: an empty duplicate `class TimeSeriesAnomalyDetector` used to live here
+# and SHADOWED the real implementation above (Python keeps the last definition),
+# deleting detect_pattern_breaks/detect_volatility_anomalies from existence —
+# every /anomalies/patterns call 500'd. Do not redefine the class below.
 
 
 class AnomalyDetectionOrchestrator:

@@ -64,7 +64,12 @@ export const formatDateTime = (dateString: string | null): string => {
 export const formatRelativeTime = (dateString: string | null): string => {
   if (!dateString) return '—';
   try {
-    return formatDistanceToNow(parseISO(dateString), { addSuffix: true });
+    // The API emits naive UTC timestamps (no timezone suffix). parseISO treats
+    // those as LOCAL time, which pushed past events into the future
+    // ("Generated in about 7 hours"). Treat suffix-less strings as UTC.
+    const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(dateString);
+    const normalized = hasTz ? dateString : `${dateString}Z`;
+    return formatDistanceToNow(parseISO(normalized), { addSuffix: true });
   } catch {
     return '—';
   }

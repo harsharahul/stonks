@@ -7,6 +7,8 @@
  */
 import axios from 'axios';
 
+import { getAccessToken } from './client';
+
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1';
 
 const brokerClient = axios.create({
@@ -15,16 +17,12 @@ const brokerClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach the OIDC bearer token via the shared token bridge (NEVER read browser
+// storage directly — tokens live in the react-oidc-context user and renew there).
 brokerClient.interceptors.request.use((config) => {
-  try {
-    const oidcUserKey = Object.keys(localStorage).find(k => k.startsWith('oidc.user:'));
-    if (oidcUserKey) {
-      const stored = JSON.parse(localStorage.getItem(oidcUserKey) || '{}');
-      const token = stored?.access_token;
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-    }
-  } catch {
-    /* anonymous */
+  const token = getAccessToken();
+  if (token && config.url && !config.url.startsWith('http')) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });

@@ -8,7 +8,7 @@ import {
 
 import {
   useTomorrowOutlook, useIntelMarketOverview,
-  usePressureTest, useDailyRecommendations, useMorningBrief,
+  useDailyRecommendations, useMorningBrief,
 } from '../hooks/useMarketIntelligence';
 import {
   useSentimentAnalysis, useLatestAlerts, useMarketAnomalies,
@@ -116,7 +116,6 @@ const MarketIntelligence: React.FC = () => {
   const alerts = useLatestAlerts(24);
   const anomalies = useMarketAnomalies();
   const recommendations = useDailyRecommendations();
-  const pressureTest = usePressureTest();
   const morningBrief = useMorningBrief();
   const featuresSummary = useFeaturesSummary(undefined, 50);
 
@@ -151,10 +150,9 @@ const MarketIntelligence: React.FC = () => {
     alerts.refetch();
     anomalies.refetch();
     recommendations.refetch();
-    pressureTest.refetch();
     featuresSummary.refetch();
     morningBrief.refetch();
-  }, [outlook, overview, sentiment, alerts, anomalies, recommendations, pressureTest, featuresSummary, morningBrief]);
+  }, [outlook, overview, sentiment, alerts, anomalies, recommendations, featuresSummary, morningBrief]);
 
   // Helpers
   const sentimentBarColor = (s: number) => {
@@ -612,58 +610,6 @@ const MarketIntelligence: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* -- AI SYSTEM HEALTH -- */}
-          <div className="card">
-            <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-1.5">
-              <Brain className="w-4 h-4 text-purple-500" />
-              AI System Health
-            </h2>
-
-            {pressureTest.isLoading ? (
-              <div className="space-y-2">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-6 bg-neutral-100 dark:bg-neutral-700 rounded animate-pulse" />)}
-              </div>
-            ) : pressureTest.error ? (
-              <p className="text-xs text-red-500 dark:text-red-400 py-2 text-center">Failed to load</p>
-            ) : pressureTest.data ? (
-              <div className="space-y-3">
-                {/* Test Results */}
-                <div>
-                  <div className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-1.5">System Tests</div>
-                  <div className="space-y-1.5">
-                    {Object.entries(pressureTest.data.test_results).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-600 dark:text-neutral-400 capitalize">{key.replace(/_/g, ' ')}</span>
-                        <StatusDot status={value} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* AI Capabilities */}
-                <div className="border-t border-neutral-100 dark:border-neutral-700 pt-3">
-                  <div className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-1.5">AI Capabilities</div>
-                  <div className="space-y-1.5">
-                    {Object.entries(pressureTest.data.ai_capabilities).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <span className="text-xs text-neutral-600 dark:text-neutral-400 capitalize">{key.replace(/_/g, ' ')}</span>
-                        <StatusDot status={value} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Overall */}
-                <div className="border-t border-neutral-100 dark:border-neutral-700 pt-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">{pressureTest.data.overall_status}</span>
-                  </div>
-                </div>
-              </div>
-            ) : null}
           </div>
 
           {/* -- COVERAGE STATS -- */}

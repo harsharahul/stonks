@@ -152,6 +152,8 @@ async def configure_intelligent_signals(
             "timestamp": datetime.utcnow().isoformat()
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error configuring intelligent signals: {e}")
         raise HTTPException(
@@ -176,6 +178,8 @@ async def list_signal_sources() -> Dict[str, Any]:
             "timestamp": datetime.utcnow().isoformat()
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error listing signal sources: {e}")
         raise HTTPException(
@@ -209,6 +213,8 @@ async def configure_signal_source(
             "timestamp": datetime.utcnow().isoformat()
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error configuring source {source_id}: {e}")
         raise HTTPException(
@@ -264,6 +270,8 @@ async def process_signal(
             "timestamp": datetime.utcnow().isoformat()
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error processing signal: {e}")
         raise HTTPException(
@@ -332,6 +340,8 @@ async def get_politician_trades(
             "timestamp": datetime.utcnow().isoformat()
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching politician trades: {e}")
         raise HTTPException(
@@ -346,52 +356,19 @@ async def get_politician_analysis(
     days: int = Query(365, ge=30, le=1095, description="Analysis period in days"),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
-    """Get detailed analysis for a specific politician's trading patterns"""
-    
-    try:
-        # This would typically involve more sophisticated analysis
-        # For now, return a basic analysis structure
-        
-        return {
-            "politician_name": politician_name,
-            "analysis_period_days": days,
-            "trading_patterns": {
-                "total_trades": 0,  # Would be calculated from data
-                "buy_sell_ratio": 0.0,
-                "average_trade_size": 0.0,
-                "sectors_traded": [],
-                "most_traded_tickers": []
-            },
-            "timing_analysis": {
-                "trades_before_earnings": 0,
-                "trades_before_announcements": 0,
-                "average_disclosure_delay": 0.0,
-                "timing_risk_score": 0.0
-            },
-            "conflict_analysis": {
-                "committee_related_trades": 0,
-                "potential_conflicts": [],
-                "conflict_risk_score": 0.0
-            },
-            "performance_analysis": {
-                "performance_vs_market": None,
-                "hit_rate": None,
-                "total_return_estimate": None
-            },
-            "overall_risk_assessment": {
-                "risk_score": 0.0,
-                "attention_level": "low",
-                "recommendations": []
-            },
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"Error analyzing politician {politician_name}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to analyze politician {politician_name}: {str(e)}"
-        )
+    """Get detailed analysis for a specific politician's trading patterns.
+
+    Honest 501 until the real Capitol Trades pipeline lands (later pipeline): the previous implementation returned hardcoded
+    all-zero data with 200 for ANY name — including fake ones — which is
+    indistinguishable from a real "this politician doesn't trade" answer.
+    """
+    raise HTTPException(
+        status_code=501,
+        detail=(
+            "Politician trading analysis is not implemented yet — the real "
+            "congressional-disclosure pipeline is on the roadmap (see FEATURES.md)."
+        ),
+    )
 
 
 @router.get("/stats")
@@ -418,6 +395,8 @@ async def get_processing_stats(db: Session = Depends(get_db)) -> Dict[str, Any]:
         
         return stats
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting processing stats: {e}")
         raise HTTPException(
@@ -455,6 +434,8 @@ async def reprocess_signal(
             "timestamp": datetime.utcnow().isoformat()
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error reprocessing signal {signal_id}: {e}")
         raise HTTPException(
@@ -480,6 +461,8 @@ async def _process_signal_background(
         else:
             logger.error(f"Failed to process signal in background: {result['errors']}")
             
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error in background signal processing: {e}")
 
@@ -516,6 +499,8 @@ async def health_check() -> Dict[str, Any]:
         
         return health_status
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error in health check: {e}")
         return {

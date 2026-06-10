@@ -222,11 +222,11 @@ def continuous_anomaly_monitoring_task(self) -> Dict:
 
         # Get most active stocks (those with recent price updates)
         from sqlalchemy import desc
-        recent_prices = db.query(Price.ticker).filter(
+        recent_prices = db.query(Price.symbol).filter(
             Price.timestamp > datetime.utcnow() - timedelta(hours=4)
         ).distinct().limit(20).all()
 
-        active_tickers = [p.ticker for p in recent_prices]
+        active_tickers = [p.symbol for p in recent_prices]
 
         if not active_tickers:
             print("   No active tickers found")

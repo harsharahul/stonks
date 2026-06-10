@@ -112,14 +112,18 @@ export const useEnhancedFeatures = (ticker: string, date?: string) => {
   return enhancedData;
 };
 
-// Hook to fetch LLM-enhanced analytics for a ticker
-export const useEnhancedAnalytics = (ticker: string) => {
+// Hook to fetch LLM-enhanced analytics for a ticker.
+// Disabled by default: the endpoint runs LLM inference server-side (30-60s)
+// and used to fire on every StockDetail view, timing out at 10s each time.
+// The AI Trading Desk (/desk/{ticker}) supersedes it with pre-computed
+// analyses; callers may still opt in explicitly (user-clicked).
+export const useEnhancedAnalytics = (ticker: string, enabled: boolean = false) => {
   return useQuery<EnhancedFeaturesResponse>({
     queryKey: featuresKeys.enhanced(ticker),
     queryFn: () => featuresApi.getEnhancedFeatures(ticker),
-    enabled: !!ticker,
-    staleTime: 2 * 60 * 1000,
-    retry: 1,
+    enabled: !!ticker && enabled,
+    staleTime: 30 * 60 * 1000,
+    retry: 0,
     onError: (error) => {
       console.error(`Error fetching enhanced analytics for ${ticker}:`, formatApiError(error));
     }

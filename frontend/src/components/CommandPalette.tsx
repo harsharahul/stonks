@@ -27,10 +27,13 @@ interface CommandPaletteProps {
 const allPages = [
   { to: '/', label: 'Dashboard', shortcut: 'Ctrl+1', icon: LayoutDashboard, keywords: ['home', 'main', 'overview'] },
   { to: '/stocks', label: 'Stocks', shortcut: 'Ctrl+2', icon: TrendingUp, keywords: ['list', 'watchlist', 'tickers'] },
+  { to: '/desk', label: 'AI Trading Desk', shortcut: '', icon: Brain, keywords: ['desk', 'agents', 'debate', 'verdict', 'trading desk'] },
   { to: '/intelligence', label: 'AI Intelligence', shortcut: 'Ctrl+3', icon: Brain, keywords: ['ai', 'analysis', 'sentiment', 'recommendations'] },
   { to: '/signals', label: 'Signals', shortcut: 'Ctrl+4', icon: Zap, keywords: ['trading', 'alerts', 'momentum'] },
   { to: '/anomalies', label: 'Anomalies', shortcut: 'Ctrl+5', icon: AlertTriangle, keywords: ['outliers', 'unusual', 'detection'] },
   { to: '/wsb-trending', label: 'WSB Trending', shortcut: 'Ctrl+6', icon: TrendingUp, keywords: ['reddit', 'wallstreetbets', 'meme'] },
+  { to: '/portfolio', label: 'Portfolio', shortcut: '', icon: LayoutDashboard, keywords: ['alpaca', 'positions', 'orders', 'trading', 'broker'] },
+  { to: '/watchlist', label: 'Watchlist', shortcut: '', icon: TrendingUp, keywords: ['starred', 'tracked', 'my stocks'] },
   { to: '/system', label: 'System Status', shortcut: 'Ctrl+7', icon: Monitor, keywords: ['health', 'pipeline', 'celery', 'ingestion', 'status'] },
   { to: '/admin', label: 'Admin Dashboard', shortcut: 'Ctrl+8', icon: Shield, keywords: ['admin', 'tasks', 'jobs', 'etl', 'celery', 'dispatch'] },
 ];

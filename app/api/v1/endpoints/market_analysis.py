@@ -4,7 +4,8 @@ Comprehensive market intelligence and AI-powered analysis
 """
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
@@ -23,6 +24,67 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Morning-brief market summary: thread-pooled LLM call + in-process TTL cache.
+# Single-pod deployment makes a process-local cache sufficient; the lock
+# guarantees at most one generation in flight.
+# ---------------------------------------------------------------------------
+import asyncio
+import hashlib
+
+_summary_cache: Dict[str, Any] = {"key": None, "value": None, "at": None}
+_summary_lock = asyncio.Lock()
+_SUMMARY_TTL_SECONDS = 3600
+
+
+async def _get_cached_market_summary(narratives_text: str) -> Optional[str]:
+    """Return the LLM market summary, cached by input hash for an hour."""
+    cache_key = hashlib.sha256(narratives_text.encode()).hexdigest()[:16]
+    now = datetime.now()
+
+    cached_at = _summary_cache["at"]
+    if (
+        _summary_cache["key"] == cache_key
+        and cached_at is not None
+        and (now - cached_at).total_seconds() < _SUMMARY_TTL_SECONDS
+    ):
+        return _summary_cache["value"]
+
+    async with _summary_lock:
+        # Re-check under the lock — another request may have just filled it.
+        cached_at = _summary_cache["at"]
+        if (
+            _summary_cache["key"] == cache_key
+            and cached_at is not None
+            and (now - cached_at).total_seconds() < _SUMMARY_TTL_SECONDS
+        ):
+            return _summary_cache["value"]
+
+        def _generate() -> Optional[str]:
+            from app.llm.analytics_agent import get_llm
+            llm = get_llm()
+            if not llm:
+                return None
+            from langchain_core.messages import HumanMessage
+            msg = HumanMessage(content=(
+                "You are a concise financial analyst. Based on these per-stock analyst notes, "
+                "write a 2-3 sentence market overview for this morning's brief. "
+                "Focus on broad trends and notable developments. Be direct and factual.\n\n"
+                f"{narratives_text}"
+            ))
+            response = llm.invoke([msg])
+            return response.content.strip()
+
+        try:
+            summary = await asyncio.get_event_loop().run_in_executor(None, _generate)
+        except Exception as llm_err:
+            logger.warning(f"LLM market summary failed: {llm_err}")
+            summary = None
+
+        _summary_cache.update({"key": cache_key, "value": summary, "at": now})
+        return summary
 
 
 @router.get("/market-overview")
@@ -57,16 +119,23 @@ async def get_market_overview(
             TickerFeaturesDaily.date == date_obj
         ).count()
         
-        # Get recent stocks with data (only those with valid sentiment)
+        # Get recent stocks with data (only those with valid sentiment).
+        # One row per ticker: multiple feature dates fall in the window, and
+        # without the dedupe the intelligence table showed duplicate tickers
+        # ("7 stocks analyzed" for a 5-stock universe).
         recent_stocks = db.query(TickerFeaturesDaily).filter(
             and_(
                 TickerFeaturesDaily.date >= yesterday,
                 TickerFeaturesDaily.sent_mean_7d.isnot(None)
             )
-        ).limit(10).all()
-        
+        ).order_by(TickerFeaturesDaily.ticker, TickerFeaturesDaily.date.desc()).limit(40).all()
+
         stocks_data = []
+        seen_tickers = set()
         for stock_feature in recent_stocks:
+            if stock_feature.ticker in seen_tickers:
+                continue  # keep only the latest row per ticker
+            seen_tickers.add(stock_feature.ticker)
             stocks_data.append({
                 'ticker': stock_feature.ticker,
                 'sentiment': float(stock_feature.sent_mean_7d) if stock_feature.sent_mean_7d else 0.0,
@@ -75,6 +144,8 @@ async def get_market_overview(
                 'volume_z': float(stock_feature.vol_z) if stock_feature.vol_z else 0.0,
                 'date': stock_feature.date.isoformat()
             })
+            if len(stocks_data) >= 10:
+                break
         
         return {
             'success': True,
@@ -198,112 +269,18 @@ async def get_market_sentiment_analysis(
 
 
 @router.get("/ai-insights/{ticker}")
-async def get_ai_insights_for_stock(
-    ticker: str,
-    db: Session = Depends(get_db),
-    target_date: Optional[str] = Query(None, description="Date for analysis (YYYY-MM-DD)")
-):
-    """Get AI-powered insights for a specific stock"""
-    try:
-        # Resolve date
-        if target_date:
-            try:
-                date_obj = datetime.strptime(target_date, "%Y-%m-%d").date()
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
-        else:
-            date_obj = date.today()
-        
-        yesterday = date_obj - timedelta(days=1)
-        
-        # Get stock features
-        stock_features = db.query(TickerFeaturesDaily).filter(
-            TickerFeaturesDaily.ticker == ticker.upper(),
-            TickerFeaturesDaily.date >= yesterday
-        ).order_by(TickerFeaturesDaily.date.desc()).first()
-        
-        if not stock_features:
-            raise HTTPException(status_code=404, detail=f"No recent data found for {ticker}")
-        
-        # Prepare features for AI analysis (structured to match LLM agent expectations)
-        features = {
-            'sentiment': {
-                'mean_7d': float(stock_features.sent_mean_7d) if stock_features.sent_mean_7d else 0.5,
-                'sent_shock': float(stock_features.sent_shock) if stock_features.sent_shock else 0.0
-            },
-            'returns': {
-                'ret_5d': float(stock_features.ret_5d) if stock_features.ret_5d else 0.0,
-                'ret_1d': float(stock_features.ret_1d) if stock_features.ret_1d else 0.0
-            },
-            'context': {
-                'article_count_7d': stock_features.article_count_7d or 0,
-                'vol_z': float(stock_features.vol_z) if stock_features.vol_z else 0.0,
-                'novelty_mean_3d': float(stock_features.novelty_mean_3d) if stock_features.novelty_mean_3d else 0.5
-            },
-            'metadata': {
-                'created_at': stock_features.created_at.isoformat() if stock_features.created_at else None
-            }
-        }
-        
-        # Fetch real articles from DB (last 7 days, limit 10)
-        week_ago = datetime.now() - timedelta(days=7)
-        real_articles = db.query(Article).filter(
-            Article.tickers.any(ticker.upper()),
-            Article.published_at >= week_ago,
-        ).order_by(Article.published_at.desc()).limit(10).all()
+async def get_ai_insights_for_stock(ticker: str):
+    """DEPRECATED — superseded by the AI Trading Desk.
 
-        sample_articles = [
-            {
-                'title': a.title or f'{ticker} article',
-                'sentiment': float(a.sentiment) if a.sentiment is not None else 0.5,
-                'url': a.url or '',
-                'published_at': a.published_at.isoformat() if a.published_at else None,
-            }
-            for a in real_articles
-        ]
-
-        # Also inject StockKnowledge narrative as synthetic article if available
-        knowledge = db.query(StockKnowledge).filter(
-            StockKnowledge.ticker == ticker.upper()
-        ).first()
-        if knowledge and knowledge.narrative:
-            sample_articles.insert(0, {
-                'title': f'[Analyst Note] {knowledge.narrative[:200]}',
-                'sentiment': features['sentiment']['mean_7d'],
-                'url': '',
-                'published_at': knowledge.last_updated.isoformat() if knowledge.last_updated else None,
-            })
-
-        # Generate AI insights
-        try:
-            ai_result = enhance_analytics_with_llm_sync(ticker.upper(), features, sample_articles)
-            
-            return {
-                'success': True,
-                'ticker': ticker.upper(),
-                'analysis_date': date_obj.isoformat(),
-                'features': features,
-                'ai_analysis': ai_result,
-                'data_date': stock_features.date.isoformat()
-            }
-            
-        except Exception as ai_error:
-            logger.warning(f"AI analysis failed for {ticker}: {ai_error}")
-            return {
-                'success': False,
-                'ticker': ticker.upper(),
-                'analysis_date': date_obj.isoformat(),
-                'features': features,
-                'ai_analysis': None,
-                'error': str(ai_error),
-                'data_date': stock_features.date.isoformat()
-            }
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting AI insights for {ticker}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get AI insights: {str(e)}")
+    The old implementation ran Ollama inference inline on the event loop
+    (30-60s per call); a handful of concurrent requests starved the health
+    probes and got the pod killed. The desk pre-computes multi-agent
+    analyses via Celery and serves them instantly from Postgres.
+    """
+    return RedirectResponse(
+        url=f"/api/v1/desk/{ticker.upper()}",
+        status_code=status.HTTP_308_PERMANENT_REDIRECT,
+    )
 
 
 @router.get("/tomorrow-outlook")
@@ -510,28 +487,18 @@ async def get_morning_brief(db: Session = Depends(get_db)):
                 "last_updated": k.last_updated.isoformat() if k.last_updated else None,
             })
 
-        # Optionally generate a 2-3 sentence market summary via LLM
+        # Optionally generate a 2-3 sentence market summary via LLM.
+        # SAFETY: the LLM call runs in a worker thread (never inline on the
+        # event loop — inline inference starved health probes and got the pod
+        # killed) and the result is cached for an hour so at most one
+        # generation is in flight regardless of traffic.
         market_summary = None
         if stocks_output:
-            try:
-                from app.llm.analytics_agent import get_llm
-                llm = get_llm()
-                if llm:
-                    from langchain_core.messages import HumanMessage
-                    narratives_text = "\n".join(
-                        f"- {s['ticker']}: {s['narrative'][:300] if s['narrative'] else 'No narrative yet'}"
-                        for s in stocks_output[:10]
-                    )
-                    msg = HumanMessage(content=(
-                        "You are a concise financial analyst. Based on these per-stock analyst notes, "
-                        "write a 2-3 sentence market overview for this morning's brief. "
-                        "Focus on broad trends and notable developments. Be direct and factual.\n\n"
-                        f"{narratives_text}"
-                    ))
-                    response = llm.invoke([msg])
-                    market_summary = response.content.strip()
-            except Exception as llm_err:
-                logger.warning(f"LLM market summary failed: {llm_err}")
+            narratives_text = "\n".join(
+                f"- {s['ticker']}: {s['narrative'][:300] if s['narrative'] else 'No narrative yet'}"
+                for s in stocks_output[:10]
+            )
+            market_summary = await _get_cached_market_summary(narratives_text)
 
         return {
             "generated_at": datetime.now().isoformat(),

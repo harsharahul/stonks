@@ -54,6 +54,16 @@ export function setAccessTokenGetter(getter: () => string | null) {
   _accessTokenGetter = getter;
 }
 
+/**
+ * Current OIDC access token (or null). The ONLY sanctioned way for API
+ * clients to obtain the token — it reads the live react-oidc-context user
+ * via the bridge, never browser storage (oidc-client-ts keeps the user in
+ * sessionStorage, and renewed tokens only flow through the context).
+ */
+export function getAccessToken(): string | null {
+  return _accessTokenGetter ? _accessTokenGetter() : null;
+}
+
 apiClient.interceptors.request.use((config) => {
   if (_accessTokenGetter) {
     const token = _accessTokenGetter();

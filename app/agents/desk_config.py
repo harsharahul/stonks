@@ -43,11 +43,13 @@ DESK_CONFIG: Dict[str, Any] = {
     "memory_log_path": os.path.join(_DEFAULT_CACHE, "trading_memory.md"),
     "memory_log_max_entries": None,
 
-    # LLM tier — Stonks uses Ollama for both tiers (qwen3:14b). Two-tier
-    # temperature differentiation lives in ``app.llm.ollama_client``.
+    # LLM tiers — quick (analysts/debate) on the efficient default model,
+    # deep (research manager / trader / portfolio manager) optionally on a
+    # stronger one via OLLAMA_DEEP_MODEL. Temperature differentiation lives
+    # in ``app.llm.ollama_client``.
     "llm_provider": "ollama",
-    "deep_think_llm": settings.OLLAMA_MODEL or "qwen3:14b",
-    "quick_think_llm": settings.OLLAMA_MODEL or "qwen3:14b",
+    "deep_think_llm": settings.OLLAMA_DEEP_MODEL or settings.OLLAMA_MODEL or "gemma4:e4b",
+    "quick_think_llm": settings.OLLAMA_MODEL or "gemma4:e4b",
     "backend_url": (settings.OLLAMA_HOST or "").rstrip("/") + "/v1" if settings.OLLAMA_HOST else None,
 
     # Provider-specific reasoning knobs — Ollama doesn't use these.

@@ -1,6 +1,7 @@
 """
 User-specific endpoints: watchlist and alert subscriptions
 """
+import logging
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel, Field
@@ -9,6 +10,8 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.dependencies import get_current_user
 from app.core.database import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -49,13 +52,32 @@ async def get_watchlist(user=Depends(get_current_user), db: Session = Depends(ge
 
 @router.post("/me/watchlist", status_code=201)
 async def add_to_watchlist(body: AddWatchlistRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """Add a stock to the user's watchlist by symbol."""
+    """Add a stock to the user's watchlist by symbol.
+
+    One-stop-shop behavior: watching a symbol Stonks doesn't track yet
+    auto-creates the stock and kicks off price backfill + feature
+    calculation in the background, instead of rejecting the add.
+    """
     from app.models.watchlist import WatchlistItem
     from app.models.stock import Stock
+    from app.services.broker.sanity import check_ticker
 
-    stock = db.query(Stock).filter(Stock.symbol == body.symbol.upper()).first()
+    symbol = body.symbol.upper()
+    stock = db.query(Stock).filter(Stock.symbol == symbol).first()
+    created = False
     if not stock:
-        raise HTTPException(status_code=404, detail=f"Stock '{body.symbol}' not found")
+        # Reuse the broker sanity blocklists so junk/index/FX symbols can't
+        # pollute the stocks table via watchlist adds.
+        base = check_ticker(symbol)
+        if not base.get("ok"):
+            raise HTTPException(
+                status_code=422,
+                detail=f"'{symbol}' doesn't look like a tradeable US symbol ({base.get('reason')})",
+            )
+        stock = Stock(symbol=symbol, company_name=symbol, is_active=True)
+        db.add(stock)
+        db.flush()
+        created = True
 
     item = WatchlistItem(
         user_id=user.id,
@@ -67,10 +89,23 @@ async def add_to_watchlist(body: AddWatchlistRequest, user=Depends(get_current_u
         db.commit()
         db.refresh(item)
         item.stock = stock
-        return item.to_dict()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail=f"'{body.symbol}' is already in your watchlist")
+        raise HTTPException(status_code=409, detail=f"'{symbol}' is already in your watchlist")
+
+    if created:
+        # Fire-and-forget data hydration for the new symbol.
+        try:
+            from app.tasks.price_ingestion import backfill_prices_for_symbol
+            from app.tasks.feature_calculation import calculate_features_for_ticker
+            backfill_prices_for_symbol.delay(symbol, 90)
+            calculate_features_for_ticker.delay(symbol)
+        except Exception as exc:
+            logger.warning(f"watchlist add: backfill enqueue failed for {symbol}: {exc}")
+
+    result = item.to_dict()
+    result["stock_created"] = created
+    return result
 
 
 @router.delete("/me/watchlist/{symbol}", status_code=200)

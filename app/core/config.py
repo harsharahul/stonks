@@ -59,7 +59,10 @@ class Settings(BaseSettings):
     ANALYTICS_LLM_PROVIDER: str = os.getenv("ANALYTICS_LLM_PROVIDER", "none")  # none | openai | ollama
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-    OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3:8b")
+    OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
+    # Stronger model for the desk's decision tier (research manager / trader /
+    # portfolio manager). Falls back to OLLAMA_MODEL when unset.
+    OLLAMA_DEEP_MODEL: str = os.getenv("OLLAMA_DEEP_MODEL", "")
     
     # External API Keys
     ALPHA_VANTAGE_API_KEY: Optional[str] = os.getenv("ALPHA_VANTAGE_API_KEY")

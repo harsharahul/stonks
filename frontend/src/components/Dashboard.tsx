@@ -143,7 +143,9 @@ const Dashboard: React.FC = () => {
             ) : (
               <>
                 <div className="text-2xl font-bold">{featuresSummary.data?.count ?? '\u2014'}</div>
-                <div className="text-[10px] text-neutral-400">Tracked</div>
+                {/* Counts tickers with CURRENT feature rows, not all tracked
+                    stocks \u2014 labeled honestly so it can't contradict Coverage. */}
+                <div className="text-[10px] text-neutral-400">With fresh data</div>
               </>
             )}
           </div>

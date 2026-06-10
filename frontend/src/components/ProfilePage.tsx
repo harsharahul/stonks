@@ -15,7 +15,7 @@ const ProfilePage: React.FC = () => {
   const [nameSaved, setNameSaved] = useState(false);
   const [themeSaved, setThemeSaved] = useState(false);
 
-  const { data: profile, isLoading, error } = useQuery({
+  const { data: profile, isLoading, error, refetch } = useQuery({
     queryKey: ['profile'],
     queryFn: () => authApi.getMe(),
     enabled: isAuthenticated,
@@ -76,7 +76,17 @@ const ProfilePage: React.FC = () => {
   }
 
   if (error || !profile) {
-    return <div className="text-center py-12 text-red-500">Failed to load profile. Try refreshing.</div>;
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500 mb-4">Failed to load profile.</p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   const initial = profile.name?.charAt(0)?.toUpperCase() || '?';

@@ -121,6 +121,16 @@ async def get_optional_user(request: Request):
             user.name = user_info["name"]
         if user_info["avatar_url"] and user.avatar_url != user_info["avatar_url"]:
             user.avatar_url = user_info["avatar_url"]
+
+        # Re-elect admin on every login (promote-only): heals config drift when
+        # an email is added to ADMIN_EMAILS after the user row already exists.
+        # Demotion stays a deliberate manual act.
+        if user.role != "admin":
+            admin_emails = [e.strip().lower() for e in settings.ADMIN_EMAILS.split(",") if e.strip()]
+            email_lower = user.email.lower()
+            if any(hmac.compare_digest(email_lower, ae) for ae in admin_emails):
+                user.role = "admin"
+                logger.info(f"Promoted user to admin via ADMIN_EMAILS: {user.email}")
         db.commit()
         db.refresh(user)
 

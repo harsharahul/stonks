@@ -28,10 +28,11 @@ export const useDashboard = () => {
     retry: 1,
   });
 
-  // Derived data
+  // Derived data — gainers must actually be UP and losers DOWN; with a small
+  // universe the old unsigned sort put the same tickers in both lists.
   const topGainers = useMemo(() =>
     featuresSummary.data?.features
-      ?.filter((s) => s.ret_5d !== null)
+      ?.filter((s) => s.ret_5d !== null && (s.ret_5d || 0) > 0)
       .sort((a, b) => (b.ret_5d || 0) - (a.ret_5d || 0))
       .slice(0, 5) || [],
     [featuresSummary.data],
@@ -39,7 +40,7 @@ export const useDashboard = () => {
 
   const topLosers = useMemo(() =>
     featuresSummary.data?.features
-      ?.filter((s) => s.ret_5d !== null)
+      ?.filter((s) => s.ret_5d !== null && (s.ret_5d || 0) < 0)
       .sort((a, b) => (a.ret_5d || 0) - (b.ret_5d || 0))
       .slice(0, 5) || [],
     [featuresSummary.data],

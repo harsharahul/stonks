@@ -47,6 +47,14 @@ const TradeTicket: React.FC<TradeTicketProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, symbol, initialSide]);
 
+  // Escape closes the ticket (standard modal behavior)
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   // Pre-fill suggested sizing once it arrives (only if user hasn't typed)
   useEffect(() => {
     if (sizing.data && !qty) {
