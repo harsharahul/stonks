@@ -198,7 +198,7 @@ const StockDetail: React.FC = () => {
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">{ticker}</h1>
           <button
             onClick={toggleTracked}
-            disabled={starLoading || trackedStocks.isLoading}
+            disabled={starLoading || watchlist.isLoading}
             className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
             title={isTracked ? 'Remove from watchlist' : 'Add to watchlist'}
           >
