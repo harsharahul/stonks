@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
 import FreshnessIndicator from './FreshnessIndicator';
+import ConsolidatedRankings from './ConsolidatedRankings';
 import {
   cn, formatNumber, formatPercent, formatRelativeTime, getSentimentColor,
 } from '../utils/format';
@@ -238,6 +239,9 @@ const Dashboard: React.FC = () => {
 
         {/* ---------- LEFT COLUMN (8/12) ---------- */}
         <div className="lg:col-span-8 space-y-6">
+
+          {/* -- CONSOLIDATED RANKINGS (every brain, one list) -- */}
+          <ConsolidatedRankings />
 
           {/* -- MORNING BRIEF -- */}
           <div className="card">

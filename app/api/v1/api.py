@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     stocks, feed, recommendations, signals, admin, features, metrics,
     anomalies, websockets, intelligent_signals, market_analysis,
     stocks_enhanced, prices, auth, users, desk, broker, strategies,
+    consolidated,
 )
 
 # Create API router
@@ -27,6 +28,7 @@ api_router.include_router(market_analysis.router, prefix="/market-analysis", tag
 api_router.include_router(stocks_enhanced.router, prefix="/stocks-enhanced", tags=["stocks-enhanced"])
 api_router.include_router(prices.router, prefix="/prices", tags=["prices"])
 api_router.include_router(desk.router, prefix="/desk", tags=["ai-trading-desk"])
+api_router.include_router(consolidated.router, prefix="/consolidated", tags=["consolidated"])
 
 # Authenticated endpoints
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
