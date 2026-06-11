@@ -5,11 +5,12 @@ import {
   ArrowRight, Activity, ChevronUp, ChevronDown, X, ChevronRight,
   Shield, Info,
 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAllSignals, useTickerSignals, useSignalTypes, useAlertStats } from '../hooks/useSignals';
 import { useLatestAlerts } from '../hooks/useWSBDashboard';
 import { signalsApi } from '../api/client';
+import apiClient from '../api/client';
 import { useToast } from '../hooks/useToast';
 import ToastManager from './ToastManager';
 import {
@@ -32,6 +33,42 @@ const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
   return (
     <span className={cn('px-1.5 py-0.5 text-[10px] font-semibold rounded border uppercase', styles[severity] || styles.low)}>
       {severity}
+    </span>
+  );
+};
+
+/** Which brain emitted this signal (mirrors backend source_for_signal). */
+function signalSource(s: Signal): string {
+  if (s.metadata && (s.metadata as any).source_plugin) return String((s.metadata as any).source_plugin);
+  if (s.model_version && s.model_version.startsWith('plugin:')) return s.model_version.split(':')[1];
+  if (s.signal_type.startsWith('anomaly_') || s.signal_type.startsWith('urgent_')) return 'anomaly_detector';
+  return 'rule_engine';
+}
+
+interface SourceTrack {
+  scored: number;
+  win_rate: number | null;
+  avg_signal_return: number | null;
+}
+
+/** Source name + verified win-rate chip (the marketplace trust signal). */
+const SourceBadge: React.FC<{ signal: Signal; trackRecords?: Record<string, SourceTrack> }> = ({ signal, trackRecords }) => {
+  const source = signalSource(signal);
+  const track = trackRecords?.[source];
+  const winRate = track && track.scored >= 5 ? track.win_rate : null;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{source.replace(/_/g, ' ')}</span>
+      {winRate != null && (
+        <span className={cn(
+          'text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+          winRate >= 0.5
+            ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+        )}>
+          {Math.round(winRate * 100)}% win
+        </span>
+      )}
     </span>
   );
 };
@@ -213,6 +250,12 @@ const SignalsExplorer: React.FC = () => {
 
   // Data hooks
   const allSignals = useAllSignals({ active_only: true, limit: 200 });
+  const trackRecords = useQuery({
+    queryKey: ['signals', 'track-record'],
+    queryFn: async (): Promise<{ sources: Record<string, SourceTrack> }> =>
+      (await apiClient.get('/signals/sources/track-record')).data,
+    staleTime: 10 * 60 * 1000,
+  });
   const signalTypes = useSignalTypes();
   const alertStats = useAlertStats(7);
   const alerts = useLatestAlerts(24);
@@ -527,6 +570,7 @@ const SignalsExplorer: React.FC = () => {
                     <tr className="border-b border-neutral-200 dark:border-neutral-700 text-left text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       <ThSortable col="ticker" label="Ticker" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} className="px-6" />
                       <ThSortable col="type" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                      <th className="px-3 py-2 hidden lg:table-cell">Source</th>
                       <th className="px-3 py-2">Direction</th>
                       <ThSortable col="strength" label="Strength" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                       <ThSortable col="confidence" label="Conf" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} className="hidden md:table-cell" />
@@ -558,6 +602,9 @@ const SignalsExplorer: React.FC = () => {
                           </td>
                           <td className="px-3 py-2.5">
                             <span className="text-xs text-neutral-600 dark:text-neutral-400">{getSignalTypeLabel(s.signal_type)}</span>
+                          </td>
+                          <td className="px-3 py-2.5 hidden lg:table-cell">
+                            <SourceBadge signal={s} trackRecords={trackRecords.data?.sources} />
                           </td>
                           <td className="px-3 py-2.5">
                             <DirectionBadge direction={s.direction} />

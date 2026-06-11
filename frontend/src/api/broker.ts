@@ -109,6 +109,8 @@ export interface PlaceOrderInput {
   take_profit_price?: number;
   source?: 'manual' | 'desk' | 'signal';
   source_ref?: string;
+  /** Idempotency ref — stable across retries of the same submission. */
+  client_ref?: string;
   confirm_live?: boolean;
 }
 

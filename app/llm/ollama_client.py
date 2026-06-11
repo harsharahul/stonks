@@ -2,7 +2,6 @@
 
 Single source of truth for LLM construction across:
 - AI Trading Desk (vendored TradingAgents)
-- intelligent_signal_service (LangGraph engine)
 - analytics_agent (legacy — being migrated)
 
 Goes through Ollama's OpenAI-compat endpoint via LangChain's ``ChatOpenAI``.

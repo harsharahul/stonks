@@ -35,6 +35,10 @@ const TradeTicket: React.FC<TradeTicketProps> = ({
   const [stopLoss, setStopLoss] = useState<string>('');
   const [takeProfit, setTakeProfit] = useState<string>('');
   const [liveConfirmed, setLiveConfirmed] = useState(false);
+  // Idempotency ref: one per ticket-open, stable across submit retries — a
+  // timeout + retry replays the same order at the backend instead of
+  // double-placing. Regenerated whenever the ticket reopens.
+  const [clientRef, setClientRef] = useState<string>('');
 
   const sizing = useSizing(symbol, open && Boolean(account.data?.broker_info));
 
@@ -43,6 +47,11 @@ const TradeTicket: React.FC<TradeTicketProps> = ({
       setSide(initialSide);
       placeOrder.reset();
       setLiveConfirmed(false);
+      setClientRef(
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, symbol, initialSide]);
@@ -97,6 +106,7 @@ const TradeTicket: React.FC<TradeTicketProps> = ({
       take_profit_price: useBracket && mode === 'qty' && parseFloat(takeProfit) > 0 ? parseFloat(takeProfit) : undefined,
       source,
       source_ref: sourceRef,
+      client_ref: clientRef || undefined,
       confirm_live: !isPaper,
     });
   };

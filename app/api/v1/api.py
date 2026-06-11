@@ -6,7 +6,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     stocks, feed, recommendations, signals, admin, features, metrics,
-    anomalies, websockets, intelligent_signals, market_analysis,
+    anomalies, websockets, market_analysis,
     stocks_enhanced, prices, auth, users, desk, broker, strategies,
     consolidated,
 )
@@ -23,7 +23,6 @@ api_router.include_router(anomalies.router, prefix="/anomalies", tags=["anomalie
 api_router.include_router(websockets.router, prefix="/ws", tags=["websockets"])
 api_router.include_router(features.router, prefix="/features", tags=["features"])
 api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
-api_router.include_router(intelligent_signals.router, prefix="/intelligent-signals", tags=["intelligent-signals"])
 api_router.include_router(market_analysis.router, prefix="/market-analysis", tags=["market-analysis"])
 api_router.include_router(stocks_enhanced.router, prefix="/stocks-enhanced", tags=["stocks-enhanced"])
 api_router.include_router(prices.router, prefix="/prices", tags=["prices"])

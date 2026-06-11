@@ -3,12 +3,14 @@
  * Signal consensus (track-record-weighted) + AI Desk verdict + quant
  * recommendation blended into a single explainable stance per ticker.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Layers } from 'lucide-react';
+import { Layers, Zap } from 'lucide-react';
 import apiClient from '../api/client';
 import { cn } from '../utils/format';
+import { useAuth } from '../hooks/useAuth';
+import TradeTicket from './broker/TradeTicket';
 
 interface RankingWhySignal {
   signal_type: string;
@@ -57,6 +59,10 @@ function whyLine(r: Ranking): string {
 }
 
 const ConsolidatedRankings: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  // The act-on-it loop: intelligence → one click → Alpaca (prefilled ticket,
+  // user always confirms — the platform never auto-trades from rankings).
+  const [ticket, setTicket] = useState<{ symbol: string; side: 'buy' | 'sell' } | null>(null);
   const rankings = useQuery({
     queryKey: ['consolidated', 'rankings'],
     queryFn: async (): Promise<RankingsResponse> => (await apiClient.get('/consolidated/rankings?limit=10')).data,
@@ -100,10 +106,30 @@ const ConsolidatedRankings: React.FC = () => {
               <span className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400 w-12 shrink-0">
                 {r.composite != null ? (r.composite > 0 ? '+' : '') + r.composite.toFixed(2) : '—'}
               </span>
-              <span className="text-[11px] text-neutral-400 dark:text-neutral-500 truncate">{whyLine(r)}</span>
+              <span className="text-[11px] text-neutral-400 dark:text-neutral-500 truncate flex-1">{whyLine(r)}</span>
+              {isAuthenticated && r.composite != null && r.stance !== 'neutral' && (
+                <button
+                  onClick={() => setTicket({ symbol: r.ticker, side: r.composite! > 0 ? 'buy' : 'sell' })}
+                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 shrink-0"
+                >
+                  <Zap className="w-3 h-3" />
+                  Trade
+                </button>
+              )}
             </div>
           ))}
         </div>
+      )}
+
+      {ticket && (
+        <TradeTicket
+          symbol={ticket.symbol}
+          open={Boolean(ticket)}
+          onClose={() => setTicket(null)}
+          source="signal"
+          sourceRef="consolidated_rankings"
+          initialSide={ticket.side}
+        />
       )}
     </div>
   );

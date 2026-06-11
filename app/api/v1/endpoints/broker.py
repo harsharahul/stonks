@@ -10,6 +10,7 @@ rest and never returned after the initial link request. v1 safety posture:
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 from datetime import datetime
 from typing import Optional
@@ -78,6 +79,9 @@ class PlaceOrderRequest(BaseModel):
     # Social layer: tag the order to one of the caller's strategies so it
     # appears in the strategy's public trade feed + verified track record.
     strategy_id: Optional[UUID] = None
+    # Idempotency: the frontend generates one ref per ticket submission and
+    # reuses it on retry — a timeout + retry can't double-place at Alpaca.
+    client_ref: Optional[str] = Field(None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9\-_]+$")
     # Live-account orders must re-confirm per order.
     confirm_live: bool = False
 
@@ -362,7 +366,21 @@ async def place_order(
     elif body.source == "desk":
         strategy = db.query(Strategy).filter(Strategy.kind == "desk", Strategy.is_active.is_(True)).first()
 
-    client_order_id = make_client_order_id(user.id)
+    if body.client_ref:
+        # Deterministic id per (user, ref): a network-timeout retry replays the
+        # SAME order identity instead of submitting a new one (the mirror task
+        # already follows this pattern). Alpaca rejects duplicate ids too.
+        digest = hashlib.sha1(f"{user.id}:{body.client_ref}".encode()).hexdigest()[:16]
+        client_order_id = f"stonks-{str(user.id)[:8]}-{digest}"
+        existing = (
+            db.query(BrokerOrder)
+            .filter(BrokerOrder.client_order_id == client_order_id)
+            .first()
+        )
+        if existing is not None:
+            return {"order": existing.to_dict(), "market_open": is_market_open(client), "replayed": True}
+    else:
+        client_order_id = make_client_order_id(user.id)
     ledger = BrokerOrder(
         user_id=user.id,
         broker_account_id=account.id,
