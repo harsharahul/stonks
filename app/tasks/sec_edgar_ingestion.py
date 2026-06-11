@@ -219,7 +219,7 @@ def fetch_sec_edgar_rss(self, filing_types: List[str] = None, days_back: int = 1
                     tickers=[],  # Will be populated by entity linking
                     sentiment=0.5,  # Neutral default for filings
                     language="en",
-                    metadata={
+                    article_metadata={
                         "filing_type": filing_type,
                         "company_name": company_name,
                         "cik": cik,

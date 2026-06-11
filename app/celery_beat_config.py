@@ -110,11 +110,35 @@ beat_schedule = {
         'options': {'expires': 1500},
     },
 
+    # Signal outcome scoring — per-source track records, nightly 23:45 UTC
+    # (after desk outcomes 23:00 and strategy performance 23:30)
+    'signal-outcome-scoring': {
+        'task': 'app.tasks.signal_outcomes.score_signal_outcomes_task',
+        'schedule': crontab(hour=23, minute=45),
+        'options': {'expires': 3600},
+    },
+
     # Strategy verified track records — nightly after desk outcome scoring (23:00)
     'strategy-performance': {
         'task': 'app.tasks.strategy_performance.compute_strategy_performance_task',
         'schedule': crontab(hour=23, minute=30),
         'options': {'expires': 3600},
+    },
+
+    # SEC EDGAR basic - RSS feed of 8-K/10-K/10-Q filings, every 2 hours
+    'sec-edgar-ingestion': {
+        'task': 'app.tasks.sec_edgar_ingestion.fetch_sec_edgar_rss',
+        'schedule': 7200.0,  # 2 hours
+        'args': (['8-K', '10-K', '10-Q'], 1),  # filing_types, days_back
+        'options': {'expires': 6000},
+    },
+
+    # SEC EDGAR CIK→ticker mapping - resolves filing articles to tickers
+    'sec-edgar-cik-mapping': {
+        'task': 'app.tasks.sec_edgar_ingestion.map_cik_to_tickers',
+        'schedule': crontab(minute=30, hour='*/2'),  # offset 30 min after RSS fetch
+        'args': (100,),
+        'options': {'expires': 6000},
     },
 
     # SEC EDGAR Enhanced - DISABLED: sec-downloader/sec-parser dependencies
@@ -197,6 +221,7 @@ task_routes = {
     'app.tasks.price_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.reddit_wsb_ingestion.*': {'queue': 'ingestion'},
     'app.tasks.signal_dispatch.*': {'queue': 'ingestion'},
+    'app.tasks.signal_outcomes.*': {'queue': 'analytics'},
     'app.tasks.strategy_performance.*': {'queue': 'analytics'},
     'app.tasks.strategy_mirror.*': {'queue': 'compute'},
     'app.tasks.sec_edgar_enhanced.*': {'queue': 'ingestion'},

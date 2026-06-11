@@ -51,6 +51,7 @@ import app.tasks.reddit_wsb_enhanced
 import app.tasks.stock_knowledge
 import app.tasks.agent_pipeline
 import app.tasks.signal_dispatch
+import app.tasks.signal_outcomes
 import app.tasks.strategy_performance
 import app.tasks.strategy_mirror
 

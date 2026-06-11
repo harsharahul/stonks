@@ -102,6 +102,7 @@ def fetch_nasdaq_earnings_calendar(self, days_ahead: int = 7, days_back: int = 3
         
         # Try Alpha Vantage earnings calendar first
         alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY')
+        provider_error = None
         if alpha_vantage_key:
             try:
                 earnings_data = fetch_alpha_vantage_earnings(alpha_vantage_key, start_date, end_date)
@@ -109,12 +110,32 @@ def fetch_nasdaq_earnings_calendar(self, days_ahead: int = 7, days_back: int = 3
                     print(f"   ✅ Alpha Vantage earnings data: {len(earnings_data)} companies")
                     return process_earnings_data(earnings_data, db, data_source, job_run)
             except Exception as e:
-                print(f"   ⚠️  Alpha Vantage failed: {e}, falling back to mock data")
-        
-        # Fallback to mock data for development
-        print("   📝 Using mock earnings data (development mode)")
-        mock_earnings = generate_mock_earnings_data(days_ahead, days_back)
-        return process_earnings_data(mock_earnings, db, data_source, job_run)
+                provider_error = str(e)
+                print(f"   ⚠️  Alpha Vantage failed: {e}")
+
+        # Mock data is a development convenience ONLY. Fabricated earnings dates
+        # in prod would poison the broker's earnings-proximity sanity gate.
+        from app.core.config import settings
+        if settings.ENVIRONMENT == "development":
+            print("   📝 Using mock earnings data (development mode)")
+            mock_earnings = generate_mock_earnings_data(days_ahead, days_back)
+            return process_earnings_data(mock_earnings, db, data_source, job_run)
+
+        # Fail honest: no provider data, no fabricated rows.
+        job_run.status = "skipped_no_provider"
+        job_run.finished_at = datetime.utcnow()
+        job_run.details.update({
+            "reason": "no earnings provider available",
+            "alpha_vantage_key_set": bool(alpha_vantage_key),
+            "provider_error": provider_error,
+        })
+        db.commit()
+        print("   🚫 No earnings provider available — skipping (no mock data in non-dev)")
+        return {
+            "task": "earnings_calendar",
+            "status": "skipped_no_provider",
+            "events_processed": 0,
+        }
         
     except Exception as e:
         if 'job_run' in locals():
@@ -229,7 +250,7 @@ def fetch_yahoo_earnings_calendar(self, ticker: str) -> Dict:
                             tickers=[ticker],
                             sentiment=0.5,
                             language="en",
-                            metadata={
+                            article_metadata={
                                 "event_type": "earnings",
                                 "earnings_date": earnings_date.isoformat(),
                                 "days_until": days_until,
@@ -435,7 +456,7 @@ def process_earnings_data(earnings_data: List[Dict], db: Session, data_source: D
                 tickers=[symbol],
                 sentiment=0.5,
                 language="en",
-                metadata={
+                article_metadata={
                     "event_type": "earnings",
                     "earnings_date": earnings_date.isoformat(),
                     "days_until": days_until,

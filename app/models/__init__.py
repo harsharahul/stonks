@@ -26,6 +26,7 @@ from .broker_order import BrokerOrder
 
 # Signal plugin SDK
 from .signal_source_state import SignalSourceState
+from .signal_outcome import SignalOutcome
 
 # Social layer (strategies / copy trading)
 from .strategy import Strategy

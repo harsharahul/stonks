@@ -292,7 +292,7 @@ def fetch_wsb_hot_posts(self, limit: int = 100, time_filter: str = "day") -> Dic
                     tickers=extracted_tickers,
                     sentiment=sentiment_score,
                     language="en",
-                    metadata={
+                    article_metadata={
                         "source": "reddit_wsb",
                         "reddit_score": score,
                         "num_comments": num_comments,
@@ -444,7 +444,7 @@ def fetch_wsb_daily_thread(self) -> Dict:
             tickers=[],  # General market sentiment, no specific tickers
             sentiment=sentiment_score,
             language="en",
-            metadata={
+            article_metadata={
                 "source": "reddit_wsb_daily",
                 "reddit_score": score,
                 "num_comments": num_comments,

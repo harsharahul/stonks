@@ -429,7 +429,7 @@ async def get_ingestion_status(
         if earnings_job:
             earnings_status = "operational" if earnings_job.status in ["completed", "success"] else "degraded"
             earnings_articles = db.query(Article).filter(
-                Article.article_metadata.cast(String).like('%"source": "earnings_calendar"%')
+                Article.article_metadata.cast(String).like('%"event_type": "earnings"%')
             ).count()
             earnings_freshness = (datetime.utcnow() - earnings_job.started_at.replace(tzinfo=None)).total_seconds() / 60
         else:

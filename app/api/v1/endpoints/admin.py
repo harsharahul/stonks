@@ -133,6 +133,18 @@ TASK_CATALOG = {
         "description": "Compute verified strategy track records from broker fills",
         "schedule": "Daily 23:30 UTC",
     },
+    "signal_outcome_scoring": {
+        "task": "app.tasks.signal_outcomes.score_signal_outcomes_task",
+        "queue": "analytics",
+        "description": "Score past signals against realized 5d returns (per-source track records)",
+        "schedule": "Daily 23:45 UTC",
+    },
+    "sec_edgar_ingestion": {
+        "task": "app.tasks.sec_edgar_ingestion.fetch_sec_edgar_rss",
+        "queue": "ingestion",
+        "description": "Fetch SEC EDGAR RSS filings (8-K/10-K/10-Q)",
+        "schedule": "Every 2 hr",
+    },
 }
 
 
@@ -255,8 +267,10 @@ async def list_signal_sources(
     """List every registered signal plugin with metadata + per-deployment state."""
     from app.core.signal_framework import register_default_sources, signal_registry
     from app.models.signal_source_state import SignalSourceState
+    from app.tasks.signal_outcomes import source_track_records
 
     register_default_sources()
+    track_records = source_track_records(db)
     sources = []
     for source_id in signal_registry.list_available_sources():
         source_cls = signal_registry._sources[source_id]
@@ -272,8 +286,14 @@ async def list_signal_sources(
             "required_config": meta.required_config,
             "enabled": state.enabled if state else getattr(source_cls, "default_enabled", True),
             "state": state.to_dict() if state else None,
+            "track_record": track_records.get(source_id),
         })
-    return {"sources": sources, "total": len(sources)}
+    # Non-plugin emitters (rule engine, anomaly detector) so the full picture shows
+    builtin = {
+        sid: rec for sid, rec in track_records.items()
+        if sid not in {s["source_id"] for s in sources}
+    }
+    return {"sources": sources, "builtin_track_records": builtin, "total": len(sources)}
 
 
 @router.post("/signal-sources/{source_id}/toggle")

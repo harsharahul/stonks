@@ -224,6 +224,24 @@ async def generate_and_broadcast_alerts_sync(
         raise HTTPException(status_code=500, detail=f"Failed to generate alerts: {str(e)}")
 
 
+@router.get("/sources/track-record")
+async def get_source_track_records(db: Session = Depends(get_db)):
+    """Verified track record per signal source (win rate over 5-day horizon).
+
+    Aggregated from `signal_outcomes` — every directional signal scored
+    against its realized forward return. This is how users judge which
+    sources are worth following.
+    """
+    from app.tasks.signal_outcomes import HORIZON_DAYS, source_track_records
+
+    records = source_track_records(db)
+    return {
+        "horizon_days": HORIZON_DAYS,
+        "sources": records,
+        "total_scored": sum(r["scored"] for r in records.values()),
+    }
+
+
 @router.get("/types")
 async def get_signal_types(
     db: Session = Depends(get_db)

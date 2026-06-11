@@ -387,6 +387,14 @@ export const recommendationsApi = {
 };
 
 // Signal plugin SDK (admin)
+export interface SourceTrackRecord {
+  scored: number;
+  wins: number;
+  win_rate: number | null;
+  avg_signal_return: number | null;
+  last_scored_at: string | null;
+}
+
 export interface SignalSourceInfo {
   source_id: string;
   name: string;
@@ -402,10 +410,12 @@ export interface SignalSourceInfo {
     last_error: string | null;
     signals_emitted_total: number;
   } | null;
+  track_record: SourceTrackRecord | null;
 }
 
 export interface SignalSourcesResponse {
   sources: SignalSourceInfo[];
+  builtin_track_records?: Record<string, SourceTrackRecord>;
   total: number;
 }
 

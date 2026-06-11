@@ -241,10 +241,56 @@ const AdminDashboard: React.FC = () => {
                     </>
                   )}
                 </div>
+                {src.track_record != null && (
+                  <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700 flex items-center gap-2 text-[10px]">
+                    <span
+                      className={cn(
+                        'font-semibold',
+                        (src.track_record.win_rate ?? 0) >= 0.5
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-500 dark:text-red-400'
+                      )}
+                    >
+                      {Math.round((src.track_record.win_rate ?? 0) * 100)}% win rate
+                    </span>
+                    <span className="text-neutral-400">·</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">
+                      {src.track_record.avg_signal_return != null
+                        ? `${(src.track_record.avg_signal_return * 100).toFixed(2)}% avg 5d`
+                        : '—'}
+                    </span>
+                    <span className="text-neutral-400">·</span>
+                    <span className="text-neutral-400 dark:text-neutral-500">{src.track_record.scored} scored</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
+        {signalSources.data?.builtin_track_records &&
+          Object.keys(signalSources.data.builtin_track_records).length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {Object.entries(signalSources.data.builtin_track_records).map(([sid, rec]) => (
+                <div
+                  key={sid}
+                  className="flex items-center gap-2 text-[10px] bg-white dark:bg-neutral-800 rounded-full border border-neutral-200 dark:border-neutral-700 px-3 py-1.5"
+                >
+                  <span className="font-medium text-neutral-700 dark:text-neutral-200">{sid}</span>
+                  <span
+                    className={cn(
+                      'font-semibold',
+                      (rec.win_rate ?? 0) >= 0.5
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-red-500 dark:text-red-400'
+                    )}
+                  >
+                    {Math.round((rec.win_rate ?? 0) * 100)}%
+                  </span>
+                  <span className="text-neutral-400 dark:text-neutral-500">{rec.scored} scored</span>
+                </div>
+              ))}
+            </div>
+          )}
       </div>
 
       {/* Job History */}
