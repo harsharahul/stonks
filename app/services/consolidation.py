@@ -211,9 +211,14 @@ CACHE_TTL_SECONDS = 300
 
 
 def consolidated_rankings_cached(db: Session, limit: int = 25) -> Dict[str, Any]:
-    if _cache["data"] is not None and (time.monotonic() - _cache["at"]) < CACHE_TTL_SECONDS:
-        return _cache["data"]
-    data = consolidated_rankings(db, limit=limit)
-    _cache["at"] = time.monotonic()
-    _cache["data"] = data
-    return data
+    # Cache the FULL computation and slice per request — otherwise the first
+    # caller's limit poisons the cache for everyone (dashboard's limit=10
+    # truncated API consumers asking for 30; observed 2026-06-11).
+    if _cache["data"] is None or (time.monotonic() - _cache["at"]) >= CACHE_TTL_SECONDS:
+        _cache["data"] = consolidated_rankings(db, limit=1000)
+        _cache["at"] = time.monotonic()
+    full = _cache["data"]
+    sliced = dict(full)
+    sliced["rankings"] = full["rankings"][:limit]
+    sliced["count"] = len(sliced["rankings"])
+    return sliced
