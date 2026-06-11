@@ -265,18 +265,46 @@ async def list_signal_sources(
     admin=Depends(require_admin),
 ):
     """List every registered signal plugin with metadata + per-deployment state."""
+    from datetime import timedelta
+    from sqlalchemy import case, func as sa_func
+
     from app.core.signal_framework import register_default_sources, signal_registry
+    from app.models.signal import Signal
     from app.models.signal_source_state import SignalSourceState
     from app.tasks.signal_outcomes import source_track_records
 
     register_default_sources()
     track_records = source_track_records(db)
+
+    # Live collection counts per plugin (active = unexpired; 7d = recent emissions)
+    now = datetime.now(tz.utc)
+    is_active = case(
+        (Signal.expires_at.is_(None), 1),
+        (Signal.expires_at > now, 1),
+        else_=0,
+    )
+    counts_rows = (
+        db.query(
+            Signal.model_version,
+            sa_func.count().label("week"),
+            sa_func.sum(is_active).label("active"),
+        )
+        .filter(Signal.model_version.like("plugin:%"), Signal.generated_at >= now - timedelta(days=7))
+        .group_by(Signal.model_version)
+        .all()
+    )
+    live_counts = {
+        r.model_version.split(":", 1)[1]: {"signals_7d": int(r.week), "active_signals": int(r.active or 0)}
+        for r in counts_rows
+    }
+
     sources = []
     for source_id in signal_registry.list_available_sources():
         source_cls = signal_registry._sources[source_id]
         meta = source_cls({}).get_metadata()
         state = db.query(SignalSourceState).filter_by(source_id=source_id).first()
         sources.append({
+            **(live_counts.get(source_id) or {"signals_7d": 0, "active_signals": 0}),
             "source_id": source_id,
             "name": meta.name,
             "description": meta.description,

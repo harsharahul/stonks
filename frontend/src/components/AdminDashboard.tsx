@@ -240,6 +240,12 @@ const AdminDashboard: React.FC = () => {
                       <span>{src.state.signals_emitted_total} emitted</span>
                     </>
                   )}
+                  <span>·</span>
+                  <span className={cn((src.active_signals ?? 0) > 0 && 'text-green-600 dark:text-green-400 font-medium')}>
+                    {src.active_signals ?? 0} active
+                  </span>
+                  <span>·</span>
+                  <span>{src.signals_7d ?? 0} this wk</span>
                 </div>
                 {src.track_record != null && (
                   <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700 flex items-center gap-2 text-[10px]">

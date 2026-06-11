@@ -411,6 +411,9 @@ export interface SignalSourceInfo {
     signals_emitted_total: number;
   } | null;
   track_record: SourceTrackRecord | null;
+  /** Live collection counts (unexpired signals / emissions in the last 7 days). */
+  active_signals?: number;
+  signals_7d?: number;
 }
 
 export interface SignalSourcesResponse {

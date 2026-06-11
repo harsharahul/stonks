@@ -31,6 +31,18 @@ logger = logging.getLogger(__name__)
 CAPITOL_TRADES_URL = "https://www.capitoltrades.com/trades"
 SCRAPE_MAX_RETRIES = 3
 
+# 119th Congress leadership (offline fallback from the earlier project) —
+# trades by leadership/committee chairs carry more information (factor f1
+# of the 6-factor scorer).
+LEADERSHIP_BIOGUIDE_IDS = {
+    "T000250", "B001261", "S000148", "D000563", "G000386",  # Senate leadership
+    "J000299", "S001176", "E000294", "J000294", "C001101",  # House leadership
+    "C000880", "W000437", "S001184", "C001095",             # Senate chairs
+    "H001072", "R000575", "T000463", "S001195", "J000289", "M001157",  # House chairs
+    "C001035", "W000779", "R000122", "B001277", "C000127", "M000133",  # more Senate
+    "W000187", "S001145", "S000344",                        # House ranking
+}
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; Stonks/1.0; Research)",
     "Accept": "text/html,application/xhtml+xml",
@@ -220,6 +232,16 @@ def scrape_page(page: int = 1, session: Optional[requests.Session] = None) -> Li
     for attempt in range(SCRAPE_MAX_RETRIES):
         try:
             resp = s.get(url, headers=HEADERS, timeout=30)
+            if resp.status_code == 429:
+                # Honor Retry-After when present; otherwise back off hard —
+                # the site rate-limits aggressively (observed from cluster IP).
+                retry_after = int(resp.headers.get("Retry-After", 0) or 0)
+                delay = max(retry_after, 5 * (attempt + 1))
+                if attempt < SCRAPE_MAX_RETRIES - 1:
+                    logger.warning("capitol_trades page %d rate-limited — waiting %ds", page, delay)
+                    time_mod.sleep(delay)
+                    continue
+                resp.raise_for_status()
             resp.raise_for_status()
             break
         except requests.RequestException as e:
@@ -288,7 +310,7 @@ class CapitolTradesSource(SignalSource):
         return True
 
     async def fetch_signals(self, since: Optional[datetime] = None) -> List[RawSignal]:
-        num_pages = int(self.config.get("num_pages", 3))
+        num_pages = int(self.config.get("num_pages", 2))  # fewer pages = fewer 429s
         max_age_days = int(self.config.get("max_age_days", 14))
         cutoff = datetime.utcnow() - timedelta(days=max_age_days)
 
@@ -314,11 +336,22 @@ class CapitolTradesSource(SignalSource):
                 if published and published < cutoff:
                     continue
 
+                # 6-factor-lite confidence (ported scorer, offline factors only):
+                # f1 influence, f2 size, f5 filing freshness, owner bonus.
                 filed_after = trade.get("filed_after_days")
-                # Fresher filings are more actionable: <30d filing → higher confidence.
-                confidence = 0.7 if (filed_after is not None and filed_after <= 30) else 0.45
+                confidence = 0.35
+                if filed_after is not None and filed_after <= 14:
+                    confidence += 0.25
+                elif filed_after is not None and filed_after <= 30:
+                    confidence += 0.15
+                if trade.get("bioguide_id") in LEADERSHIP_BIOGUIDE_IDS:
+                    confidence += 0.20  # f1: leadership/chair trades carry more signal
+                size_min = trade.get("size_min_usd") or 0
+                if size_min >= 100_000:
+                    confidence += 0.10  # f2: six-figure conviction
                 if trade.get("owner_type") == "self":
-                    confidence = min(1.0, confidence + 0.1)
+                    confidence += 0.10
+                confidence = round(min(0.95, confidence), 4)
 
                 signals.append(
                     RawSignal(
@@ -338,7 +371,7 @@ class CapitolTradesSource(SignalSource):
                     )
                 )
             if page < num_pages:
-                time_mod.sleep(1.0)
+                time_mod.sleep(3.0)  # polite inter-page gap (site 429s easily)
 
         logger.info("capitol_trades: %d tradable signals from %d pages", len(signals), num_pages)
         return signals
