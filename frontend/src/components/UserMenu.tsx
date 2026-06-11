@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LogOut, User, Star, Settings, ChevronDown } from 'lucide-react';
+import { LogOut, Star, Settings, ChevronDown, Monitor, Shield } from 'lucide-react';
 import { cn } from '../utils/format';
 
 const UserMenu: React.FC = () => {
@@ -80,6 +80,24 @@ const UserMenu: React.FC = () => {
           >
             <Settings className="w-4 h-4" /> Preferences
           </Link>
+
+          <Link
+            to="/system"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+          >
+            <Monitor className="w-4 h-4" /> System Status
+          </Link>
+
+          {isAdmin && (
+            <Link
+              to="/admin"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+            >
+              <Shield className="w-4 h-4" /> Admin
+            </Link>
+          )}
 
           <div className="border-t border-neutral-100 dark:border-neutral-700" />
 

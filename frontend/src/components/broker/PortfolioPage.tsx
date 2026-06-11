@@ -292,7 +292,7 @@ const PortfolioPage: React.FC = () => {
               </thead>
               <tbody>
                 {orders.data.orders.map(o => {
-                  const cancellable = ['submitted', 'accepted', 'new', 'pending'].includes(o.status);
+                  const cancellable = ['submitted', 'accepted', 'new', 'pending', 'pending_new'].includes(o.status);
                   return (
                     <tr key={o.id} className="border-b border-neutral-100 dark:border-neutral-800/50">
                       <td className="px-4 py-2 text-xs text-neutral-500">

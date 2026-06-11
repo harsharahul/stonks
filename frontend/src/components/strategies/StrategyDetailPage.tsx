@@ -33,7 +33,10 @@ const StrategyDetailPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   const detail = useQuery({
-    queryKey: ['strategies', 'detail', slug],
+    // isAuthenticated in the key: the first fetch often races the OIDC token
+    // bridge and comes back anonymous (is_owner/is_following wrong) — keying
+    // on auth state refetches once the session lands.
+    queryKey: ['strategies', 'detail', slug, isAuthenticated],
     queryFn: () => strategiesApi.detail(slug!),
     enabled: Boolean(slug),
   });

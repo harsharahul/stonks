@@ -24,7 +24,7 @@ import StrategiesPage from './components/strategies/StrategiesPage';
 import StrategyDetailPage from './components/strategies/StrategyDetailPage';
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './hooks/useAuth';
-import { TrendingUp, Brain, AlertTriangle, Zap, Menu, X, Search, Monitor, Shield, Star, Briefcase, Users } from 'lucide-react';
+import { TrendingUp, Brain, Menu, X, Search, Shield, Briefcase, Users, ChevronDown } from 'lucide-react';
 import { cn } from './utils/format';
 
 // Create a client
@@ -71,6 +71,65 @@ const OidcCallback: React.FC = () => {
   return <Navigate to="/" replace />;
 };
 
+// Grouped navigation — mirrors the platform architecture: market data,
+// the unified intelligence brain, the social layer, personal trading.
+interface NavLeaf { to: string; label: string; description: string }
+interface NavGroup { label: string; icon: React.ReactNode; match: (p: string) => boolean; children: NavLeaf[] }
+
+const NAV_ACTIVE = 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+const NAV_IDLE = 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800';
+
+const NavDropdown: React.FC<{ group: NavGroup; pathname: string }> = ({ group, pathname }) => {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const active = group.match(pathname);
+
+  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onClick); document.removeEventListener('keydown', onKey); };
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={cn('flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors', active ? NAV_ACTIVE : NAV_IDLE)}
+      >
+        {group.icon}
+        {group.label}
+        <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-64 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg p-1.5 z-50">
+          {group.children.map(child => {
+            const childActive = pathname === child.to || (child.to !== '/' && pathname.startsWith(child.to));
+            return (
+              <Link
+                key={child.to}
+                to={child.to}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  'block px-3 py-2 rounded-md transition-colors',
+                  childActive ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/60'
+                )}
+              >
+                <span className={cn('block text-sm font-medium', childActive ? 'text-blue-700 dark:text-blue-300' : 'text-neutral-800 dark:text-neutral-200')}>
+                  {child.label}
+                </span>
+                <span className="block text-[11px] text-neutral-400 dark:text-neutral-500">{child.description}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) => {
   const location = useLocation();
   const { isAuthenticated, isAdmin, isOidcEnabled } = useAuth();
@@ -80,25 +139,50 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Build nav links dynamically based on auth state
-  const navLinks = [
-    { to: '/', label: 'Dashboard', match: (p: string) => p === '/', activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
-    { to: '/stocks', label: 'Stocks', match: (p: string) => p.startsWith('/stocks'), activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
-    { to: '/desk', label: 'AI Desk', icon: <Brain className="w-4 h-4 inline mr-1" />, match: (p: string) => p.startsWith('/desk'), activeClass: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
-    { to: '/intelligence', label: 'AI Intelligence', icon: <Brain className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/intelligence', activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
-    { to: '/signals', label: 'Signals', icon: <Zap className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/signals', activeClass: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' },
-    { to: '/strategies', label: 'Strategies', icon: <Users className="w-4 h-4 inline mr-1" />, match: (p: string) => p.startsWith('/strategies'), activeClass: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' },
-    { to: '/anomalies', label: 'Anomalies', icon: <AlertTriangle className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/anomalies', activeClass: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' },
-    { to: '/wsb-trending', label: '\u{1F412} WSB', match: (p: string) => p === '/wsb-trending', activeClass: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
-    ...(isAuthenticated ? [
-      { to: '/portfolio', label: 'Portfolio', icon: <Briefcase className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/portfolio', activeClass: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
-      { to: '/watchlist', label: 'Watchlist', icon: <Star className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/watchlist', activeClass: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
-    ] : []),
-    { to: '/system', label: 'System', icon: <Monitor className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/system', activeClass: 'bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200' },
-    ...(!isOidcEnabled || isAdmin ? [
-      { to: '/admin', label: 'Admin', icon: <Shield className="w-4 h-4 inline mr-1" />, match: (p: string) => p === '/admin', activeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
-    ] : []),
+  const flatLinks = [
+    { to: '/', label: 'Dashboard', match: (p: string) => p === '/' },
+    { to: '/stocks', label: 'Stocks', match: (p: string) => p.startsWith('/stocks') },
   ];
+
+  const groups: NavGroup[] = [
+    {
+      label: 'Intelligence',
+      icon: <Brain className="w-4 h-4" />,
+      match: p => ['/desk', '/intelligence', '/signals', '/anomalies'].some(x => p.startsWith(x)),
+      children: [
+        { to: '/desk', label: 'AI Desk', description: '12-agent debate verdicts' },
+        { to: '/intelligence', label: 'Market Intelligence', description: 'Briefs, outlook, recommendations' },
+        { to: '/signals', label: 'Signals', description: 'All sources, verified win rates' },
+        { to: '/anomalies', label: 'Anomalies', description: 'Statistical outliers' },
+      ],
+    },
+    {
+      label: 'Social',
+      icon: <Users className="w-4 h-4" />,
+      match: p => p.startsWith('/strategies') || p === '/wsb-trending',
+      children: [
+        { to: '/strategies', label: 'Strategies', description: 'Follow verified track records' },
+        { to: '/wsb-trending', label: 'WSB Trending', description: 'Retail buzz radar' },
+      ],
+    },
+    ...(isAuthenticated ? [{
+      label: 'Trading',
+      icon: <Briefcase className="w-4 h-4" />,
+      match: (p: string) => p === '/portfolio' || p === '/watchlist',
+      children: [
+        { to: '/portfolio', label: 'Portfolio', description: 'Positions & orders via Alpaca' },
+        { to: '/watchlist', label: 'Watchlist', description: 'Starred tickers' },
+      ],
+    }] : []),
+  ];
+
+  // Without OIDC (bare dev) the user menu is hidden, so System/Admin need a home here.
+  const devOnlyLinks = !isOidcEnabled
+    ? [
+        { to: '/system', label: 'System', match: (p: string) => p === '/system' },
+        { to: '/admin', label: 'Admin', match: (p: string) => p === '/admin' },
+      ]
+    : [];
 
   return (
     <nav className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 relative z-50">
@@ -112,18 +196,31 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
           </div>
           {/* Desktop nav */}
           <div className="hidden md:flex items-center space-x-1">
-            {navLinks.map((link) => (
+            {flatLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
                 className={cn(
                   'px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                  link.match(location.pathname)
-                    ? link.activeClass
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  link.match(location.pathname) ? NAV_ACTIVE : NAV_IDLE
                 )}
               >
-                {link.icon}{link.label}
+                {link.label}
+              </Link>
+            ))}
+            {groups.map((group) => (
+              <NavDropdown key={group.label} group={group} pathname={location.pathname} />
+            ))}
+            {devOnlyLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={cn(
+                  'px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  link.match(location.pathname) ? NAV_ACTIVE : NAV_IDLE
+                )}
+              >
+                {link.label}
               </Link>
             ))}
             {/* Search trigger */}
@@ -171,23 +268,40 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
       <div
         className={cn(
           'md:hidden overflow-hidden transition-all duration-200 ease-in-out border-t border-neutral-200 dark:border-neutral-700',
-          mobileMenuOpen ? 'max-h-96' : 'max-h-0 border-t-0'
+          mobileMenuOpen ? 'max-h-[34rem] overflow-y-auto' : 'max-h-0 border-t-0'
         )}
       >
         <div className="px-2 py-2 space-y-1 bg-white dark:bg-neutral-900">
-          {navLinks.map((link) => (
+          {flatLinks.concat(devOnlyLinks).map((link) => (
             <Link
               key={link.to}
               to={link.to}
               className={cn(
-                'block py-3 px-4 rounded-md text-base font-medium transition-colors',
-                link.match(location.pathname)
-                  ? link.activeClass
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                'block py-2.5 px-4 rounded-md text-base font-medium transition-colors',
+                link.match(location.pathname) ? NAV_ACTIVE : NAV_IDLE
               )}
             >
-              {link.icon}{link.label}
+              {link.label}
             </Link>
+          ))}
+          {groups.map((group) => (
+            <div key={group.label}>
+              <div className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                {group.label}
+              </div>
+              {group.children.map((child) => (
+                <Link
+                  key={child.to}
+                  to={child.to}
+                  className={cn(
+                    'block py-2.5 px-4 rounded-md text-base font-medium transition-colors',
+                    (location.pathname === child.to || (child.to !== '/' && location.pathname.startsWith(child.to))) ? NAV_ACTIVE : NAV_IDLE
+                  )}
+                >
+                  {child.label}
+                </Link>
+              ))}
+            </div>
           ))}
         </div>
       </div>

@@ -87,7 +87,7 @@ function CreateStrategyForm({ onDone }: { onDone: () => void }) {
       queryClient.invalidateQueries({ queryKey: ['strategies'] });
       onDone();
     },
-    onError: (e: any) => setError(e?.response?.data?.detail || 'Failed to create strategy'),
+    onError: (e: any) => setError(e?.response?.data?.detail || e?.response?.data?.message || 'Failed to create strategy'),
   });
 
   return (
