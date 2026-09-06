@@ -1,8 +1,6 @@
 #!/bin/bash
+# Container entrypoint: wait for the database, bring the schema to head,
+# seed an empty database, then hand off to the requested process.
 set -e
-
-echo "Running database migrations..."
-alembic upgrade head || echo "WARNING: Migration failed (DB may not be ready yet or already up to date)"
-
-echo "Starting application..."
+python -m app.core.bootstrap
 exec "$@"

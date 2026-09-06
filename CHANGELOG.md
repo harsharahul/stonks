@@ -6,6 +6,9 @@ All notable changes to Stonks are documented here, following
 ## [Unreleased]
 
 ### Added
+- Database bootstrap on container start: waits for PostgreSQL, creates the
+  schema on an empty database, migrates an existing one, and seeds a starter
+  universe, so `docker compose up` on a fresh clone yields a working app.
 - Per-source plugin configuration from the environment (`SIGNAL_SOURCE_CONFIG`)
   and from the admin API (`PUT /admin/signal-sources/{id}/config`).
 - Open-source release: AGPL-3.0 license, contribution guide, security policy,

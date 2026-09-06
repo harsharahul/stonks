@@ -25,8 +25,7 @@ docker build -f Dockerfile.frontend -t stonks-frontend .
 
 `docker-compose.yml` runs PostgreSQL, Redis, the backend (all roles), and
 the frontend on port 3000. `docker compose --profile llm up -d` adds a local
-Ollama. The backend entrypoint waits for the database, applies migrations,
-and seeds a starter universe on an empty database.
+Ollama. The backend entrypoint bootstraps the database as described below.
 
 ## Kubernetes
 
@@ -59,10 +58,14 @@ Notes that matter in practice:
 
 ## Database
 
-`alembic upgrade head` applies migrations. On a completely empty database
-the entrypoint creates the schema first and stamps the migration head, then
-applies later revisions normally. Backups are the operator's responsibility;
-every table lives in the one PostgreSQL database.
+The backend container runs `python -m app.core.bootstrap` before starting
+any process: it waits for PostgreSQL, creates the schema from the models on
+an empty database and stamps the Alembic head (the earliest migration only
+alters tables, so a fresh install cannot replay history), runs
+`alembic upgrade head` on an existing database, and seeds a starter
+universe of twenty large caps when the stocks table is empty
+(`STONKS_SKIP_SEED=1` disables the seed). Backups are the operator's
+responsibility; every table lives in the one PostgreSQL database.
 
 ## Releases
 

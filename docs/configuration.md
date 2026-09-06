@@ -15,7 +15,7 @@ every integration degrades to "skipped" when its key is absent.
 | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | database | `postgres`, `5432`, `stonks`, none, `stonks` |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_PASSWORD` | broker and pub/sub; passwords with special characters are URL-encoded internally | `redis`, `6379`, `0`, none |
 | `CORS_ORIGINS` | comma-separated browser origins allowed in production (localhost origins are always allowed) | empty |
-| `ENABLE_RATE_LIMIT`, `RATE_LIMIT_PER_MINUTE` | per-client API rate limit | `true`, `60` |
+| `ENABLE_RATE_LIMIT`, `RATE_LIMIT_PER_MINUTE` | per-client API rate limit | `true`, `120` |
 | `API_KEY` | optional shared key for machine clients | none |
 
 ## LLM
@@ -23,8 +23,8 @@ every integration degrades to "skipped" when its key is absent.
 | Variable | Meaning | Default |
 |---|---|---|
 | `ANALYTICS_LLM_PROVIDER` | `none`, `ollama`, or `openai` | `none` |
-| `OLLAMA_HOST` | Ollama base URL | `http://localhost:11434` |
-| `OLLAMA_MODEL` | quick-tier model for analysts, debate, and knowledge distillation | `qwen3:14b` |
+| `OLLAMA_HOST` | Ollama base URL | `http://ollama:11434` (the Compose service) |
+| `OLLAMA_MODEL` | quick-tier model for analysts, debate, and knowledge distillation | `gemma4:e4b` |
 | `OLLAMA_DEEP_MODEL` | deep-tier model for the research manager, trader, and portfolio manager | same as `OLLAMA_MODEL` |
 | `OPENAI_API_KEY` | used when the provider is `openai` | none |
 
