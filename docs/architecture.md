@@ -1,131 +1,95 @@
-Architecture – Stonks
+# Architecture
 
-System Components
+## Services
 
-- **AI-Powered Signal Intelligence**: LangGraph-based multi-step AI workflows for intelligent signal processing
-- **Expandable Signal Sources**: Plugin-based architecture supporting unlimited data sources (political trades, social media, news, regulatory filings)
-- **Self-Correcting Data System**: LLM-powered validation and automatic error correction
-- **Intelligent Signal Routing**: AI-driven prioritization and multi-channel distribution
-- **Politician Trades Monitoring**: Real-time Congressional and Senate stock disclosure tracking
-- **Data Sources**: price APIs (Yahoo Finance/Alpha Vantage), news feeds (RSS/finance portals), political disclosures, social media
-- **Ingestion Service**: scheduled fetchers, parsers, normalizers, deduplicators with AI enhancement
-- **Analytics Service**: batch jobs computing metrics/signals and daily recommendations with LLM synthesis
-- **API Backend**: FastAPI serving `/api/v1` for feed, stocks, recommendations, signals, and intelligent signal processing
-- **Real-Time System**: WebSocket infrastructure for live alerts and market updates
-- **Error Handling**: Comprehensive error management with user-friendly messaging
-- **Task Queue & Cache**: Redis (Celery broker + cache)
-- **Database**: PostgreSQL 16 as the system of record with enhanced signal storage
-- **Frontend**: React micro‑frontends (Vite Module Federation) hosted by an app shell with real-time AI insights
+| Service | Role |
+|---|---|
+| API | FastAPI on port 8080. Routers under `/api/v1/`, OpenAPI at `/api/v1/openapi.json`, health at `/health`, Prometheus metrics at `/api/v1/metrics/metrics`. |
+| Workers | Celery. Queues: `celery` (default), `compute`, `ingestion`, `analytics`. The backend image runs two worker processes: one bound to `analytics` for LLM work (desk runs, knowledge distillation) and one bound to the fast queues, so a long desk run never delays ingestion. |
+| Beat | The Celery scheduler, `app.celery_beat_app`. Exactly one instance may run. |
+| PostgreSQL 16 | All state. Schema managed by Alembic. |
+| Redis 7 | Celery broker and result backend, and the pub/sub channel behind WebSocket alerts. |
+| Frontend | nginx serving the Vite bundle, proxying `/api/` to the API so the browser talks to one origin. |
+| Ollama (optional) | Local LLM host for the analytics agent and the AI Trading Desk. |
 
-Data Flow (Enhanced AI Pipeline)
+One backend image (`Dockerfile.backend`) serves all backend roles. Under
+Docker Compose, supervisord inside the container runs the API, both workers,
+and Beat. Under Kubernetes the same image is run once per role with a command
+override; see [deployment.md](deployment.md).
 
-1. **Signal Ingestion**: Multi-source data collection (news, political trades, social media, market data)
-2. **LangGraph Processing**: AI-powered analysis, validation, and enrichment through multi-step workflows
-3. **Self-Correcting Writes**: Automatic error detection and correction before database persistence
-4. **Intelligent Routing**: AI-driven signal prioritization and multi-channel distribution
-5. **Real-Time Distribution**: WebSocket broadcasts, alerts, API responses, and dashboard updates
-6. **Quality Monitoring**: Continuous assessment and improvement of signal processing accuracy
+## Data flow
 
-Traditional Flow (Still Supported):
-1. Ingestion fetchers pull data on schedules (Celery Beat)
-2. Raw content is parsed and normalized (ticker extraction, timestamps, source attribution)  
-3. Records are upserted into PostgreSQL with idempotent keys (hashes, unique constraints)
-4. Analytics jobs aggregate features and write `signals`
-5. Daily job ranks stocks and writes to `recommendations`
-6. API reads from PostgreSQL, caches hot queries in Redis if needed
-7. Frontend queries APIs and renders the feed and insights
+1. Ingestion tasks pull RSS news, Reddit, SEC EDGAR, the earnings calendar,
+   and OHLCV prices into `articles`, `prices`, and related tables. Every
+   article gets a sentiment score on the way in.
+2. The daily feature calculator aggregates per ticker into
+   `ticker_features_daily`: sentiment windows, sentiment shock, novelty,
+   momentum, one- and five-day returns, volume z-score, Reddit mention
+   counts, retail buzz, meme indicator, article counts.
+3. Signal generation (rule-based, ten signal types), the anomaly detector,
+   and the plugin dispatcher write `signals`; the alert engine turns
+   qualifying signals into `alerts` and publishes them on Redis.
+4. The WebSocket manager fans alerts out to connected browsers.
+5. The AI Trading Desk runs its nightly batch over the desk universe and
+   writes runs, briefs, and decisions.
+6. Outcome scorers record what prices did after each signal and each desk
+   decision. Strategy performance is computed from real fills.
+7. The consolidation service reads all of the above and serves one ranked
+   list per request, cached for a short window.
 
-Quality & Observability
+## Schedule (UTC)
 
-- Structured logging with correlation IDs per job run
-- `etl_job_runs` table records every batch with status and metrics
-- Health (`/health`) and readiness (`/ready`) endpoints
-- Comprehensive error handling with user-friendly messaging
-- Request tracking with unique IDs for support and debugging
-- WebSocket connection monitoring and automatic recovery
+| Task | When |
+|---|---|
+| RSS news ingestion | every 10 minutes |
+| Post-ingest processing | every 15 minutes |
+| Reddit ingestion | every 30 minutes |
+| Signal plugin dispatch | every 30 minutes |
+| Anomaly monitoring | every 15 minutes |
+| Alert generation | every 5 minutes |
+| Price OHLCV | hourly |
+| SEC EDGAR filings | every 2 hours; CIK-to-ticker mapping 30 minutes later |
+| Stock knowledge distillation | 02:30 daily |
+| Article and job-run cleanup | 03:00 and 03:15 daily |
+| Daily features | 05:00 daily |
+| Daily signals | 06:00 daily |
+| Daily recommendations | 06:30 daily |
+| Earnings calendar | 07:00 daily |
+| Desk nightly batch | 07:15 daily |
+| Expired-signal cleanup | every 6 hours |
+| Desk outcome scoring | 23:00 daily |
+| Strategy performance | 23:30 daily |
+| Signal outcome scoring | 23:45 daily |
+| Desk universe refresh | Sunday 00:00 |
 
-Scalability
+Every scheduled task also appears in the admin console with a Run Now
+button and its job history.
 
-- Horizontal scale of Celery workers for fetch and analytics
-- Read replicas for PostgreSQL (later) if read traffic grows
-- Caching popular endpoints (feed, top recommendations)
-- Sharding/partitioning `prices` by date (future work) if needed
-- LLM usage is budgeted and cached; local Ollama enables offline scaling when GPUs/CPUs available
+## API surface
 
-Security
+`/stocks`, `/stocks-enhanced`, `/prices`, `/feed`, `/features`, `/signals`,
+`/anomalies`, `/recommendations`, `/market-analysis`, `/desk`,
+`/consolidated`, `/strategies`, `/broker`, `/auth`, `/users`, `/admin`,
+`/metrics`, and `/ws` for WebSocket channels. Public data is readable without
+a token; anything about a user's own account requires a bearer token; the
+admin routes require the operator allowlist.
 
-- Use API keys or basic auth for admin endpoints initially
-- Validate and sanitize all external input (URLs, HTML) during ingestion
-- Least‑privilege DB roles for app and worker
-- Secrets via env or Kubernetes Secrets; LLM keys never logged; redact PII
+## Frontend
 
-Frontend Micro‑Frontend Topology
+React 18, TypeScript, Vite, Tailwind, React Router, React Query. Routes:
+`/` dashboard, `/stocks`, `/stocks/:symbol`, `/desk` and `/desk/:ticker`,
+`/intelligence`, `/signals`, `/strategies` and `/strategies/:slug`,
+`/anomalies`, `/wsb-trending`, `/system`, and behind sign-in `/portfolio`,
+`/watchlist`, `/profile`, `/admin`. The WebSocket hook reconnects with
+exponential backoff. The command palette (Ctrl+K) covers navigation and
+ticker search.
 
-- App Shell: routing, layout, authentication, shared libs
-- Remotes: `feed-mf`, `stock-mf`, `recs-mf`, `admin-mf`
-- Shared UI kit and data layer abstractions
+## Storage
 
-Dev → Prod Strategy
-
-- Environments: `dev` (local via docker-compose), `prod` (k3s deployment)
-- Images: Dockerfiles per service; images published to container registry on CI
-- Deploy: k8s manifests (manifests/*.yaml) with Kustomize overlays for prod
-- Database: managed PostgreSQL (preferred) or statefulset with backup jobs; migrations via Alembic
-- CI/CD: Gitea Actions pipeline builds, tests, scans, and deploys on git tags
-
-## AI-Powered System Architecture
-
-### **Core Intelligence Layer**
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                 🚀 AI-POWERED MARKET INTELLIGENCE                │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────────┐
-│                     Signal Orchestration Layer                  │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │   LangGraph     │  │  Signal Router  │  │ Quality Monitor │ │
-│  │    Agents       │  │   & Dispatcher  │  │   & Validator   │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### **System Components Architecture**
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │  FastAPI + AI   │    │   Celery + AI   │
-│   (React + WS)  │    │   (LangGraph)   │    │   (Background)  │
-│   Port 3000     │    │   Port 8080     │    │   Processing    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   WebSocket     │    │   PostgreSQL    │    │     Redis       │
-│   4 Channels    │    │   15+ Tables    │    │   Queue/Cache   │
-│   Real-Time     │    │   AI Enhanced   │    │   AI Tasks      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### **Real-Time Data Flow**
-```
-Political Trades → LangGraph Processing → Self-Correcting Writes → Intelligent Routing → Real-Time Alerts
-Social Media     → AI Analysis         → Auto Validation        → Smart Distribution  → WebSocket Updates
-News & RSS       → Pattern Detection   → Error Correction       → Priority Scoring    → Dashboard Updates
-SEC Filings      → Signal Enhancement  → Data Quality Control   → Channel Management  → API Responses
-Market Data      → Sentiment Analysis  → Integrity Assurance    → Load Balancing      → User Interface
-```
-
-## Request Routing Flow
-
-- **`/`** → Frontend (React micro-frontend app shell)
-- **`/api/*`** → API Backend (FastAPI with `/api/v1` endpoints)
-- **Background**: Worker processes + Analytics CronJob
-
-## Service Responsibilities
-
-- **Frontend**: React micro-frontend app shell, routing, shared components
-- **API**: FastAPI serving `/api/v1` endpoints, health checks, data access
-- **Worker**: Celery background tasks, data ingestion, ETL processing
-- **Analytics CronJob**: Daily scheduled analytics and recommendations generation
-
-
+Principal tables: `stocks`, `articles`, `prices`, `ticker_features_daily`,
+`signals`, `signal_outcomes`, `signal_source_states`, `alerts`,
+`recommendations`, `stock_knowledge`, `etl_job_runs`; the desk's
+`agent_runs`, `agent_briefs`, `agent_decisions`, `agent_decision_outcomes`,
+`agent_universe_membership`; and the user layer `users`, `watchlist_items`,
+`user_broker_accounts`, `broker_orders`, `strategies`, `strategy_follows`,
+`strategy_performance_daily`.

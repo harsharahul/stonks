@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify release integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify the release tag matches the VERSION file
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          ver="v$(cat VERSION)"
+          echo "release tag=$tag  VERSION=$ver"
+          test "$tag" = "$ver" || { echo "::error::release tag $tag != VERSION $ver"; exit 1; }
+      - name: Verify the changelog has an entry for this version
+        run: |
+          ver="$(cat VERSION)"
+          grep -q -e "^## \[$ver\]" CHANGELOG.md || { echo "::error::CHANGELOG.md has no entry for $ver"; exit 1; }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build and test the released revision
+        env:
+          ENVIRONMENT: development
+        run: |
+          pip install -r requirements.txt
+          pytest -q
+          cd frontend && npm ci && npm run build

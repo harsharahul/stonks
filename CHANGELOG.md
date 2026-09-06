@@ -1,0 +1,145 @@
+# Changelog
+
+All notable changes to Stonks are documented here, following
+[Keep a Changelog](https://keepachangelog.com/) and semantic versioning.
+
+## [Unreleased]
+
+### Added
+- Open-source release: AGPL-3.0 license, contribution guide, security policy,
+  code of conduct, contributor license agreement, third-party notices,
+  references, GitHub Actions CI publishing multi-architecture images to
+  ghcr.io, Dependabot, and present-tense documentation under `docs/`.
+- `SEC_CONTACT_EMAIL` setting, declared to SEC EDGAR as the fair-access
+  policy requires.
+- A single `VERSION` file drives the API version and is checked against the
+  frontend package and the release tag.
+
+### Changed
+- One backend image (`Dockerfile.backend`) and one frontend image
+  (`Dockerfile.frontend`); the separate API and worker Dockerfiles are gone.
+- Frontend image builds on Node 22.
+- Legacy planning documents removed from the tree.
+
+### Fixed
+- Consolidated rankings cache stores the full computation and slices per
+  request, so different page sizes no longer return inconsistent lists.
+
+## [1.16.0] - 2026-06-11
+
+### Added
+- Two signal sources: board-seat positioning around a tracked public figure,
+  and the 13F holdings of a tracked AI-infrastructure fund with filing-age
+  decay.
+- Live collection counts per signal source (active and last seven days) in
+  the admin console.
+
+### Changed
+- Congressional-trade scoring upgraded to a six-factor model with polite
+  handling of rate limits.
+- Public-figure news scanner adapted to the current yfinance news shape.
+
+## [1.15.0] - 2026-06-11
+
+### Changed
+- Navigation grouped by function (market data, intelligence, trading,
+  account) across desktop and mobile.
+
+### Fixed
+- Several UI defects found in end-to-end browser testing.
+- Hardening for provider outages: ingestion tasks skip and report instead of
+  failing the batch.
+
+## [1.14.0] - 2026-06-11
+
+### Added
+- Consolidated rankings: signal consensus weighted by each source's verified
+  record, desk verdict and conviction, and the quantitative recommendation
+  blended into one score per ticker with the breakdown shown. Dashboard panel
+  with a one-click prefilled trade ticket.
+- Win-rate badges wherever signals are listed.
+- Manual orders carry a client reference, so a retried request is idempotent.
+
+### Changed
+- The analytics fallback when the LLM is unavailable is now marked as such
+  in the response and the UI.
+
+### Removed
+- The unused intelligent-signals endpoints and workflow stubs.
+
+## [1.13.0] - 2026-06-10
+
+### Added
+- Per-source signal track records: a nightly scorer records each signal's
+  five-day realized return; win rate and average return per source are public
+  and shown in the admin console.
+
+### Fixed
+- SEC EDGAR ingestion and CIK-to-ticker mapping are scheduled again.
+- Article metadata is persisted for earnings, filings, and Reddit sources
+  (a keyword mismatch had dropped it silently).
+- The earnings calendar no longer substitutes placeholder rows outside the
+  development environment.
+
+## [1.12.0] - 2026-06-10
+
+### Added
+- Strategies: publish a strategy, tag orders to it, follow others, and see
+  nightly verified track records with disclosures. Public strategy pages.
+- Paper-only copy engine: followers can mirror a strategy's trades into
+  their own paper account with independent sizing and a hard cap.
+- Separate worker processes for LLM analytics and for fast ingestion queues,
+  so desk runs no longer delay ingestion.
+
+## [1.11.0] - 2026-06-10
+
+### Added
+- Signal source plugin SDK: a registry decorator, a dispatcher that runs
+  enabled sources every thirty minutes with fingerprint deduplication, admin
+  toggles per source, and three bundled sources (Reddit momentum,
+  congressional trades, tracked public-figure news).
+
+### Fixed
+- Logout completes cleanly at the identity provider.
+
+## [1.10.0] - 2026-06-09
+
+### Added
+- Reddit ingestion authenticates with the Reddit API.
+- Desk run tasks survive worker restarts and show honest job history.
+- Per-ticker desk run from the admin console.
+
+### Security
+- Dependency upgrade pass across the web framework, token library, HTTP
+  client, XML parser, and LLM client.
+
+## [1.9.6] - 2026-06-09
+
+### Fixed
+- Stock detail crash when the tracked list was empty.
+- Ingress accepts additional external hostnames.
+
+## [1.9.5] - 2026-06-09
+
+### Fixed
+- Desk universe selection read a feature column that did not exist, leaving
+  the features snapshot empty in every run.
+
+## [1.9.4] - 2026-06-09
+
+### Added
+- AI desk tasks (universe refresh, nightly batch, outcome scoring) in the
+  admin task catalog with Run Now and parameters.
+
+## [1.9.3] - 2026-06-09
+
+### Fixed
+- Sessions renew silently instead of expiring after minutes.
+- Long-running LLM endpoints no longer block the API; the insights endpoint
+  redirects to the precomputed desk decision.
+- Anomaly detection repaired; watch any symbol with automatic backfill.
+
+## [1.9.2] - 2026-06-09
+
+### Added
+- Multi-architecture container images (amd64 and arm64).
