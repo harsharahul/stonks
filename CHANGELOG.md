@@ -23,6 +23,11 @@ All notable changes to Stonks are documented here, following
 - Frontend image builds on Node 22.
 - Legacy planning documents removed from the tree.
 
+### Security
+- aiohttp 3.14.3 and langchain 0.3.30. The remaining advisories on the
+  langchain and langgraph 0.3 line are fixed only by the 1.x migration and
+  are listed explicitly in the CI audit step until then.
+
 ### Fixed
 - Consolidated rankings cache stores the full computation and slices per
   request, so different page sizes no longer return inconsistent lists.

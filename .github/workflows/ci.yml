@@ -51,7 +51,16 @@ jobs:
       - name: Unit tests
         run: pytest -q
       - name: Audit Python dependencies for known vulnerabilities
-        run: pip-audit --progress-spinner off --strict
+        # The ignored advisories are fixed only on the langchain / langgraph 1.x
+        # line (the desk engine migration in ROADMAP.md) or have no fix (ecdsa
+        # timing side channel, transitive via python-jose). Anything new fails.
+        run: |
+          pip-audit --progress-spinner off --strict \
+            --ignore-vuln PYSEC-2026-1325 \
+            --ignore-vuln PYSEC-2026-2192 --ignore-vuln PYSEC-2026-2193 --ignore-vuln PYSEC-2026-2562 \
+            --ignore-vuln PYSEC-2026-76 --ignore-vuln PYSEC-2026-77 \
+            --ignore-vuln PYSEC-2026-83 --ignore-vuln PYSEC-2026-2194 \
+            --ignore-vuln PYSEC-2026-1527 --ignore-vuln PYSEC-2026-2573 --ignore-vuln PYSEC-2026-2574
 
   frontend:
     name: Frontend (Node ${{ matrix.node }})
