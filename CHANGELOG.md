@@ -14,6 +14,8 @@ All notable changes to Stonks are documented here, following
   policy requires.
 - A single `VERSION` file drives the API version and is checked against the
   frontend package and the release tag.
+- `pytest.ini` scopes the unit suite to `tests/`; the integration scripts
+  under `scripts/` need a running database and are run by hand.
 
 ### Changed
 - One backend image (`Dockerfile.backend`) and one frontend image
