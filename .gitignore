@@ -35,9 +35,22 @@ frontend.log
 # Screenshots & temp artifacts
 *.png
 
-# Playwright MCP logs
+# Browser automation output
 .playwright-mcp/
 
 # Misc
 typescript
 service_kube
+
+# Internal record lives in the private context repo (symlinked in by its link.sh)
+CLAUDE.md
+FEATURES.md
+HANDOFF.md
+PLAN.md
+*.local.md
+.claude
+.cursor
+
+# Runtime artifacts
+celerybeat-schedule*
+test-results/
