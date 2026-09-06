@@ -1,4 +1,4 @@
-"""Unit tests for the signal plugin SDK — pure logic, no network or DB."""
+"""Unit tests for the signal plugin SDK, pure logic, no network or DB."""
 from datetime import datetime
 
 import pytest
@@ -83,7 +83,7 @@ class TestCapitolTradesParsing:
     def test_size_range_parsing(self):
         from app.signals.capitol_trades import parse_size_range
 
-        assert parse_size_range("1K–15K") == (1_000, 15_000)
+        assert parse_size_range("1K-15K") == (1_000, 15_000)
         assert parse_size_range("$500K - $1M".replace("$", "")) == (500_000, 1_000_000)
         assert parse_size_range("") == (None, None)
 

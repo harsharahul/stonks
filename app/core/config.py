@@ -70,17 +70,20 @@ class Settings(BaseSettings):
 
     # Reddit OAuth (app-only / client-credentials). Without these the WSB
     # ingestion falls back to the public JSON endpoint, which Reddit 403-blocks
-    # from datacenter IPs — fine for local dev, dead in k8s.
+    # from datacenter IPs: fine for local dev, dead in k8s.
     REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", "")
     REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", "")
     REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", "Stonks-Analytics/1.0 (Educational Research)")
+
+    # SEC EDGAR fair-access policy asks for a contact address in the User-Agent.
+    SEC_CONTACT_EMAIL: str = os.getenv("SEC_CONTACT_EMAIL", "")
 
     # Security / Auth
     API_KEY: Optional[str] = os.getenv("API_KEY")
     ENABLE_RATE_LIMIT: bool = os.getenv("ENABLE_RATE_LIMIT", "true").lower() == "true"
     RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
 
-    # OIDC / Authentik configuration (Public client with PKCE — no client secret needed)
+    # OIDC / Authentik configuration (Public client with PKCE: no client secret needed)
     OIDC_ISSUER_URL: Optional[str] = os.getenv("OIDC_ISSUER_URL")  # e.g. https://auth.example.com/application/o/stonks/
     OIDC_CLIENT_ID: Optional[str] = os.getenv("OIDC_CLIENT_ID")
     OIDC_AUDIENCE: str = os.getenv("OIDC_AUDIENCE", "")  # defaults to OIDC_CLIENT_ID if empty

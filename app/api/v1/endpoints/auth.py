@@ -1,5 +1,5 @@
 """
-Auth endpoints — user profile management
+Auth endpoints: user profile management
 """
 import json
 from typing import Optional, Dict, Any

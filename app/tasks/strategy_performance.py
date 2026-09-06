@@ -3,7 +3,7 @@
 Reads FILLED BrokerOrder rows per (strategy, paper-flag), FIFO-matches buys
 against sells per symbol into round trips, and writes one
 StrategyPerformanceDaily snapshot per strategy per day. Real Alpaca fills
-only — the entire point of the social layer is records nobody can fake.
+only: the entire point of the social layer is records nobody can fake.
 """
 from __future__ import annotations
 

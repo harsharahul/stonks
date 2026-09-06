@@ -1,12 +1,12 @@
-"""Capitol Trades plugin — REAL politician stock trades.
+"""Capitol Trades plugin: REAL politician stock trades.
 
 Ported from the earlier project's scraper (Apache 2.0,
 an earlier project). Scrapes capitoltrades.com/trades (server-side
-rendered HTML — no browser needed) and emits political_trade signals.
+rendered HTML: no browser needed) and emits political_trade signals.
 
 Replaces the mock PoliticianTradesSource as the registered politician
 source; congress.gov leadership enrichment is intentionally omitted in the
-plugin (keeps it key-free) — the 6-factor scorer port can add it later.
+plugin (keeps it key-free): the 6-factor scorer port can add it later.
 """
 import logging
 import re
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 CAPITOL_TRADES_URL = "https://www.capitoltrades.com/trades"
 SCRAPE_MAX_RETRIES = 3
 
-# 119th Congress leadership (offline fallback from the earlier project) —
+# 119th Congress leadership (offline fallback from the earlier project):
 # trades by leadership/committee chairs carry more information (factor f1
 # of the 6-factor scorer).
 LEADERSHIP_BIOGUIDE_IDS = {
@@ -50,15 +50,15 @@ HEADERS = {
 }
 
 SIZE_MAP = {
-    "1k–15k":    (1_000, 15_000),
-    "15k–50k":   (15_000, 50_000),
-    "50k–100k":  (50_000, 100_000),
-    "100k–250k": (100_000, 250_000),
-    "250k–500k": (250_000, 500_000),
-    "500k–1m":   (500_000, 1_000_000),
-    "1m–5m":     (1_000_000, 5_000_000),
-    "5m–25m":    (5_000_000, 25_000_000),
-    "25m–50m":   (25_000_000, 50_000_000),
+    "1k-15k":    (1_000, 15_000),
+    "15k-50k":   (15_000, 50_000),
+    "50k-100k":  (50_000, 100_000),
+    "100k-250k": (100_000, 250_000),
+    "250k-500k": (250_000, 500_000),
+    "500k-1m":   (500_000, 1_000_000),
+    "1m-5m":     (1_000_000, 5_000_000),
+    "5m-25m":    (5_000_000, 25_000_000),
+    "25m-50m":   (25_000_000, 50_000_000),
     "50m+":      (50_000_000, None),
     "1k - 15k":   (1_000, 15_000),
     "15k - 50k":  (15_000, 50_000),
@@ -164,7 +164,7 @@ def _parse_row(row) -> Optional[Dict]:
     trade["state"] = state_match.group(1) if state_match else None
 
     # Equities show "<COMPANY NAME> <TICKER>:US"; bonds/treasuries show "N/A"
-    # and stay ticker-less — never guess (bond-ticker pollution lesson).
+    # and stay ticker-less: never guess (bond-ticker pollution lesson).
     iss_text = cells[1].get_text(" ", strip=True)
     ticker_match = re.search(r'\b([A-Z]{1,5}):US\b', iss_text)
     trade["ticker"] = ticker_match.group(1) if ticker_match else None
@@ -233,12 +233,12 @@ def scrape_page(page: int = 1, session: Optional[requests.Session] = None) -> Li
         try:
             resp = s.get(url, headers=HEADERS, timeout=30)
             if resp.status_code == 429:
-                # Honor Retry-After when present; otherwise back off hard —
+                # Honor Retry-After when present; otherwise back off hard:
                 # the site rate-limits aggressively (observed from cluster IP).
                 retry_after = int(resp.headers.get("Retry-After", 0) or 0)
                 delay = max(retry_after, 5 * (attempt + 1))
                 if attempt < SCRAPE_MAX_RETRIES - 1:
-                    logger.warning("capitol_trades page %d rate-limited — waiting %ds", page, delay)
+                    logger.warning("capitol_trades page %d rate-limited: waiting %ds", page, delay)
                     time_mod.sleep(delay)
                     continue
                 resp.raise_for_status()
@@ -247,7 +247,7 @@ def scrape_page(page: int = 1, session: Optional[requests.Session] = None) -> Li
         except requests.RequestException as e:
             if attempt < SCRAPE_MAX_RETRIES - 1:
                 delay = 2 ** (attempt + 1)
-                logger.warning("capitol_trades page %d attempt %d failed: %s — retry in %ds", page, attempt + 1, e, delay)
+                logger.warning("capitol_trades page %d attempt %d failed: %s: retry in %ds", page, attempt + 1, e, delay)
                 time_mod.sleep(delay)
             else:
                 raise
@@ -257,7 +257,7 @@ def scrape_page(page: int = 1, session: Optional[requests.Session] = None) -> Li
     soup = BeautifulSoup(resp.text, "html.parser")
     rows = soup.select("table tbody tr")
     if not rows:
-        logger.warning("capitol_trades: no rows on page %d — selector may have changed", page)
+        logger.warning("capitol_trades: no rows on page %d: selector may have changed", page)
         return []
 
     trades = []
@@ -329,7 +329,7 @@ class CapitolTradesSource(SignalSource):
                 continue
 
             for trade in trades:
-                # Equity trades only — treasuries/bonds have no ticker by design.
+                # Equity trades only: treasuries/bonds have no ticker by design.
                 if not trade.get("ticker") or trade.get("trade_type") not in ("buy", "sell"):
                     continue
                 published = trade.get("published_date")

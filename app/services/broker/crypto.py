@@ -1,8 +1,8 @@
 """Fernet encryption for broker credentials at rest.
 
 The key comes from ``settings.BROKER_CREDS_ENCRYPTION_KEY`` (generate with
-``Fernet.generate_key()``). Losing the key orphans all linked accounts —
-users would simply re-link — but rotating it requires re-encrypting rows,
+``Fernet.generate_key()``). Losing the key orphans all linked accounts:
+users would simply re-link: but rotating it requires re-encrypting rows,
 so treat it like a database credential in k8s secrets.
 
 Plaintext credentials must never be logged, persisted, or returned by any
@@ -24,7 +24,7 @@ def _fernet() -> Fernet:
     key = settings.BROKER_CREDS_ENCRYPTION_KEY
     if not key:
         raise BrokerCryptoError(
-            "BROKER_CREDS_ENCRYPTION_KEY is not configured — cannot link or use "
+            "BROKER_CREDS_ENCRYPTION_KEY is not configured: cannot link or use "
             "broker accounts. Generate one with: python -c "
             "\"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
         )
@@ -47,5 +47,5 @@ def decrypt_credential(ciphertext: str) -> str:
         return _fernet().decrypt(ciphertext.encode()).decode()
     except InvalidToken as exc:
         raise BrokerCryptoError(
-            "credential decryption failed — encryption key changed or data corrupt"
+            "credential decryption failed: encryption key changed or data corrupt"
         ) from exc

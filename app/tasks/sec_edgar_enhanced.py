@@ -95,7 +95,7 @@ def fetch_sec_edgar_enhanced(
         print(f"📊 Monitoring {len(stocks)} stocks for SEC filings")
         
         # Initialize SEC downloader - temporarily disabled
-        # downloader = Downloader("Stonks-Analytics", "dev@stonks-analytics.com")
+        # downloader = Downloader("Stonks", settings.SEC_CONTACT_EMAIL)
         
         articles_created = 0
         articles_duplicate = 0
@@ -323,7 +323,7 @@ def test_sec_parser():
         print("✅ sec-parser and sec-downloader imported successfully")
         
         # Test downloader initialization
-        downloader = sec_downloader.Downloader("TestCompany", "test@example.com")
+        downloader = sec_downloader.Downloader("Stonks", settings.SEC_CONTACT_EMAIL or "contact@example.com")
         print("✅ SEC downloader initialized successfully")
         
         return {

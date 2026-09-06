@@ -48,7 +48,7 @@ export const passesScreenerFilters = (
   if (sentiment !== null) {
     if (sentiment < filters.sentimentMin || sentiment > filters.sentimentMax) return false;
   } else if (filters.sentimentMin > 0 || filters.sentimentMax < 1) {
-    return false; // No data and filter is active — exclude
+    return false; // No data and filter is active, exclude
   }
 
   // Returns filter

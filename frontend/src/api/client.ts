@@ -45,7 +45,7 @@ const apiClient = axios.create({
 });
 
 // ---------------------------------------------------------------------------
-// Auth interceptor — attaches Bearer token when available
+// Auth interceptor: attaches Bearer token when available
 // ---------------------------------------------------------------------------
 let _accessTokenGetter: (() => string | null) | null = null;
 
@@ -56,7 +56,7 @@ export function setAccessTokenGetter(getter: () => string | null) {
 
 /**
  * Current OIDC access token (or null). The ONLY sanctioned way for API
- * clients to obtain the token — it reads the live react-oidc-context user
+ * clients to obtain the token: it reads the live react-oidc-context user
  * via the bridge, never browser storage (oidc-client-ts keeps the user in
  * sessionStorage, and renewed tokens only flow through the context).
  */

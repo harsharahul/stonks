@@ -3,7 +3,7 @@
 Implements upstream's ``TradingMemoryLog`` interface so the vendored
 ``trading_graph.py`` can swap implementations via constructor injection.
 The data lives in the ``agent_decisions`` and ``agent_decision_outcomes``
-tables — same source of truth as the rest of the desk pipeline.
+tables: same source of truth as the rest of the desk pipeline.
 
 Phase 1 supports the read/write surface; the markdown formatting in
 ``get_past_context`` mirrors upstream's exact shape so prompts read it

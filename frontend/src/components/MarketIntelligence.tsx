@@ -109,7 +109,7 @@ const StatusDot: React.FC<{ status: string }> = ({ status }) => {
 // ---------------------------------------------------------------------------
 
 const MarketIntelligence: React.FC = () => {
-  // Data hooks — each panel loads independently
+  // Data hooks: each panel loads independently
   const outlook = useTomorrowOutlook();
   const overview = useIntelMarketOverview();
   const sentiment = useSentimentAnalysis();
@@ -256,7 +256,7 @@ const MarketIntelligence: React.FC = () => {
                       }}
                     />
                   </div>
-                  <span className="text-[10px] text-white/60 dark:text-white/70 mt-0.5">0 — 1</span>
+                  <span className="text-[10px] text-white/60 dark:text-white/70 mt-0.5">0-1</span>
                 </div>
               </div>
             </div>
@@ -288,7 +288,7 @@ const MarketIntelligence: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <PulseCard
           label="Stocks Tracked"
-          value={systemHealth?.stocks_tracked ?? '—'}
+          value={systemHealth?.stocks_tracked ?? '--'}
           subtitle={systemHealth?.status ?? 'Loading...'}
           icon={<Target className="w-4 h-4" />}
           color="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
@@ -296,7 +296,7 @@ const MarketIntelligence: React.FC = () => {
         />
         <PulseCard
           label="Active Signals"
-          value={systemHealth?.active_signals ?? '—'}
+          value={systemHealth?.active_signals ?? '--'}
           subtitle="All tickers"
           icon={<Activity className="w-4 h-4" />}
           color="bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
@@ -312,7 +312,7 @@ const MarketIntelligence: React.FC = () => {
         />
         <PulseCard
           label="Sentiment"
-          value={overallSentiment ? formatNumber(overallSentiment.score, 2) : '—'}
+          value={overallSentiment ? formatNumber(overallSentiment.score, 2) : '--'}
           subtitle={overallSentiment ? `${overallSentiment.label} (${overallSentiment.confidence})` : 'Loading...'}
           icon={<TrendingUp className="w-4 h-4" />}
           color={cn(
@@ -431,7 +431,7 @@ const MarketIntelligence: React.FC = () => {
                               s.vol_z !== null && Math.abs(s.vol_z) > 1 ? 'text-yellow-600 dark:text-yellow-400' :
                               'text-neutral-600 dark:text-neutral-400',
                             )}>
-                              {s.vol_z !== null ? formatNumber(s.vol_z, 1) : '—'}
+                              {s.vol_z !== null ? formatNumber(s.vol_z, 1) : '--'}
                             </span>
                           </td>
                           <td className="px-3 py-2.5 text-neutral-600 dark:text-neutral-400 text-xs">{s.article_count_7d}</td>
@@ -444,7 +444,7 @@ const MarketIntelligence: React.FC = () => {
                                 )}
                               </div>
                             ) : (
-                              <span className="text-neutral-300 dark:text-neutral-600 text-xs">—</span>
+                              <span className="text-neutral-300 dark:text-neutral-600 text-xs">--</span>
                             )}
                           </td>
                           <td className="px-3 py-2.5 text-neutral-400 dark:text-neutral-500 text-xs hidden sm:table-cell">{s.date}</td>

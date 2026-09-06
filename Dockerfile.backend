@@ -1,8 +1,11 @@
-# Consolidated Backend Dockerfile
-# Used for API, Worker, and Beat (command override selects role)
-# Local Docker: runs all 3 via supervisord
-# K3s: separate deployments with different command overrides
+# Stonks backend: one image for the API, the Celery workers, and Celery Beat.
+# Build:  docker build -f Dockerfile.backend -t stonks-backend .
+# Run:    docker run -p 8080:8080 --env-file .env stonks-backend            (all roles via supervisord)
+#         docker run --env-file .env stonks-backend celery -A app.worker worker   (one role via command override)
 FROM python:3.11-slim
+LABEL org.opencontainers.image.title="Stonks backend" \
+      org.opencontainers.image.source="https://github.com/harsharahul/stonks" \
+      org.opencontainers.image.licenses="AGPL-3.0-only"
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -29,7 +32,7 @@ RUN pip install --no-cache-dir -r requirements.txt supervisor
 # Copy application code
 COPY app/ ./app/
 COPY alembic/ ./alembic/
-COPY alembic.ini .
+COPY alembic.ini VERSION ./
 COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 COPY scripts/supervisord.conf ./supervisord.conf
 

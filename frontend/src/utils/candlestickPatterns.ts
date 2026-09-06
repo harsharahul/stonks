@@ -91,7 +91,7 @@ function detectDoji(c: Candle, i: number): DetectedPattern | null {
     return {
       index: i, date: c.date, name: 'Doji', type: 'doji',
       sentiment: 'neutral', reliability: 'low', span: 1,
-      description: 'Market indecision — open and close nearly equal',
+      description: 'Market indecision: open and close nearly equal',
     };
   }
   return null;
@@ -108,7 +108,7 @@ function detectHammer(c: Candle, i: number, prices: Candle[]): DetectedPattern |
     return {
       index: i, date: c.date, name: 'Hammer', type: 'hammer',
       sentiment: 'bullish', reliability: 'medium', span: 1,
-      description: 'Potential reversal after downtrend — buyers pushed price up from lows',
+      description: 'Potential reversal after downtrend: buyers pushed price up from lows',
     };
   }
   return null;
@@ -125,7 +125,7 @@ function detectInvertedHammer(c: Candle, i: number, prices: Candle[]): DetectedP
     return {
       index: i, date: c.date, name: 'Inverted Hammer', type: 'inverted_hammer',
       sentiment: 'bullish', reliability: 'medium', span: 1,
-      description: 'Potential bullish reversal — buying pressure emerging after downtrend',
+      description: 'Potential bullish reversal: buying pressure emerging after downtrend',
     };
   }
   return null;
@@ -142,7 +142,7 @@ function detectShootingStar(c: Candle, i: number, prices: Candle[]): DetectedPat
     return {
       index: i, date: c.date, name: 'Shooting Star', type: 'shooting_star',
       sentiment: 'bearish', reliability: 'medium', span: 1,
-      description: 'Potential reversal after uptrend — sellers rejected higher prices',
+      description: 'Potential reversal after uptrend: sellers rejected higher prices',
     };
   }
   return null;
@@ -158,7 +158,7 @@ function detectMarubozu(c: Candle, i: number): DetectedPattern | null {
     return {
       index: i, date: c.date, name: 'Marubozu', type: 'marubozu',
       sentiment, reliability: 'medium', span: 1,
-      description: `Strong ${sentiment} candle with almost no wicks — strong conviction`,
+      description: `Strong ${sentiment} candle with almost no wicks, strong conviction`,
     };
   }
   return null;
@@ -174,7 +174,7 @@ function detectBullishEngulfing(prev: Candle, curr: Candle, i: number): Detected
     return {
       index: i, date: curr.date, name: 'Bullish Engulfing', type: 'bullish_engulfing',
       sentiment: 'bullish', reliability: 'high', span: 2,
-      description: 'Green candle completely engulfs prior red candle — strong reversal signal',
+      description: 'Green candle completely engulfs prior red candle, strong reversal signal',
     };
   }
   return null;
@@ -190,7 +190,7 @@ function detectBearishEngulfing(prev: Candle, curr: Candle, i: number): Detected
     return {
       index: i, date: curr.date, name: 'Bearish Engulfing', type: 'bearish_engulfing',
       sentiment: 'bearish', reliability: 'high', span: 2,
-      description: 'Red candle completely engulfs prior green candle — strong reversal signal',
+      description: 'Red candle completely engulfs prior green candle, strong reversal signal',
     };
   }
   return null;
@@ -207,7 +207,7 @@ function detectPiercingLine(prev: Candle, curr: Candle, i: number): DetectedPatt
     return {
       index: i, date: curr.date, name: 'Piercing Line', type: 'piercing_line',
       sentiment: 'bullish', reliability: 'medium', span: 2,
-      description: 'Opens below prior low, closes above 50% of prior body — bullish reversal',
+      description: 'Opens below prior low, closes above 50% of prior body, bullish reversal',
     };
   }
   return null;
@@ -224,7 +224,7 @@ function detectDarkCloudCover(prev: Candle, curr: Candle, i: number): DetectedPa
     return {
       index: i, date: curr.date, name: 'Dark Cloud Cover', type: 'dark_cloud_cover',
       sentiment: 'bearish', reliability: 'medium', span: 2,
-      description: 'Opens above prior high, closes below 50% of prior body — bearish reversal',
+      description: 'Opens above prior high, closes below 50% of prior body, bearish reversal',
     };
   }
   return null;
@@ -245,7 +245,7 @@ function detectMorningStar(a: Candle, b: Candle, c: Candle, i: number): Detected
     return {
       index: i, date: c.date, name: 'Morning Star', type: 'morning_star',
       sentiment: 'bullish', reliability: 'high', span: 3,
-      description: 'Three-candle bullish reversal — bearish, indecision, then strong bullish',
+      description: 'Three-candle bullish reversal: bearish, indecision, then strong bullish',
     };
   }
   return null;
@@ -266,7 +266,7 @@ function detectEveningStar(a: Candle, b: Candle, c: Candle, i: number): Detected
     return {
       index: i, date: c.date, name: 'Evening Star', type: 'evening_star',
       sentiment: 'bearish', reliability: 'high', span: 3,
-      description: 'Three-candle bearish reversal — bullish, indecision, then strong bearish',
+      description: 'Three-candle bearish reversal: bullish, indecision, then strong bearish',
     };
   }
   return null;
@@ -285,7 +285,7 @@ function detectThreeWhiteSoldiers(a: Candle, b: Candle, c: Candle, i: number): D
     return {
       index: i, date: c.date, name: 'Three White Soldiers', type: 'three_white_soldiers',
       sentiment: 'bullish', reliability: 'high', span: 3,
-      description: 'Three consecutive green candles with ascending closes — strong bullish momentum',
+      description: 'Three consecutive green candles with ascending closes, strong bullish momentum',
     };
   }
   return null;

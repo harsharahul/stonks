@@ -262,7 +262,7 @@ const EnhancedStocksList: React.FC = () => {
     if (total >= 5) return { level: 'High', color: 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30' };
     if (total >= 2) return { level: 'Med', color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30' };
     if (total > 0) return { level: 'Low', color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30' };
-    return { level: '—', color: 'text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700' };
+    return { level: '--', color: 'text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700' };
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -500,7 +500,7 @@ const EnhancedStocksList: React.FC = () => {
           <div className="bg-neutral-800/60 rounded-lg p-3 border border-neutral-700/50">
             <div className="text-xs text-neutral-400 mb-1">Avg Sentiment</div>
             <div className={cn('text-2xl font-bold', avgSentiment !== null ? getSentimentColor(avgSentiment) : 'text-neutral-500')}>
-              {avgSentiment !== null ? formatNumber(avgSentiment, 3) : '—'}
+              {avgSentiment !== null ? formatNumber(avgSentiment, 3) : '--'}
             </div>
           </div>
           <div className="bg-neutral-800/60 rounded-lg p-3 border border-neutral-700/50">
@@ -512,7 +512,7 @@ const EnhancedStocksList: React.FC = () => {
           <div className="bg-neutral-800/60 rounded-lg p-3 border border-neutral-700/50">
             <div className="text-xs text-neutral-400 mb-1">Coverage</div>
             <div className="text-2xl font-bold text-white">
-              {stats?.tracking_stats.coverage.feature_coverage ?? '—'}
+              {stats?.tracking_stats.coverage.feature_coverage ?? '--'}
             </div>
           </div>
         </div>
@@ -725,16 +725,16 @@ const EnhancedStocksList: React.FC = () => {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-neutral-400 dark:text-neutral-500 text-xs">—</span>
+                          <span className="text-neutral-400 dark:text-neutral-500 text-xs">--</span>
                         )}
                       </td>
                       <td className="px-3 py-2.5">
                         <span className={cn('text-xs font-medium', getReturnColor(ret5d))}>
-                          {ret5d !== null ? formatPercent(ret5d, 1) : '—'}
+                          {ret5d !== null ? formatPercent(ret5d, 1) : '--'}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-neutral-700 dark:text-neutral-300 text-xs hidden sm:table-cell">
-                        {volZ !== null ? formatNumber(volZ, 2) : '—'}
+                        {volZ !== null ? formatNumber(volZ, 2) : '--'}
                       </td>
                       <td className="px-3 py-2.5 text-neutral-700 dark:text-neutral-300 text-xs hidden sm:table-cell">
                         {articles}

@@ -12,10 +12,10 @@ import TradeTicket from './TradeTicket';
 import { cn } from '../../utils/format';
 
 const fmtUsd = (v: number | null | undefined) =>
-  v === null || v === undefined ? '—' : `$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  v === null || v === undefined ? '--' : `$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 const fmtPct = (v: number | null | undefined) =>
-  v === null || v === undefined ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(2)}%`;
+  v === null || v === undefined ? '--' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(2)}%`;
 
 // ---------------------------------------------------------------------------
 // Link form
@@ -41,7 +41,7 @@ const LinkBrokerCard: React.FC = () => {
         <a href="https://alpaca.markets" target="_blank" rel="noreferrer" className="text-emerald-600 underline">
           Alpaca
         </a>{' '}
-        paper account — your keys are encrypted at rest and never shown again.
+        paper account: your keys are encrypted at rest and never shown again.
       </p>
 
       <div className="space-y-3">
@@ -206,7 +206,7 @@ const PortfolioPage: React.FC = () => {
       ) : (
         <div className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950 p-4 text-sm flex items-center gap-2">
           <XCircle className="w-4 h-4 text-amber-600" />
-          Credentials no longer valid or Alpaca unreachable — re-link your account.
+          Credentials no longer valid or Alpaca unreachable, re-link your account.
         </div>
       )}
 
@@ -296,14 +296,14 @@ const PortfolioPage: React.FC = () => {
                   return (
                     <tr key={o.id} className="border-b border-neutral-100 dark:border-neutral-800/50">
                       <td className="px-4 py-2 text-xs text-neutral-500">
-                        {o.created_at ? new Date(o.created_at).toLocaleString() : '—'}
+                        {o.created_at ? new Date(o.created_at).toLocaleString() : '--'}
                       </td>
                       <td className="px-4 py-2 font-mono font-semibold">{o.symbol}</td>
                       <td className={cn('px-4 py-2 font-semibold uppercase text-xs', o.side === 'buy' ? 'text-emerald-600' : 'text-red-600')}>
                         {o.side}
                       </td>
                       <td className="px-4 py-2 text-right font-mono">
-                        {o.qty ?? (o.notional ? fmtUsd(o.notional) : '—')}
+                        {o.qty ?? (o.notional ? fmtUsd(o.notional) : '--')}
                         {o.filled_avg_price ? ` @ ${fmtUsd(o.filled_avg_price)}` : ''}
                       </td>
                       <td className="px-4 py-2 text-xs">{o.order_type}{o.limit_price ? ` ${fmtUsd(o.limit_price)}` : ''}</td>

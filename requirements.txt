@@ -58,7 +58,7 @@ python-dotenv==1.2.2
 structlog==23.2.0
 prometheus-client==0.19.0
 
-# Brokerage (Alpaca) — per-user trading accounts
+# Brokerage (Alpaca): per-user trading accounts
 alpaca-py==0.43.4
 
 # Testing

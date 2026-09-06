@@ -102,7 +102,7 @@ beat_schedule = {
         }
     },
 
-    # Signal plugin dispatcher — runs every enabled SignalSource plugin
+    # Signal plugin dispatcher: runs every enabled SignalSource plugin
     # (registry-driven; per-source enable/config in signal_source_states)
     'signal-source-dispatch': {
         'task': 'app.tasks.signal_dispatch.dispatch_signal_sources_task',
@@ -110,7 +110,7 @@ beat_schedule = {
         'options': {'expires': 1500},
     },
 
-    # Signal outcome scoring — per-source track records, nightly 23:45 UTC
+    # Signal outcome scoring: per-source track records, nightly 23:45 UTC
     # (after desk outcomes 23:00 and strategy performance 23:30)
     'signal-outcome-scoring': {
         'task': 'app.tasks.signal_outcomes.score_signal_outcomes_task',
@@ -118,7 +118,7 @@ beat_schedule = {
         'options': {'expires': 3600},
     },
 
-    # Strategy verified track records — nightly after desk outcome scoring (23:00)
+    # Strategy verified track records: nightly after desk outcome scoring (23:00)
     'strategy-performance': {
         'task': 'app.tasks.strategy_performance.compute_strategy_performance_task',
         'schedule': crontab(hour=23, minute=30),
@@ -162,21 +162,21 @@ beat_schedule = {
         }
     },
 
-    # Article cleanup (tiered): null content 30–90d, full delete 90d+ — daily at 3 AM
+    # Article cleanup (tiered): null content 30-90d, full delete 90d+, daily at 3 AM
     'cleanup-old-articles': {
         'task': 'app.tasks.post_ingest_hooks.cleanup_old_articles',
         'schedule': crontab(hour=3, minute=0),
         'options': {'expires': 3600},
     },
 
-    # ETL job run cleanup: delete rows older than 30 days — daily at 3:15 AM
+    # ETL job run cleanup: delete rows older than 30 days, daily at 3:15 AM
     'cleanup-old-etl-runs': {
         'task': 'app.tasks.post_ingest_hooks.cleanup_old_etl_runs',
         'schedule': crontab(hour=3, minute=15),
         'options': {'expires': 1800},
     },
 
-    # Stock knowledge update: evolving per-ticker intelligence — daily at 2:30 AM
+    # Stock knowledge update: evolving per-ticker intelligence: daily at 2:30 AM
     # Runs BEFORE cleanup (3:00 AM) so articles are distilled before deletion
     'update-stock-knowledge': {
         'task': 'app.tasks.stock_knowledge.update_stock_knowledge_task',
@@ -184,7 +184,7 @@ beat_schedule = {
         'options': {'expires': 7200},
     },
 
-    # AI Trading Desk — Phase 1 schedule.
+    # AI Trading Desk: Phase 1 schedule.
     # Universe refresh: every Sunday at 00:00 UTC.
     'desk-refresh-universe': {
         'task': 'app.tasks.agent_pipeline.refresh_universe_membership_task',

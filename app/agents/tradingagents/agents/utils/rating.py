@@ -22,7 +22,7 @@ RATINGS_5_TIER: Tuple[str, ...] = (
 
 _RATING_SET = {r.lower() for r in RATINGS_5_TIER}
 
-# Matches "Rating: X" / "rating - X" / "Rating: **X**" — tolerates markdown
+# Matches "Rating: X" / "rating - X" / "Rating: **X**", tolerates markdown
 # bold wrappers and either a colon or hyphen separator.
 _RATING_LABEL_RE = re.compile(r"rating.*?[:\-][\s*]*(\w+)", re.IGNORECASE)
 

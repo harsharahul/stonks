@@ -251,7 +251,7 @@ class TradingAgentsGraph:
         for entry in pending:
             raw, alpha, days = self._fetch_returns(ticker, entry["date"])
             if raw is None:
-                continue  # price not available yet — try again next run
+                continue  # price not available yet, try again next run
             reflection = self.reflector.reflect_on_final_decision(
                 final_decision=entry.get("decision", ""),
                 raw_return=raw,
@@ -309,7 +309,7 @@ class TradingAgentsGraph:
 
     def _run_graph(self, company_name, trade_date):
         """Execute the graph and write the resulting state to disk and memory log."""
-        # Initialize state — inject memory log context for PM.
+        # Initialize state: inject memory log context for PM.
         past_context = self.memory_log.get_past_context(company_name)
         init_agent_state = self.propagator.create_initial_state(
             company_name, trade_date, past_context=past_context

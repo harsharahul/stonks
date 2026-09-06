@@ -13,19 +13,20 @@ from app.api.v1.api import api_router
 from app.core.metrics import record_request_metrics
 from app.api.dependencies import enforce_rate_limit
 from app.core.error_handlers import setup_error_handlers
+from app.core.version import __version__
 
 # Create FastAPI application
 app = FastAPI(
     title="Stonks API",
     description="Stock Tracker & Analyzer - Aggregating market signals for daily recommendations",
-    version="0.1.0",
+    version=__version__,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
 # Setup enhanced error handling
 setup_error_handlers(app)
 
-# CORS — restrict to known origins in production.
+# CORS: restrict to known origins in production.
 # Deployment origin(s) come from CORS_ORIGINS (comma-separated env var, set in
 # the k8s ConfigMap) so no deployment-specific domain lives in code.
 _cors_origins = [
@@ -111,7 +112,7 @@ async def _validate_oidc_config():
         if configured:
             logging.getLogger(__name__).info("OIDC configured: issuer=%s", settings.OIDC_ISSUER_URL)
         else:
-            logging.getLogger(__name__).info("OIDC not configured — running without authentication")
+            logging.getLogger(__name__).info("OIDC not configured: running without authentication")
     except ValueError as e:
         logging.getLogger(__name__).error("OIDC config error: %s", e)
         raise

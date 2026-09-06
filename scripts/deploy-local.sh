@@ -42,7 +42,7 @@ echo "→ Smoke test..."
 curl -sf http://localhost:8080/health >/dev/null && echo "✓ API OK" || echo "✗ API not responding"
 curl -sf http://localhost:3000/ >/dev/null && echo "✓ Frontend OK" || echo "✗ Frontend not responding"
 
-# Seed initial data — trigger ingestion + feature calculation
+# Seed initial data: trigger ingestion + feature calculation
 if [ "$SKIP_SEED" = true ]; then
   echo "→ Skipping data seeding (--no-seed)"
 else
@@ -60,7 +60,7 @@ else
   sleep 20
   curl -sf -X POST "http://localhost:8080/api/v1/features/calculate/daily" \
     -H "X-API-Key: $API_KEY" >/dev/null 2>&1 && echo "  ✓ Daily feature calculation triggered" || echo "  ⚠ Feature calculation failed"
-  echo "  (Features will compute in ~30s — sentiment, returns, WSB metrics)"
+  echo "  (Features will compute in ~30s: sentiment, returns, WSB metrics)"
 fi
 
 echo ""

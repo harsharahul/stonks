@@ -3,7 +3,7 @@
 Populated for each AgentBrief in Phase 4. The Ask-the-Desk endpoint
 (`POST /desk/{ticker}/ask`) embeds the user's question, retrieves the K
 most-similar briefs for that ticker, and feeds them as context to a small
-synthesis call — no full re-run.
+synthesis call: no full re-run.
 
 Separate from `agent_decision_embedding` because briefs and decisions are
 different shapes and different retrieval patterns.

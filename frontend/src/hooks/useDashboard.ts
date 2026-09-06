@@ -28,7 +28,7 @@ export const useDashboard = () => {
     retry: 1,
   });
 
-  // Derived data — gainers must actually be UP and losers DOWN; with a small
+  // Derived data: gainers must actually be UP and losers DOWN; with a small
   // universe the old unsigned sort put the same tickers in both lists.
   const topGainers = useMemo(() =>
     featuresSummary.data?.features

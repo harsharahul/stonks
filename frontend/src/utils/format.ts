@@ -8,12 +8,12 @@ export const cn = (...inputs: ClassValue[]) => {
 
 // Number formatting utilities
 export const formatPercent = (value: number | null, decimals: number = 2): string => {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return '--';
   return `${(value * 100).toFixed(decimals)}%`;
 };
 
 export const formatCurrency = (value: number | null, currency: string = 'USD'): string => {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return '--';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
@@ -23,12 +23,12 @@ export const formatCurrency = (value: number | null, currency: string = 'USD'): 
 };
 
 export const formatNumber = (value: number | null, decimals: number = 2): string => {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return '--';
   return value.toFixed(decimals);
 };
 
 export const formatLargeNumber = (value: number | null): string => {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return '--';
   
   if (value >= 1e9) {
     return `${(value / 1e9).toFixed(1)}B`;
@@ -44,25 +44,25 @@ export const formatLargeNumber = (value: number | null): string => {
 
 // Date formatting utilities
 export const formatDate = (dateString: string | null): string => {
-  if (!dateString) return '—';
+  if (!dateString) return '--';
   try {
     return format(parseISO(dateString), 'MMM d, yyyy');
   } catch {
-    return '—';
+    return '--';
   }
 };
 
 export const formatDateTime = (dateString: string | null): string => {
-  if (!dateString) return '—';
+  if (!dateString) return '--';
   try {
     return format(parseISO(dateString), 'MMM d, yyyy h:mm a');
   } catch {
-    return '—';
+    return '--';
   }
 };
 
 export const formatRelativeTime = (dateString: string | null): string => {
-  if (!dateString) return '—';
+  if (!dateString) return '--';
   try {
     // The API emits naive UTC timestamps (no timezone suffix). parseISO treats
     // those as LOCAL time, which pushed past events into the future
@@ -71,7 +71,7 @@ export const formatRelativeTime = (dateString: string | null): string => {
     const normalized = hasTz ? dateString : `${dateString}Z`;
     return formatDistanceToNow(parseISO(normalized), { addSuffix: true });
   } catch {
-    return '—';
+    return '--';
   }
 };
 

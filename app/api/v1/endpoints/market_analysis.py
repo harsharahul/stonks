@@ -53,7 +53,7 @@ async def _get_cached_market_summary(narratives_text: str) -> Optional[str]:
         return _summary_cache["value"]
 
     async with _summary_lock:
-        # Re-check under the lock — another request may have just filled it.
+        # Re-check under the lock: another request may have just filled it.
         cached_at = _summary_cache["at"]
         if (
             _summary_cache["key"] == cache_key
@@ -270,7 +270,7 @@ async def get_market_sentiment_analysis(
 
 @router.get("/ai-insights/{ticker}")
 async def get_ai_insights_for_stock(ticker: str):
-    """DEPRECATED — superseded by the AI Trading Desk.
+    """DEPRECATED: superseded by the AI Trading Desk.
 
     The old implementation ran Ollama inference inline on the event loop
     (30-60s per call); a handful of concurrent requests starved the health
@@ -431,7 +431,7 @@ async def get_pressure_test_summary(db: Session = Depends(get_db)):
                 'langgraph_workflows': '80% FUNCTIONAL',
                 'self_correcting_system': 'READY'
             },
-            'overall_status': 'AI PLATFORM OPERATIONAL',
+            'overall_status': 'operational',
             'next_update': 'Real-time via platform alerts'
         }
         
@@ -489,7 +489,7 @@ async def get_morning_brief(db: Session = Depends(get_db)):
 
         # Optionally generate a 2-3 sentence market summary via LLM.
         # SAFETY: the LLM call runs in a worker thread (never inline on the
-        # event loop — inline inference starved health probes and got the pod
+        # event loop: inline inference starved health probes and got the pod
         # killed) and the result is cached for an hour so at most one
         # generation is in flight regardless of traffic.
         market_summary = None

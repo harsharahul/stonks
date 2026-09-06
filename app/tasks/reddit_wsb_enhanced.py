@@ -31,7 +31,7 @@ class RedditParser:
 
     When REDDIT_CLIENT_ID/SECRET are configured, uses Reddit's OAuth app-only
     flow against oauth.reddit.com. The anonymous www.reddit.com JSON endpoint
-    is kept as a dev fallback only — Reddit 403-blocks it from datacenter IPs.
+    is kept as a dev fallback only, Reddit 403-blocks it from datacenter IPs.
     """
 
     def __init__(self):

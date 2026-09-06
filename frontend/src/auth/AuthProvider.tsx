@@ -3,9 +3,9 @@
  * Wraps the app with react-oidc-context configured for Authentik.
  *
  * Required environment variables (set in .env or at build time):
- *   VITE_OIDC_AUTHORITY  — Authentik OIDC issuer URL
+ *   VITE_OIDC_AUTHORITY: Authentik OIDC issuer URL
  *                          e.g. https://auth.example.com/application/o/stonks/
- *   VITE_OIDC_CLIENT_ID  — OIDC client ID registered in Authentik
+ *   VITE_OIDC_CLIENT_ID: OIDC client ID registered in Authentik
  */
 import React, { useEffect } from 'react';
 import { AuthProvider as OidcAuthProvider, useAuth as useOidcAuth } from 'react-oidc-context';
@@ -37,12 +37,12 @@ function TokenBridge({ children }: { children: React.ReactNode }) {
 
   // Industry-standard failure path: background renewal almost never fails
   // (rotating refresh tokens), but when it does (refresh token revoked, IdP
-  // session expired) bounce through the IdP — instant and invisible if the
+  // session expired) bounce through the IdP, instant and invisible if the
   // SSO session is alive, otherwise the user correctly lands on login.
   useEffect(() => {
     if (!auth.events) return;
     const onRenewError = () => {
-      console.warn('OIDC silent renew failed — redirecting through IdP');
+      console.warn('OIDC silent renew failed: redirecting through IdP');
       auth.signinRedirect().catch(() => {/* user stays anonymous */});
     };
     auth.events.addSilentRenewError(onRenewError);

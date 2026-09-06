@@ -1,4 +1,4 @@
-"""Unit tests for the board_seat_tracker and fund_13f_tracker plugins — pure logic."""
+"""Unit tests for the board_seat_tracker and fund_13f_tracker plugins, pure logic."""
 import asyncio
 from datetime import date
 
@@ -36,7 +36,7 @@ class TestFund13FTracker:
 
     def test_strength_orders_by_portfolio_weight(self):
         sigs = asyncio.run(Fund13FTrackerSource({}).fetch_signals())
-        if not sigs:  # filing fully decayed in the far future — nothing to assert
+        if not sigs:  # filing fully decayed in the far future, nothing to assert
             return
         by_strength = sorted(sigs, key=lambda s: -s.strength)
         assert by_strength[0].ticker == "CRWV"  # largest position leads

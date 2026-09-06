@@ -1,7 +1,7 @@
 """StrategyPerformanceDaily: nightly verified track-record snapshot.
 
 Computed exclusively from FILLED BrokerOrder rows (real Alpaca fills) by
-``app/tasks/strategy_performance.py`` — never self-reported. Paper and live
+``app/tasks/strategy_performance.py``: never self-reported. Paper and live
 are tracked separately and always labeled; mixing them would be the
 screenshot-cherry-picking we exist to kill.
 """

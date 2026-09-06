@@ -22,7 +22,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 function formatDuration(start: string | null, end: string | null): string {
-  if (!start) return '—';
+  if (!start) return '--';
   if (!end) return 'Running...';
   const ms = new Date(end).getTime() - new Date(start).getTime();
   if (ms < 1000) return `${ms}ms`;
@@ -263,7 +263,7 @@ const AdminDashboard: React.FC = () => {
                     <span className="text-neutral-500 dark:text-neutral-400">
                       {src.track_record.avg_signal_return != null
                         ? `${(src.track_record.avg_signal_return * 100).toFixed(2)}% avg 5d`
-                        : '—'}
+                        : '--'}
                     </span>
                     <span className="text-neutral-400">·</span>
                     <span className="text-neutral-400 dark:text-neutral-500">{src.track_record.scored} scored</span>
@@ -351,7 +351,7 @@ const AdminDashboard: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-neutral-500 dark:text-neutral-400">
-                      {job.started_at ? formatRelativeTime(job.started_at) : '—'}
+                      {job.started_at ? formatRelativeTime(job.started_at) : '--'}
                     </td>
                     <td className="px-4 py-2.5 text-neutral-500 dark:text-neutral-400 hidden sm:table-cell">
                       {formatDuration(job.started_at, job.finished_at)}
@@ -374,7 +374,7 @@ const AdminDashboard: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-neutral-500 dark:text-neutral-400 hidden sm:table-cell">
-                      {job.items_processed ?? '—'}
+                      {job.items_processed ?? '--'}
                     </td>
                   </tr>
                 ))}

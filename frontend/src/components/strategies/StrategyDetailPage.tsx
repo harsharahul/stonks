@@ -1,5 +1,5 @@
 /**
- * /strategies/:slug — verified track record, privacy-reduced trade feed,
+ * /strategies/:slug: verified track record, privacy-reduced trade feed,
  * follow/unfollow. The record chart is computed from broker fills only.
  */
 import React from 'react';
@@ -34,7 +34,7 @@ const StrategyDetailPage: React.FC = () => {
 
   const detail = useQuery({
     // isAuthenticated in the key: the first fetch often races the OIDC token
-    // bridge and comes back anonymous (is_owner/is_following wrong) — keying
+    // bridge and comes back anonymous (is_owner/is_following wrong): keying
     // on auth state refetches once the session lands.
     queryKey: ['strategies', 'detail', slug, isAuthenticated],
     queryFn: () => strategiesApi.detail(slug!),
@@ -119,18 +119,18 @@ const StrategyDetailPage: React.FC = () => {
         <StatCard label="Followers" value={String(follower_count)} />
         <StatCard
           label="Win rate"
-          value={latest?.win_rate != null ? `${(latest.win_rate * 100).toFixed(0)}%` : '—'}
+          value={latest?.win_rate != null ? `${(latest.win_rate * 100).toFixed(0)}%` : '--'}
           tone={latest?.win_rate != null ? (latest.win_rate >= 0.5 ? 'good' : 'bad') : undefined}
         />
         <StatCard
           label="Avg return / trade"
-          value={latest?.avg_return_pct != null ? `${latest.avg_return_pct.toFixed(1)}%` : '—'}
+          value={latest?.avg_return_pct != null ? `${latest.avg_return_pct.toFixed(1)}%` : '--'}
           tone={latest?.avg_return_pct != null ? (latest.avg_return_pct >= 0 ? 'good' : 'bad') : undefined}
         />
         <StatCard label="Closed trades" value={String(latest?.closed_trade_count ?? 0)} />
         <StatCard
           label="Max drawdown"
-          value={latest?.max_drawdown_pct != null ? `${latest.max_drawdown_pct.toFixed(1)}%` : '—'}
+          value={latest?.max_drawdown_pct != null ? `${latest.max_drawdown_pct.toFixed(1)}%` : '--'}
           tone={latest?.max_drawdown_pct != null && latest.max_drawdown_pct < -20 ? 'bad' : undefined}
         />
       </div>

@@ -6,7 +6,7 @@ Adapted from the earlier project's execution engine
 - No module-level env constants: everything arrives as explicit arguments
   (client, account, order intent) so two users' orders can never share state.
 - Idempotent submits: every order carries a deterministic ``client_order_id``
-  persisted BEFORE submission — a retried call can't double-place because
+  persisted BEFORE submission: a retried call can't double-place because
   Alpaca rejects duplicate client order IDs and our ledger has a unique
   constraint on it.
 - v1 is strictly "user clicked confirm": no auto-execute path. Sizing

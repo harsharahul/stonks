@@ -1,19 +1,19 @@
-"""Unified consolidation layer — every brain, one ranked view.
+"""Unified consolidation layer: every brain, one ranked view.
 
 Merges the platform's three independent voices per ticker into a single
 explainable score:
 
-1. **Signal consensus** — active Signal rows (rule engine, plugins, anomaly
+1. **Signal consensus**: active Signal rows (rule engine, plugins, anomaly
    detector), each weighted by its source's VERIFIED track record
    (signal_outcomes win rates). Unproven sources get neutral weight; proven
    winners count more, proven losers count less. This is where the open
    signal marketplace becomes trustworthy instead of noisy.
-2. **AI Desk verdict** — latest non-stale AgentDecision (12-agent debate),
+2. **AI Desk verdict**: latest non-stale AgentDecision (12-agent debate),
    scaled by conviction.
-3. **Quant recommendation** — today's rule-based Recommendation score.
+3. **Quant recommendation**: today's rule-based Recommendation score.
 
 The composite is a presence-renormalized blend, and every component ships
-with its inputs so the UI can show WHY — no black boxes, no platform
+with its inputs so the UI can show WHY, no black boxes, no platform
 "picks", just arithmetic over verified inputs. Labels are market-stance
 words (bullish/bearish), never advice words.
 """
@@ -45,7 +45,7 @@ DESK_DECISION_SCORES = {
     "sell": -1.0, "strong sell": -1.0,
 }
 
-MIN_SCORED_FOR_WEIGHT = 10   # below this a source's record is noise — stay neutral
+MIN_SCORED_FOR_WEIGHT = 10   # below this a source's record is noise: stay neutral
 DESK_STALENESS_DAYS = 5      # desk verdicts older than this don't vote
 SIGNAL_LOOKBACK_HOURS = 48   # active window for signal consensus
 
@@ -198,7 +198,7 @@ def consolidated_rankings(db: Session, limit: int = 25) -> Dict[str, Any]:
         "track_records": tracks,
         "rankings": rankings[:limit],
         "disclaimer": (
-            "Consolidated market stance from verified inputs — not investment advice. "
+            "Consolidated market stance from verified inputs, not investment advice. "
             "Source weights come from realized signal outcomes."
         ),
     }
@@ -211,7 +211,7 @@ CACHE_TTL_SECONDS = 300
 
 
 def consolidated_rankings_cached(db: Session, limit: int = 25) -> Dict[str, Any]:
-    # Cache the FULL computation and slice per request — otherwise the first
+    # Cache the FULL computation and slice per request, otherwise the first
     # caller's limit poisons the cache for everyone (dashboard's limit=10
     # truncated API consumers asking for 30; observed 2026-06-11).
     if _cache["data"] is None or (time.monotonic() - _cache["at"]) >= CACHE_TTL_SECONDS:

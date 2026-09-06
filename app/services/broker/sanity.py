@@ -32,7 +32,7 @@ _SANITY_CACHE_TTL = int(os.getenv("SANITY_CACHE_TTL", "900"))      # 15 min
 
 ALLOWED_EXCHANGES = {"NYSE", "NASDAQ", "AMEX", "ARCA", "BATS"}
 
-# Leveraged / inverse ETFs decay over multi-day holds — blocked outright.
+# Leveraged / inverse ETFs decay over multi-day holds, blocked outright.
 LEVERAGED_ETF_BLOCKLIST = {
     "TQQQ", "SQQQ", "SPXL", "SPXS", "TNA", "TZA", "SOXL", "SOXS",
     "UPRO", "SPXU", "UDOW", "SDOW", "FAS", "FAZ", "LABU", "LABD",
@@ -138,7 +138,7 @@ def passes_liquidity_and_size_check(ctx: Dict, *, live: bool) -> Dict:
 
     Unlike the upstream version, "no market data at all" REJECTS for live
     accounts (the upstream fail-open here was flagged RED in its own risk
-    review — a delisted ticker sails through every gate).
+    review: a delisted ticker sails through every gate).
     """
     if not ctx:
         return _gate_unavailable("no_market_data", live=live) if not live else {

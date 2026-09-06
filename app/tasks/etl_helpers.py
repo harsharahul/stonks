@@ -30,7 +30,7 @@ def get_or_create_etl_job(db, celery_task_id, job_name, details=None):
             db.commit()
             return existing
 
-    # No admin record found — create a new one (Beat-triggered)
+    # No admin record found: create a new one (Beat-triggered)
     job_run = ETLJobRun(
         job_name=job_name,
         started_at=datetime.utcnow(),

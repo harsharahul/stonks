@@ -1,4 +1,4 @@
-"""WSB momentum plugin — the reference implementation of the signal SDK.
+"""WSB momentum plugin: the reference implementation of the signal SDK.
 
 Reads the already-ingested WSB features (ticker_features_daily) and emits a
 social_momentum trading signal for tickers with unusual retail buzz. This is
@@ -44,7 +44,7 @@ class WSBMomentumSource(SignalSource):
             update_frequency=timedelta(minutes=30),
             reliability_score=0.6,
             data_quality_score=0.7,
-            required_config=[],  # reads our own DB — no keys needed
+            required_config=[],  # reads our own DB, no keys needed
         )
 
     async def configure(self) -> bool:

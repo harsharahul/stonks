@@ -130,7 +130,7 @@ def fetch_nasdaq_earnings_calendar(self, days_ahead: int = 7, days_back: int = 3
             "provider_error": provider_error,
         })
         db.commit()
-        print("   🚫 No earnings provider available — skipping (no mock data in non-dev)")
+        print("   🚫 No earnings provider available: skipping (no mock data in non-dev)")
         return {
             "task": "earnings_calendar",
             "status": "skipped_no_provider",

@@ -18,10 +18,16 @@ from bs4 import BeautifulSoup
 from celery import shared_task
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models.article import Article
 from app.models.data_source import DataSource
 from app.models.etl_job_run import ETLJobRun
+
+
+def _sec_contact() -> str:
+    """Contact address the SEC asks every automated client to declare."""
+    return settings.SEC_CONTACT_EMAIL or 'contact@example.com'
 
 
 class SECEdgarIngestionError(Exception):
@@ -117,8 +123,8 @@ def fetch_sec_edgar_rss(self, filing_types: List[str] = None, days_back: int = 1
         
         # Fetch RSS feed with proper headers for SEC compliance
         headers = {
-            'User-Agent': 'Stonks-Analytics/1.0 (Educational Purpose) contact@stonks-analytics.com',
-            'From': 'contact@stonks-analytics.com',
+            'User-Agent': f'Stonks/1.0 (research; {_sec_contact()})',
+            'From': _sec_contact(),
             'Accept': 'application/rss+xml, application/xml, text/xml',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',

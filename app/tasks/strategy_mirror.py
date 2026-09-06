@@ -5,18 +5,18 @@ legal/safety posture is enforced in code, not convention:
 
 - PAPER ONLY. A follower is mirrored iff their linked account has
   ``paper=True`` AND ``auto_execute=True`` AND ``copy_mode='paper_auto'``.
-  Live accounts are skipped unconditionally — live auto-copy requires RIA
+  Live accounts are skipped unconditionally: live auto-copy requires RIA
   registration or a BD/RIA partner (In re Weiss Research; Autopilot
   Advisers precedent). Do not "fix" this without that paperwork.
 - IDEMPOTENT. The mirror's client_order_id is deterministic per
-  (follower, origin order): a redelivered task can't double-place — Alpaca
+  (follower, origin order): a redelivered task can't double-place: Alpaca
   rejects duplicate client order ids and the ledger has a unique constraint.
 - INDEPENDENT SIZING. Followers are sized from their OWN equity and
   risk_config (never the leader's amounts, which are private): buys use
   ``copy_position_pct`` of equity (default 2%, capped 10%); sells close
   whatever the follower's mirrored position in that symbol is.
 - Mirrored orders carry source='copy' + source_ref=<origin order id> and NO
-  strategy_id — follower fills must never pollute the leader's verified
+  strategy_id: follower fills must never pollute the leader's verified
   track record or public trade feed.
 """
 from __future__ import annotations
@@ -42,7 +42,7 @@ MAX_COPY_POSITION_PCT = 0.10
 
 
 def mirror_client_order_id(follower_user_id, origin_order_id) -> str:
-    """Deterministic per (follower, origin) — the idempotency key."""
+    """Deterministic per (follower, origin): the idempotency key."""
     return f"stonks-copy-{str(follower_user_id)[:8]}-{str(origin_order_id).replace('-', '')[:16]}"
 
 

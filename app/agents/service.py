@@ -1,4 +1,4 @@
-"""TradingDeskService — orchestration around the desk workflow.
+"""TradingDeskService: orchestration around the desk workflow.
 
 Single entry point for:
 - Universe selection (top-N composite score + watchlists + movers reserve)
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-# Tunable knobs for universe sizing — kept module-scope so tests / overrides
+# Tunable knobs for universe sizing: kept module-scope so tests / overrides
 # can monkeypatch without touching the desk_config dict.
 TOP_N_BY_SCORE = 45
 RESERVE_MOVERS = 5
@@ -54,7 +54,7 @@ def select_universe(db: Session) -> List[Tuple[str, float, str]]:
         score(ticker) = z(article_count_7d) + z(wsb_mention_count_7d)
                        + z(abs(vol_z))      + 0.5 * z(abs(sent_shock))
 
-    Returns list of (ticker, score, reason) tuples — sorted by relevance.
+    Returns list of (ticker, score, reason) tuples: sorted by relevance.
     Reasons: ``top_activity`` | ``mover_reserve`` | ``watchlist``.
 
     NaN handling: any ticker with < 7 days of features is excluded from
@@ -149,7 +149,7 @@ def select_universe(db: Session) -> List[Tuple[str, float, str]]:
     scored.sort(key=lambda t: t[1], reverse=True)
     top_activity = [(t, s, "top_activity") for t, s in scored[:TOP_N_BY_SCORE]]
 
-    # Mover reserve — biggest |ret_1d| from the latest day.
+    # Mover reserve: biggest |ret_1d| from the latest day.
     movers_today = (
         db.execute(
             select(TickerFeaturesDaily.ticker, TickerFeaturesDaily.ret_1d)
@@ -173,7 +173,7 @@ def select_universe(db: Session) -> List[Tuple[str, float, str]]:
         mover_reserve.append((t, abs_ret, "mover_reserve"))
         seen.add(t)
 
-    # Watchlist union — pull all distinct watchlist tickers.
+    # Watchlist union: pull all distinct watchlist tickers.
     watchlist_tickers = (
         db.execute(
             select(WatchlistItem.stock_id).distinct()
@@ -304,7 +304,7 @@ def run_for_ticker(
     try:
         init_state = desk_workflow.create_initial_state(sym, as_of.isoformat())
         final_state = desk_workflow.invoke(init_state)
-    except Exception as exc:  # pragma: no cover — defensive
+    except Exception as exc:  # pragma: no cover: defensive
         logger.exception("desk_workflow invocation failed for %s: %s", sym, exc)
         error_text = f"{type(exc).__name__}: {exc}"
 

@@ -1,10 +1,10 @@
 """Celery tasks that drive the AI Trading Desk pipeline.
 
 Phase 1 surface:
-- ``refresh_universe_membership_task``  Sun 00:00 UTC — recompute coverage
-- ``run_desk_universe_nightly_task``    daily 7:15 UTC — enqueue per-ticker runs
+- ``refresh_universe_membership_task``  Sun 00:00 UTC: recompute coverage
+- ``run_desk_universe_nightly_task``    daily 7:15 UTC: enqueue per-ticker runs
 - ``run_desk_for_ticker_task``          triggered (nightly batch / on-demand)
-- ``score_past_decisions_task``         daily 23:00 UTC — fill outcomes
+- ``score_past_decisions_task``         daily 23:00 UTC: fill outcomes
 
 Phase 2 will add ``event_triggered_desk_check_task``; Phase 4 adds
 ``monitor_decision_distribution_task``. The corresponding beat-schedule
@@ -71,7 +71,7 @@ def refresh_universe_membership_task(self) -> Dict:
 # ---------------------------------------------------------------------------
 
 
-# acks_late: a deploy restart (SIGKILL) must not eat an in-flight 10-min LLM run —
+# acks_late: a deploy restart (SIGKILL) must not eat an in-flight 10-min LLM run:
 # the unacked message is redelivered to the new worker (lost AAPL/DOCU 2026-06-10).
 @shared_task(
     bind=True,
@@ -139,7 +139,7 @@ def run_desk_universe_nightly_task(self) -> Dict:
                 run_desk_for_ticker_task.apply_async(
                     args=(membership.ticker, "nightly"),
                     queue="analytics",
-                    expires=3 * 3600,  # if not picked up in 3h, drop — next batch supersedes
+                    expires=3 * 3600,  # if not picked up in 3h, drop, next batch supersedes
                 )
                 enqueued += 1
             _finish_job(db, job_run, status="success", items=enqueued)

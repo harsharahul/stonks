@@ -323,9 +323,9 @@ def generate_recommendations(state: AnalyticsState) -> Dict:
             }
         else:
             # HONEST fallback: the LLM is unavailable, so this is rule-derived
-            # text — say so loudly and machine-readably instead of passing it
+            # text: say so loudly and machine-readably instead of passing it
             # off as analysis (audit finding #9).
-            logger.warning("analytics_agent: LLM unavailable — serving rule-derived fallback recommendation")
+            logger.warning("analytics_agent: LLM unavailable: serving rule-derived fallback recommendation")
             ret_5d = context['ret_5d']
             sent_7d = context['sent_mean_7d']
 
@@ -337,7 +337,7 @@ def generate_recommendations(state: AnalyticsState) -> Dict:
                 recommendation = "Mixed signals. Monitor for clearer trend development before making significant changes."
 
             recommendations = {
-                'llm_insights': f"[AI offline — rule-derived fallback] {recommendation}",
+                'llm_insights': f"[AI offline: rule-derived fallback] {recommendation}",
                 'confidence': 'low',
                 'llm_fallback': True,
             }

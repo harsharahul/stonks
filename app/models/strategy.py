@@ -2,7 +2,7 @@
 
 The social spine of the platform. Every strategy's trades come from the
 BrokerOrder ledger (rows tagged with strategy_id), so track records are
-computed from real broker fills — never self-reported. ``kind`` says where
+computed from real broker fills: never self-reported. ``kind`` says where
 the strategy's trade intents come from:
 
 - manual:      the owner tags their own trades
@@ -52,7 +52,7 @@ class Strategy(Base):
     visibility: Mapped[str] = mapped_column(String, nullable=False, default="private")
     kind: Mapped[str] = mapped_column(String, nullable=False, default="manual")
     config: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
-    # Owner's conflict-of-interest statement — required to go public.
+    # Owner's conflict-of-interest statement: required to go public.
     disclosure: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 

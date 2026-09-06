@@ -29,7 +29,7 @@ const RangeSlider: React.FC<{
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{label}</span>
         <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
-          {formatValue(value[0])} — {formatValue(value[1])}
+          {formatValue(value[0])}: {formatValue(value[1])}
         </span>
       </div>
       {/* Visual range bar */}

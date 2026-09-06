@@ -84,7 +84,7 @@ export const useStockKnowledge = (ticker: string) => {
     retry: 0,
     enabled: !!ticker,
     onError: () => {
-      // 404 is expected when knowledge hasn't been generated yet — suppress error
+      // 404 is expected when knowledge hasn't been generated yet: suppress error
     },
   });
 };

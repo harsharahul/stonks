@@ -14,7 +14,7 @@ class Reflector:
     def _get_log_reflection_prompt(self) -> str:
         """Concise prompt for reflect_on_final_decision (Phase B log entries).
 
-        Produces 2-4 sentences of plain prose — compact enough to be re-injected
+        Produces 2-4 sentences of plain prose, compact enough to be re-injected
         into future agent prompts without bloating the context window.
         """
         return (

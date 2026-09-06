@@ -13,7 +13,7 @@ Stonks values:
 - LLMs come from ``app.llm.ollama_client`` (qwen3:14b on Mac Studio)
 - Memory log is Postgres-backed (``app.agents.adapters.memory_log``);
   ``memory_log_path`` is unused but populated for upstream compat
-- Cache/results dirs default to /tmp inside containers — desk runs persist
+- Cache/results dirs default to /tmp inside containers, desk runs persist
   to Postgres, not disk
 - Phase 1: full pipeline runs (max_debate_rounds=1, max_risk_discuss_rounds=1)
   but UI hides debate/risk panels until Phase 2 (V0.2 finding)
@@ -33,17 +33,17 @@ _DEFAULT_RESULTS = os.path.join(tempfile.gettempdir(), "stonks-desk-results")
 # Phase 1 desk config. Keep this dict in sync with upstream's expected keys
 # so the vendored ``trading_graph.py`` can pull values without surprise.
 DESK_CONFIG: Dict[str, Any] = {
-    # Filesystem (mostly unused — Stonks persists to Postgres). Upstream's
+    # Filesystem (mostly unused: Stonks persists to Postgres). Upstream's
     # __init__ does os.makedirs on these, so they must be writable paths.
     "project_dir": os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "results_dir": _DEFAULT_RESULTS,
     "data_cache_dir": _DEFAULT_CACHE,
 
-    # Memory log (unused — PostgresMemoryLog overrides) but populated for compat.
+    # Memory log (unused: PostgresMemoryLog overrides) but populated for compat.
     "memory_log_path": os.path.join(_DEFAULT_CACHE, "trading_memory.md"),
     "memory_log_max_entries": None,
 
-    # LLM tiers — quick (analysts/debate) on the efficient default model,
+    # LLM tiers: quick (analysts/debate) on the efficient default model,
     # deep (research manager / trader / portfolio manager) optionally on a
     # stronger one via OLLAMA_DEEP_MODEL. Temperature differentiation lives
     # in ``app.llm.ollama_client``.
@@ -52,22 +52,22 @@ DESK_CONFIG: Dict[str, Any] = {
     "quick_think_llm": settings.OLLAMA_MODEL or "gemma4:e4b",
     "backend_url": (settings.OLLAMA_HOST or "").rstrip("/") + "/v1" if settings.OLLAMA_HOST else None,
 
-    # Provider-specific reasoning knobs — Ollama doesn't use these.
+    # Provider-specific reasoning knobs: Ollama doesn't use these.
     "google_thinking_level": None,
     "openai_reasoning_effort": None,
     "anthropic_effort": None,
 
-    # Checkpoint/resume — disabled (we don't persist checkpoints to disk).
+    # Checkpoint/resume: disabled (we don't persist checkpoints to disk).
     "checkpoint_enabled": False,
 
     "output_language": "English",
 
-    # Debate & discussion settings (Phase 1 ships rounds=1, UI hides panels — V0.2).
+    # Debate & discussion settings (Phase 1 ships rounds=1, UI hides panels, V0.2).
     "max_debate_rounds": int(os.getenv("DESK_MAX_DEBATE_ROUNDS", "1")),
     "max_risk_discuss_rounds": int(os.getenv("DESK_MAX_RISK_DISCUSS_ROUNDS", "1")),
     "max_recur_limit": 100,
 
-    # Data vendor configuration — Stonks adapters route through
+    # Data vendor configuration: Stonks adapters route through
     # ``app.agents.adapters.tools``. The vendor name here is decorative.
     "data_vendors": {
         "core_stock_apis": "stonks",

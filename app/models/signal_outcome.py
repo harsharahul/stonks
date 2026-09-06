@@ -3,7 +3,7 @@
 One row per scored signal. The nightly scorer fills entry/exit closes from the
 prices table once the horizon window has elapsed, then ``win`` records whether
 the signal's direction called the move correctly. Per-source aggregates
-(win rate, avg return) are computed from these rows at query time — this is
+(win rate, avg return) are computed from these rows at query time, this is
 the raw material for source track records, not a rollup table.
 """
 from datetime import datetime

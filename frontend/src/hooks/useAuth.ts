@@ -1,5 +1,5 @@
 /**
- * useAuth — Stonks-flavoured wrapper around react-oidc-context's useAuth.
+ * useAuth: Stonks-flavoured wrapper around react-oidc-context's useAuth.
  * Returns a stable API regardless of whether OIDC is configured.
  *
  * Admin status is determined by the backend (ADMIN_EMAILS env var) via /auth/me,
@@ -30,7 +30,7 @@ export interface AuthState {
   isOidcEnabled: boolean;
 }
 
-// M6: OIDC_ENABLED is a compile-time constant — Vite inlines the env vars at build.
+// M6: OIDC_ENABLED is a compile-time constant: Vite inlines the env vars at build.
 // This means the conditional hook call below is safe: the branch never changes at runtime.
 const OIDC_ENABLED =
   Boolean(import.meta.env.VITE_OIDC_AUTHORITY) &&

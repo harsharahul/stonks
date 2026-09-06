@@ -6,7 +6,7 @@ Original work:
   Yijia Xiao, Edward Sun, Di Luo, Wei Wang
   arXiv:2412.20138 (https://arxiv.org/abs/2412.20138)
 
-License: Apache License, Version 2.0 — see LICENSE in this directory.
+License: Apache License, Version 2.0. See LICENSE in this directory.
 
 Vendored from: https://github.com/TauricResearch/TradingAgents.git
 Pinned commit: 7c37249f808f9c169ad2198dc384166e7ca7adf9 (release v0.2.4)

@@ -410,7 +410,7 @@ def register_signal_source(source_id: str, *, default_enabled: bool = True):
 
     ``default_enabled`` seeds the admin toggle for deployments that have
     never seen this source (mock/experimental sources should pass False).
-    Contributors: decorate your SignalSource subclass with this — see
+    Contributors: decorate your SignalSource subclass with this, see
     CONTRIBUTING-SIGNALS.md for the full plugin contract.
     """
     def _wrap(cls):

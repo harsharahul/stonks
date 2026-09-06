@@ -4,7 +4,7 @@ For every directional signal (bullish/bearish) whose horizon window has
 closed, look up the realized forward return from the ``prices`` table and
 record whether the call was right. Aggregating ``signal_outcomes`` by
 ``source`` is what lets users judge which signal sources have actually been
-worth listening to — the trust layer under the open signal marketplace.
+worth listening to, the trust layer under the open signal marketplace.
 
 Source attribution:
 - plugin signals carry ``model_version = "plugin:<source_id>"`` (and

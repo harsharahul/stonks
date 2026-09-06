@@ -1,5 +1,5 @@
 /**
- * /strategies — discover public strategies (verified records) + manage your own.
+ * /strategies: discover public strategies (verified records) + manage your own.
  * Every surface carries the not-investment-advice disclaimer; ranking is by
  * objective verified metrics only.
  */
@@ -198,7 +198,7 @@ const StrategiesPage: React.FC = () => {
           </div>
         ) : (discover.data?.strategies?.length ?? 0) === 0 ? (
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            No public strategies yet — be the first to publish one.
+            No public strategies yet: be the first to publish one.
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -147,7 +147,7 @@ async def get_stock_knowledge(
     if not knowledge:
         raise HTTPException(
             status_code=404,
-            detail="No knowledge record yet — run update_stock_knowledge_task to generate one"
+            detail="No knowledge record yet: run update_stock_knowledge_task to generate one"
         )
 
     return {

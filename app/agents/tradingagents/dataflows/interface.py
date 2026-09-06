@@ -9,7 +9,7 @@ Stonks replaces all those vendor implementations with DB-backed adapters in
 ``app.agents.adapters.tools``. This stub forwards the same method names to
 those adapters so vendored upstream tool wrappers (e.g.
 ``app.agents.tradingagents.agents.utils.core_stock_tools.get_stock_data``) keep
-working unmodified — they call ``route_to_vendor("get_stock_data", ...)``,
+working unmodified: they call ``route_to_vendor("get_stock_data", ...)``,
 which lands in our adapter.
 
 If a method is invoked that we haven't implemented, returns a deterministic
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 _NOT_AVAILABLE_TEMPLATE = (
     "Data not available for `{method}({args})` in this environment. "
-    "Phase 1 fallback — upstream agents should rely on the analyst's narrative "
+    "Phase 1 fallback: upstream agents should rely on the analyst's narrative "
     "and the per-ticker StockKnowledge context window."
 )
 
@@ -56,7 +56,7 @@ def route_to_vendor(method: str, *args: Any, **kwargs: Any) -> str:
     impl = getattr(stonks_tools, f"adapter_{method}", None) or getattr(stonks_tools, method, None)
     if impl is None:
         logger.info(
-            "route_to_vendor: no adapter implementation for %s — returning not-available stub",
+            "route_to_vendor: no adapter implementation for %s: returning not-available stub",
             method,
         )
         return _NOT_AVAILABLE_TEMPLATE.format(method=method, args=_format_args(args, kwargs))
@@ -74,4 +74,4 @@ def route_to_vendor(method: str, *args: Any, **kwargs: Any) -> str:
 # Upstream defines AlphaVantageRateLimitError at this level for a few try/except
 # blocks. We don't need it but provide the symbol so any straggler import resolves.
 class AlphaVantageRateLimitError(Exception):
-    """Stub — Stonks doesn't use Alpha Vantage in the desk pipeline."""
+    """Stub: Stonks doesn't use Alpha Vantage in the desk pipeline."""

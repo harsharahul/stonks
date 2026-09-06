@@ -21,7 +21,7 @@ Naming contract: a function named exactly ``<method>`` here is invoked by
   get_income_statement(ticker, freq="quarterly", curr_date=None) -> str
 
 Every adapter returns a deterministic non-empty markdown string. On missing
-data we return a "Not available — see narrative" stub so downstream prompts
+data we return a "Not available: see narrative" stub so downstream prompts
 never see ``None``/``""`` (the missing-data fallback specified in the plan).
 """
 from __future__ import annotations
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # Helpers
 # ---------------------------------------------------------------------------
 
-_NOT_AVAILABLE = "_Not available._ Phase 1 fallback — rely on the per-ticker narrative."
+_NOT_AVAILABLE = "_Not available._ Phase 1 fallback: rely on the per-ticker narrative."
 
 
 def _parse_date(s: Optional[str]) -> Optional[date]:
@@ -151,7 +151,7 @@ def get_stock_data(symbol: str, start_date: str, end_date: str) -> str:
 
     rows = fetch_daily_bars(sym, sd, ed)
     if not rows:
-        return f"# {sym} — OHLCV ({start_date} → {end_date})\n\n{_NOT_AVAILABLE}"
+        return f"# {sym}: OHLCV ({start_date} → {end_date})\n\n{_NOT_AVAILABLE}"
 
     first = rows[0]
     last = rows[-1]
@@ -162,7 +162,7 @@ def get_stock_data(symbol: str, start_date: str, end_date: str) -> str:
     avg_vol = sum(vols) / len(vols) if vols else None
 
     lines = [
-        f"# {sym} — OHLCV ({start_date} → {end_date})",
+        f"# {sym}: OHLCV ({start_date} → {end_date})",
         "",
         f"- Bars: {len(rows)}",
         f"- First close ({first.date}): {first.close:.4f}",
@@ -229,7 +229,7 @@ def get_indicators(
 
     rows = fetch_daily_bars(sym, start, end)
     if len(rows) < 5:
-        return f"# {sym} — Indicators ({indicator})\n\n{_NOT_AVAILABLE}"
+        return f"# {sym}: Indicators ({indicator})\n\n{_NOT_AVAILABLE}"
 
     closes = [r.close for r in rows]
     sma_20 = _sma(closes, 20)
@@ -240,7 +240,7 @@ def get_indicators(
     period_return = (last - first) / first if first else None
 
     lines = [
-        f"# {sym} — Indicators ({indicator}, look_back={look_back_days}d)",
+        f"# {sym}: Indicators ({indicator}, look_back={look_back_days}d)",
         "",
         f"- Last close: {last:.4f} on {rows[-1].date}",
         f"- Period return: {period_return:+.2%}" if period_return is not None else "- Period return: n/a",
@@ -286,7 +286,7 @@ def get_news(ticker: str, start_date: str, end_date: str) -> str:
             )
         except Exception as exc:
             logger.warning("get_news: query failed: %s", exc)
-            return f"# News — {sym} ({start_date} → {end_date})\n\n{_NOT_AVAILABLE}"
+            return f"# News: {sym} ({start_date} → {end_date})\n\n{_NOT_AVAILABLE}"
 
         # Filter by ticker tag (best-effort across schema variations).
         filtered = []
@@ -305,15 +305,15 @@ def get_news(ticker: str, start_date: str, end_date: str) -> str:
 
         rows = filtered[:10] if filtered else articles[:5]
         if not rows:
-            return f"# News — {sym} ({start_date} → {end_date})\n\n{_NOT_AVAILABLE}"
+            return f"# News: {sym} ({start_date} → {end_date})\n\n{_NOT_AVAILABLE}"
 
-        lines = [f"# News — {sym} ({start_date} → {end_date})", ""]
+        lines = [f"# News: {sym} ({start_date} → {end_date})", ""]
         for r in rows:
             sentiment = getattr(r, "sentiment", None)
             sent_str = f" sentiment={float(sentiment):+.2f}" if sentiment is not None else ""
             published = r.published_at.strftime("%Y-%m-%d") if r.published_at else "?"
             title = (r.title or "").strip()
-            lines.append(f"- {published} — {title}{sent_str}")
+            lines.append(f"- {published}: {title}{sent_str}")
         return "\n".join(lines)
 
 
@@ -355,7 +355,7 @@ def get_global_news(curr_date: str, look_back_days: int = 7, limit: int = 5) -> 
         lines = [f"# Global news ({start} → {end})", ""]
         for r in rows:
             published = r.published_at.strftime("%Y-%m-%d") if r.published_at else "?"
-            lines.append(f"- {published} — {(r.title or '').strip()}")
+            lines.append(f"- {published}: {(r.title or '').strip()}")
         return "\n".join(lines)
 
 
@@ -365,7 +365,7 @@ def get_insider_transactions(ticker: str) -> str:
     try:
         from app.models.politician_trade import PoliticianTrade  # type: ignore
     except ImportError:
-        return f"# Insider transactions — {sym}\n\n{_NOT_AVAILABLE}"
+        return f"# Insider transactions: {sym}\n\n{_NOT_AVAILABLE}"
 
     cutoff = date.today() - timedelta(days=120)
     with SessionLocal() as db:
@@ -382,19 +382,19 @@ def get_insider_transactions(ticker: str) -> str:
             )
         except Exception as exc:
             logger.info("get_insider_transactions: query failed: %s", exc)
-            return f"# Insider transactions — {sym}\n\n{_NOT_AVAILABLE}"
+            return f"# Insider transactions: {sym}\n\n{_NOT_AVAILABLE}"
 
     if not rows:
-        return f"# Insider transactions — {sym}\n\n{_NOT_AVAILABLE}"
+        return f"# Insider transactions: {sym}\n\n{_NOT_AVAILABLE}"
 
-    lines = [f"# Insider / political trades — {sym}", ""]
+    lines = [f"# Insider / political trades: {sym}", ""]
     for r in rows:
         when = getattr(r, "transaction_date", None) or getattr(r, "filing_date", None)
         when_str = when.isoformat() if when else "?"
         actor = getattr(r, "politician_name", None) or getattr(r, "name", None) or "?"
         side = getattr(r, "transaction_type", None) or "?"
         amt = getattr(r, "amount_label", None) or getattr(r, "amount", None) or "?"
-        lines.append(f"- {when_str} — {actor} {side} {amt}")
+        lines.append(f"- {when_str}: {actor} {side} {amt}")
     return "\n".join(lines)
 
 
@@ -406,7 +406,7 @@ def get_fundamentals(ticker: str, curr_date: Optional[str] = None) -> str:
     sym = ticker.upper()
     with SessionLocal() as db:
         excerpt = _stock_knowledge_excerpt(sym, db)
-    return f"# Fundamentals — {sym}\n\n{excerpt}"
+    return f"# Fundamentals: {sym}\n\n{excerpt}"
 
 
 def get_balance_sheet(
@@ -416,7 +416,7 @@ def get_balance_sheet(
 ) -> str:
     sym = ticker.upper()
     return (
-        f"# Balance sheet — {sym} ({freq})\n\n{_NOT_AVAILABLE}\n\n"
+        f"# Balance sheet: {sym} ({freq})\n\n{_NOT_AVAILABLE}\n\n"
         "Phase-1 Stonks fundamentals lean on the per-ticker narrative; "
         "structured XBRL parsing is on the SEC EDGAR enhanced backlog."
     )
@@ -429,7 +429,7 @@ def get_cashflow(
 ) -> str:
     sym = ticker.upper()
     return (
-        f"# Cash flow — {sym} ({freq})\n\n{_NOT_AVAILABLE}\n\n"
+        f"# Cash flow: {sym} ({freq})\n\n{_NOT_AVAILABLE}\n\n"
         "Phase-1 Stonks fundamentals lean on the per-ticker narrative; "
         "structured XBRL parsing is on the SEC EDGAR enhanced backlog."
     )
@@ -442,7 +442,7 @@ def get_income_statement(
 ) -> str:
     sym = ticker.upper()
     return (
-        f"# Income statement — {sym} ({freq})\n\n{_NOT_AVAILABLE}\n\n"
+        f"# Income statement: {sym} ({freq})\n\n{_NOT_AVAILABLE}\n\n"
         "Phase-1 Stonks fundamentals lean on the per-ticker narrative; "
         "structured XBRL parsing is on the SEC EDGAR enhanced backlog."
     )

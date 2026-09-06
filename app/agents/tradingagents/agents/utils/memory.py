@@ -12,7 +12,7 @@ class TradingMemoryLog:
 
     # HTML comment: cannot appear in LLM prose output, safe as a hard delimiter
     _SEPARATOR = "\n\n<!-- ENTRY_END -->\n\n"
-    # Precompiled patterns — avoids re-compilation on every load_entries() call
+    # Precompiled patterns: avoids re-compilation on every load_entries() call
     _DECISION_RE = re.compile(r"DECISION:\n(.*?)(?=\nREFLECTION:|\Z)", re.DOTALL)
     _REFLECTION_RE = re.compile(r"REFLECTION:\n(.*?)$", re.DOTALL)
 

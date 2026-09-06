@@ -44,7 +44,7 @@ services:
       OLLAMA_HOST: ${OLLAMA_DOCKER_HOST:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_DOCKER_MODEL:-qwen3:14b}
       ANALYTICS_LLM_PROVIDER: ${ANALYTICS_LLM_PROVIDER_DOCKER:-ollama}
-      # Brokerage credential encryption — generate per environment (see .env.example)
+      # Brokerage credential encryption: generate per environment (see .env.example)
       BROKER_CREDS_ENCRYPTION_KEY: ${BROKER_CREDS_ENCRYPTION_KEY:-}
       # OIDC comes from .env via env_file above
     depends_on:
@@ -58,7 +58,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        # Set in .env — leave empty to build with OIDC disabled (anonymous mode)
+        # Set in .env: leave empty to build with OIDC disabled (anonymous mode)
         VITE_OIDC_AUTHORITY: "${VITE_OIDC_AUTHORITY:-}"
         VITE_OIDC_CLIENT_ID: "${VITE_OIDC_CLIENT_ID:-}"
     restart: unless-stopped

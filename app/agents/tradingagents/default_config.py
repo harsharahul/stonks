@@ -4,7 +4,7 @@ The real configuration lives in ``app.agents.desk_config.DESK_CONFIG``. This
 module exists only so that vendored upstream code (specifically
 ``trading_graph.py``) can do ``from app.agents.tradingagents.default_config
 import DEFAULT_CONFIG`` without crashing at module load. We deliberately do
-NOT use upstream's full config — paths, debate rounds, vendor selection are
+NOT use upstream's full config: paths, debate rounds, vendor selection are
 all owned by Stonks.
 """
 from __future__ import annotations

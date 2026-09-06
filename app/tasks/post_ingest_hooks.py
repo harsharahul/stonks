@@ -340,7 +340,7 @@ def cleanup_old_articles(self, archive_days: int = 30, delete_days: int = 90) ->
     """
     Tiered cleanup of old articles to manage database size.
 
-    Phase 1 (archive_days to delete_days): Null out raw_content — keeps title,
+    Phase 1 (archive_days to delete_days): Null out raw_content: keeps title,
     tickers, sentiment, url for reference.
     Phase 2 (delete_days+): Full delete.
 
@@ -359,7 +359,7 @@ def cleanup_old_articles(self, archive_days: int = 30, delete_days: int = 90) ->
         archive_cutoff = datetime.utcnow() - timedelta(days=archive_days)
         delete_cutoff = datetime.utcnow() - timedelta(days=delete_days)
 
-        # Phase 1: Null raw_content for articles in the archive window (30–90 days old)
+        # Phase 1: Null raw_content for articles in the archive window (30-90 days old)
         archived = db.query(Article).filter(
             Article.published_at < archive_cutoff,
             Article.published_at >= delete_cutoff,

@@ -1,4 +1,4 @@
-"""Unit tests for the paper-auto copy engine's pure logic — no DB, no broker."""
+"""Unit tests for the paper-auto copy engine's pure logic: no DB, no broker."""
 from app.tasks.strategy_mirror import (
     DEFAULT_COPY_POSITION_PCT,
     MAX_COPY_POSITION_PCT,

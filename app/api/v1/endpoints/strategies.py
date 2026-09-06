@@ -1,9 +1,9 @@
-"""Strategies API — the social spine.
+"""Strategies API: the social spine.
 
 Publish a strategy, follow one, read its verified track record. Privacy and
 compliance rules baked in:
 
-- Trade feeds NEVER expose dollar amounts or quantities — side/symbol/price/
+- Trade feeds NEVER expose dollar amounts or quantities, side/symbol/price/
   time only. Follower identities are private; counts are public.
 - Public strategies REQUIRE a disclosure statement from the owner.
 - Discovery ranks by objective verified metrics (never platform picks).
@@ -103,7 +103,7 @@ def _latest_perf(db: Session, strategy_id) -> Optional[Dict[str, Any]]:
 
 
 def _trade_feed(db: Session, strategy_id, limit: int = 50) -> List[Dict[str, Any]]:
-    """Public trade feed — deliberately omits qty/notional (privacy)."""
+    """Public trade feed: deliberately omits qty/notional (privacy)."""
     orders = (
         db.query(BrokerOrder)
         .filter(
@@ -217,7 +217,7 @@ async def my_follows(
 
 @router.get("/public")
 async def discover_strategies(db: Session = Depends(get_db)):
-    """Public discovery — ranked by objective metrics only (no platform picks)."""
+    """Public discovery: ranked by objective metrics only (no platform picks)."""
     rows = (
         db.query(Strategy)
         .filter(Strategy.visibility == "public", Strategy.is_active.is_(True))

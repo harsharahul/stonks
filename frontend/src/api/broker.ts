@@ -18,7 +18,7 @@ const brokerClient = axios.create({
 });
 
 // Attach the OIDC bearer token via the shared token bridge (NEVER read browser
-// storage directly — tokens live in the react-oidc-context user and renew there).
+// storage directly: tokens live in the react-oidc-context user and renew there).
 brokerClient.interceptors.request.use((config) => {
   const token = getAccessToken();
   if (token && config.url && !config.url.startsWith('http')) {
@@ -109,7 +109,7 @@ export interface PlaceOrderInput {
   take_profit_price?: number;
   source?: 'manual' | 'desk' | 'signal';
   source_ref?: string;
-  /** Idempotency ref — stable across retries of the same submission. */
+  /** Idempotency ref: stable across retries of the same submission. */
   client_ref?: string;
   confirm_live?: boolean;
 }

@@ -2,7 +2,7 @@
 
 Single source of truth for LLM construction across:
 - AI Trading Desk (vendored TradingAgents)
-- analytics_agent (legacy — being migrated)
+- analytics_agent (legacy: being migrated)
 
 Goes through Ollama's OpenAI-compat endpoint via LangChain's ``ChatOpenAI``.
 Phase 0 verification confirmed the shim handles ``bind_tools()``,
@@ -20,7 +20,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Tier defaults — analysts/researchers want some sampling diversity for debate;
+# Tier defaults: analysts/researchers want some sampling diversity for debate;
 # managers/trader want deterministic consolidation.
 QUICK_THINK_TEMPERATURE = 0.3
 DEEP_THINK_TEMPERATURE = 0.1

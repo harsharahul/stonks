@@ -7,18 +7,18 @@ import type { LatestCandleData, DetectedPattern } from '../utils/candlestickPatt
 // --- Pattern signal explanations ---
 
 const PATTERN_SIGNAL_MAP: Record<string, string> = {
-  doji: 'Indecision — watch the next candle for direction. Break above high = bullish, below low = bearish.',
+  doji: 'Indecision: watch the next candle for direction. Break above high = bullish, below low = bearish.',
   hammer: 'Buyers rejected lower prices aggressively. A green follow-through candle confirms a potential bottom.',
-  inverted_hammer: 'Buying pressure emerging. Confirmation needed — watch for a gap up or strong green candle next.',
+  inverted_hammer: 'Buying pressure emerging. Confirmation needed: watch for a gap up or strong green candle next.',
   shooting_star: 'Rally rejected at highs. A red follow-through candle below this body confirms distribution.',
   marubozu: 'Strong conviction candle with no wicks. Momentum likely continues in the same direction.',
-  bullish_engulfing: 'Complete reversal of prior selling. High reliability — watch for follow-through above this high.',
-  bearish_engulfing: 'Sellers overwhelmed buyers. High reliability — a close below this low confirms further downside.',
-  piercing_line: 'Buyers reclaimed more than half the prior loss. Moderate reversal signal — needs confirmation.',
+  bullish_engulfing: 'Complete reversal of prior selling. High reliability: watch for follow-through above this high.',
+  bearish_engulfing: 'Sellers overwhelmed buyers. High reliability: a close below this low confirms further downside.',
+  piercing_line: 'Buyers reclaimed more than half the prior loss. Moderate reversal signal: needs confirmation.',
   dark_cloud_cover: 'Sellers erased more than half the prior gain. Watch for a red candle next to confirm.',
-  morning_star: 'Three-candle bottom reversal. One of the strongest bullish patterns — watch for continued buying.',
-  evening_star: 'Three-candle top reversal. One of the strongest bearish patterns — watch for continued selling.',
-  three_white_soldiers: 'Sustained buying pressure over three sessions. Strong momentum — pullbacks may be buying opportunities.',
+  morning_star: 'Three-candle bottom reversal. One of the strongest bullish patterns, watch for continued buying.',
+  evening_star: 'Three-candle top reversal. One of the strongest bearish patterns, watch for continued selling.',
+  three_white_soldiers: 'Sustained buying pressure over three sessions. Strong momentum: pullbacks may be buying opportunities.',
 };
 
 // --- Mini candle SVG ---
@@ -242,7 +242,7 @@ const LatestCandleInsight: React.FC<LatestCandleInsightProps> = ({ data, ticker,
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">No candlestick pattern detected</p>
               <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-                Plain {candle.label.toLowerCase()} candle — look to indicators for context.
+                Plain {candle.label.toLowerCase()} candle: look to indicators for context.
               </p>
             </div>
           )}
@@ -292,7 +292,7 @@ const LatestCandleInsight: React.FC<LatestCandleInsightProps> = ({ data, ticker,
               </div>
               {data.macd !== null && (
                 <div className="text-[11px] text-neutral-500 dark:text-neutral-400 font-mono">
-                  MACD {data.macd.toFixed(2)} &middot; Signal {data.macdSignal?.toFixed(2) ?? '—'}
+                  MACD {data.macd.toFixed(2)} &middot; Signal {data.macdSignal?.toFixed(2) ?? '--'}
                   {data.macdHist !== null && (
                     <span className={data.macdHist >= 0 ? ' text-green-600' : ' text-red-600'}>
                       {' '}Hist {data.macdHist >= 0 ? '+' : ''}{data.macdHist.toFixed(2)}

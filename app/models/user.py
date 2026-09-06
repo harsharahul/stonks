@@ -13,7 +13,7 @@ from app.models.base import Base
 
 class User(Base):
     """
-    Authenticated user — identity sourced from Authentik OIDC.
+    Authenticated user: identity sourced from Authentik OIDC.
     Auto-created on first successful login.
     """
     __tablename__ = "users"
@@ -32,7 +32,7 @@ class User(Base):
     # Authorization
     role: Mapped[str] = mapped_column(String, nullable=False, default="user")  # "user" | "admin"
 
-    # Preferences (JSON blob — theme, alert settings, default views, etc.)
+    # Preferences (JSON blob: theme, alert settings, default views, etc.)
     preferences: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
 
     # Timestamps

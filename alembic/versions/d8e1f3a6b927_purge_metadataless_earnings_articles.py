@@ -1,7 +1,7 @@
 """purge legacy earnings articles that lost their metadata
 
 Earnings ingestion passed ``metadata=`` to Article() instead of
-``article_metadata=`` — SQLAlchemy silently dropped the payload, so every
+``article_metadata=``: SQLAlchemy silently dropped the payload, so every
 earnings article persisted with NULL metadata. In prod (no Alpha Vantage key
 configured) those rows also carried RANDOM mock earnings dates in their
 titles. They are unidentifiable as mock vs real and unusable downstream;

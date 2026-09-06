@@ -1,4 +1,4 @@
-"""Unit tests for the consolidation scoring math — pure logic, no DB."""
+"""Unit tests for the consolidation scoring math, pure logic, no DB."""
 from app.services.consolidation import (
     blend,
     desk_component,

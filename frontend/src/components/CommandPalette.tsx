@@ -140,7 +140,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onOpenChange, onS
           </div>
         )}
 
-        {/* Stock results — shown first when searching to prioritize ticker matches */}
+        {/* Stock results: shown first when searching to prioritize ticker matches */}
         {search.length >= 1 && (stocks.length > 0 || stocksLoading) && (
           <Command.Group
             heading={

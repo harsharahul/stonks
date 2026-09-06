@@ -74,7 +74,7 @@ def run_daily_analytics():
 
 
 # ---------------------------------------------------------------------------
-# Celery signal handlers — auto-update admin-created ETLJobRun records
+# Celery signal handlers: auto-update admin-created ETLJobRun records
 # When admin clicks "Run Now", an ETLJobRun is created with status="queued"
 # and the celery_task_id stored in details JSON. These handlers close the loop
 # by updating that record as the task progresses.

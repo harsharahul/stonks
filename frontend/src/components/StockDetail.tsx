@@ -42,7 +42,7 @@ const StockDetail: React.FC = () => {
   const { toasts, showSuccess, showError: showErrorToast, removeToast } = useToast();
 
   // The star is the USER's watchlist (per-account), not the legacy global
-  // tracked-stocks list — the two were conflated before, so the star showed the wrong state.
+  // tracked-stocks list: the two were conflated before, so the star showed the wrong state.
   const { isAuthenticated } = useAuth();
   const watchlist = useQuery({
     queryKey: ['my-watchlist'],
@@ -381,7 +381,7 @@ const StockDetail: React.FC = () => {
         )}
       </div>
 
-      {/* Stock Intelligence Section — only render if knowledge data exists */}
+      {/* Stock Intelligence Section: only render if knowledge data exists */}
       {knowledge && (
         <div className="card mb-8">
           <div className="flex items-center gap-2 mb-5">
@@ -406,7 +406,7 @@ const StockDetail: React.FC = () => {
               </p>
             ) : (
               <p className="text-sm text-neutral-500 dark:text-neutral-400 italic">
-                Structured intelligence only — LLM narrative not configured
+                Structured intelligence only: LLM narrative not configured
               </p>
             )}
           </div>
@@ -428,7 +428,7 @@ const StockDetail: React.FC = () => {
                     return (
                       <div key={idx} className="flex items-start gap-2 text-sm">
                         <span className="text-neutral-400 dark:text-neutral-500 text-xs mt-0.5 shrink-0 w-20">
-                          {event.date || '—'}
+                          {event.date || '--'}
                         </span>
                         <span className={cn('px-1.5 py-0.5 text-[10px] font-semibold rounded border shrink-0', sentColor)}>
                           {sentLabel}
@@ -569,7 +569,7 @@ const StockDetail: React.FC = () => {
         />
       </div>
 
-      {/* AI Insights — pre-computed by the AI Trading Desk; on-demand legacy generation */}
+      {/* AI Insights: pre-computed by the AI Trading Desk; on-demand legacy generation */}
       <div className="card mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">AI Insights</h2>
@@ -618,7 +618,7 @@ const StockDetail: React.FC = () => {
         ) : (
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              The AI Trading Desk pre-computes a full multi-agent analysis nightly — check the
+              The AI Trading Desk pre-computes a full multi-agent analysis nightly, check the
               desk for {ticker}'s latest verdict, or generate a quick insight now (slow: ~60s).
             </p>
             <button
@@ -645,19 +645,19 @@ const StockDetail: React.FC = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-neutral-600 dark:text-neutral-400">3-Day Average:</span>
-                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_3d?.toFixed(3) || '—'}</span>
+                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_3d?.toFixed(3) || '--'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600 dark:text-neutral-400">7-Day Average:</span>
-                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_7d?.toFixed(3) || '—'}</span>
+                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_7d?.toFixed(3) || '--'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600 dark:text-neutral-400">10-Day Average:</span>
-                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_10d?.toFixed(3) || '—'}</span>
+                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.mean_10d?.toFixed(3) || '--'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600 dark:text-neutral-400">Volume Weighted:</span>
-                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.volume_weighted?.toFixed(3) || '—'}</span>
+                  <span className="font-medium dark:text-neutral-200">{features.sentiment?.volume_weighted?.toFixed(3) || '--'}</span>
                 </div>
               </div>
             </div>
@@ -670,7 +670,7 @@ const StockDetail: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600 dark:text-neutral-400">Model Version:</span>
-                  <span className="font-medium dark:text-neutral-200">{features.metadata?.model_version || '—'}</span>
+                  <span className="font-medium dark:text-neutral-200">{features.metadata?.model_version || '--'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600 dark:text-neutral-400">Articles (7d):</span>
@@ -722,7 +722,7 @@ const ArticlesSection: React.FC<{ ticker: string }> = ({ ticker }) => {
                     {a.title || a.url}
                   </a>
                   <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                    {a.published_at ? formatDate(a.published_at) : '—'}
+                    {a.published_at ? formatDate(a.published_at) : '--'}
                     {a.author ? ` • ${a.author}` : ''}
                   </div>
                 </div>
@@ -735,7 +735,7 @@ const ArticlesSection: React.FC<{ ticker: string }> = ({ ticker }) => {
                       ? 'bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400'
                       : 'bg-danger-50 dark:bg-danger-900/30 text-danger-700 dark:text-danger-400'
                   )}>
-                    {a.sentiment === null || a.sentiment === undefined ? '—' : a.sentiment.toFixed(2)}
+                    {a.sentiment === null || a.sentiment === undefined ? '--' : a.sentiment.toFixed(2)}
                   </span>
                 </div>
               </div>

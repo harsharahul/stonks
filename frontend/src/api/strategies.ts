@@ -1,5 +1,5 @@
 /**
- * Strategies API — the social layer.
+ * Strategies API: the social layer.
  * Trade feeds are privacy-reduced server-side (no qty/notional ever).
  */
 import apiClient from './client';

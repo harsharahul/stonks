@@ -1,4 +1,4 @@
-"""Per-ticker prompt context block — sector + StockKnowledge highlights.
+"""Per-ticker prompt context block: sector + StockKnowledge highlights.
 
 Used by the Trader / Research Manager / Portfolio Manager prompts to anchor
 their reasoning on the specific instrument. Phase 1: lightweight enrichment;
@@ -7,7 +7,7 @@ Phase 2 may extend to include peer-group context, options-flow flags, etc.
 Upstream's ``build_instrument_context`` lives in
 ``app.agents.tradingagents.agents.utils.agent_utils`` and returns a generic
 "preserve the exchange-qualified ticker" string. We don't replace that
-function (vendored agents call it directly) — this module is a Stonks-only
+function (vendored agents call it directly): this module is a Stonks-only
 extension reachable from `desk_workflow` if it wants to inject richer
 context into the initial state.
 """

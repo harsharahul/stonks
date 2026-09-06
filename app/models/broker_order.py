@@ -6,7 +6,7 @@ and unique so a retried submit can never double-place at the broker
 (Alpaca rejects duplicate client_order_ids).
 
 `source`/`source_ref` record provenance: 'manual' (user clicked trade),
-'desk' (AI Trading Desk decision id), 'signal' (signal id) — the audit
+'desk' (AI Trading Desk decision id), 'signal' (signal id): the audit
 trail for "why did Stonks place this order".
 """
 from datetime import datetime

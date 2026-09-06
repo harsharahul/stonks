@@ -80,7 +80,7 @@ class PlaceOrderRequest(BaseModel):
     # appears in the strategy's public trade feed + verified track record.
     strategy_id: Optional[UUID] = None
     # Idempotency: the frontend generates one ref per ticket submission and
-    # reuses it on retry — a timeout + retry can't double-place at Alpaca.
+    # reuses it on retry: a timeout + retry can't double-place at Alpaca.
     client_ref: Optional[str] = Field(None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9\-_]+$")
     # Live-account orders must re-confirm per order.
     confirm_live: bool = False
@@ -207,7 +207,7 @@ async def update_account_settings(
     db: Session = Depends(get_db),
 ):
     """Update account settings. auto_execute (the copy-trading opt-in) can only
-    be enabled on PAPER accounts — live auto-execution is not offered."""
+    be enabled on PAPER accounts: live auto-execution is not offered."""
     account = _get_account_or_404(user, db)
     if body.auto_execute is not None:
         if body.auto_execute and not account.paper:
@@ -335,7 +335,7 @@ async def place_order(
     if is_live and not body.confirm_live:
         raise HTTPException(
             status_code=400,
-            detail="This is a LIVE account — re-confirm with confirm_live=true.",
+            detail="This is a LIVE account: re-confirm with confirm_live=true.",
         )
 
     try:
@@ -401,7 +401,7 @@ async def place_order(
         strategy_id=strategy.id if strategy is not None else None,
     )
     db.add(ledger)
-    db.commit()  # persist BEFORE submit — submit retries stay idempotent
+    db.commit()  # persist BEFORE submit: submit retries stay idempotent
 
     try:
         order_request = build_order_request(
@@ -451,7 +451,7 @@ async def place_order(
         except Exception:
             logger.warning("mirror dispatch failed (non-fatal)", exc_info=True)
 
-    # Privacy: side/symbol/strategy only — never qty, notional, or identities.
+    # Privacy: side/symbol/strategy only: never qty, notional, or identities.
     if strategy is not None and strategy.visibility == "public":
         try:
             from app.services.websocket_manager import event_broadcaster

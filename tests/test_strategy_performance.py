@@ -1,4 +1,4 @@
-"""Unit tests for verified track-record math — pure logic, no DB."""
+"""Unit tests for verified track-record math, pure logic, no DB."""
 from app.tasks.strategy_performance import compute_round_trips, summarize
 
 

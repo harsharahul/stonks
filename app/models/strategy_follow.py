@@ -1,8 +1,8 @@
 """StrategyFollow: a user following a strategy.
 
 ``copy_mode`` ladder (legal gates researched 2026-06, see plan):
-- notify:     trade alerts + one-click prefilled ticket (self-directed) — Phase 2
-- paper_auto: opt-in auto-mirroring on PAPER accounts only — Phase 3
+- notify:     trade alerts + one-click prefilled ticket (self-directed): Phase 2
+- paper_auto: opt-in auto-mirroring on PAPER accounts only, Phase 3
 - live_auto:  RESERVED. Hard-blocked until RIA registration or BD/RIA
               partnership (In re Weiss Research; Autopilot Advisers precedent).
 """

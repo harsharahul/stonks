@@ -1,17 +1,20 @@
-# React Frontend Dockerfile (Multi-stage build with universal support)
-FROM --platform=$BUILDPLATFORM node:18-alpine AS builder
+# Stonks frontend: Vite build, served by nginx which also proxies /api/ to the backend.
+# Build:  docker build -f Dockerfile.frontend -t stonks-frontend .
+# Run:    docker run -p 3000:80 stonks-frontend   (nginx proxies /api/ to stonks-api:8080 on the same network)
+# OIDC settings are baked into the bundle at build time via --build-arg (see docs/configuration.md).
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files  
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copy source code
 COPY frontend/ .
 
-# OIDC env vars — baked into the JS bundle at build time.
+# OIDC env vars: baked into the JS bundle at build time.
 # Override these via --build-arg in CI or docker build.
 ARG VITE_OIDC_AUTHORITY=""
 ARG VITE_OIDC_CLIENT_ID=""
@@ -23,6 +26,9 @@ RUN npm run build
 
 # Production stage
 FROM --platform=$TARGETPLATFORM nginx:alpine
+LABEL org.opencontainers.image.title="Stonks frontend" \
+      org.opencontainers.image.source="https://github.com/harsharahul/stonks" \
+      org.opencontainers.image.licenses="AGPL-3.0-only"
 
 # Copy custom nginx config
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
@@ -30,15 +36,10 @@ COPY frontend/nginx.conf /etc/nginx/nginx.conf
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create non-root user for file ownership
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-# Change ownership of web content only
-RUN chown -R nextjs:nodejs /usr/share/nginx/html
-
-# Keep nginx running as root for system access
-# USER nextjs
+# Web content is owned by an unprivileged user; nginx itself keeps its default
+# master/worker split (master as root, workers as nginx).
+RUN addgroup -g 1001 -S web && adduser -S web -u 1001 -G web && \
+    chown -R web:web /usr/share/nginx/html
 
 # Expose port
 EXPOSE 80

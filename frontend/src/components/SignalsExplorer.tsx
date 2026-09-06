@@ -631,7 +631,7 @@ const SignalsExplorer: React.FC = () => {
                             ) : s.expires_at ? (
                               <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{formatRelativeTime(s.expires_at)}</span>
                             ) : (
-                              <span className="text-[10px] text-neutral-300 dark:text-neutral-700">—</span>
+                              <span className="text-[10px] text-neutral-300 dark:text-neutral-700">--</span>
                             )}
                           </td>
                         </tr>
@@ -821,7 +821,7 @@ const SignalsExplorer: React.FC = () => {
 
       {/* ====== FOOTER ====== */}
       <div className="text-center text-xs text-neutral-400 dark:text-neutral-500 pt-2 border-t border-neutral-200 dark:border-neutral-700">
-        Signal Explorer — 11 signal types across {allSignals.data?.count ?? 0} active signals
+        Signal Explorer: 11 signal types across {allSignals.data?.count ?? 0} active signals
         {allSignals.dataUpdatedAt && (
           <span> · Updated {formatRelativeTime(new Date(allSignals.dataUpdatedAt).toISOString())}</span>
         )}

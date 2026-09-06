@@ -6,12 +6,12 @@ PostgresMemoryLog without going through upstream's
 checkpoints, and a markdown memory log we don't want).
 
 The vendored upstream pieces we still rely on:
-  - ``app.agents.tradingagents.graph.setup.GraphSetup``       — node/edge wiring
+  - ``app.agents.tradingagents.graph.setup.GraphSetup``: node/edge wiring
   - ``app.agents.tradingagents.graph.conditional_logic.ConditionalLogic``
   - ``app.agents.tradingagents.graph.propagation.Propagator``
   - ``app.agents.tradingagents.graph.signal_processing.SignalProcessor``
-  - ``app.agents.tradingagents.agents.*``                     — the agent fns
-  - ``app.agents.tradingagents.agents.utils.agent_utils``     — tool wrappers
+  - ``app.agents.tradingagents.agents.*``: the agent fns
+  - ``app.agents.tradingagents.agents.utils.agent_utils``: tool wrappers
 
 Usage::
 

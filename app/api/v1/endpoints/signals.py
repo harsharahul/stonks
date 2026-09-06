@@ -228,7 +228,7 @@ async def generate_and_broadcast_alerts_sync(
 async def get_source_track_records(db: Session = Depends(get_db)):
     """Verified track record per signal source (win rate over 5-day horizon).
 
-    Aggregated from `signal_outcomes` — every directional signal scored
+    Aggregated from `signal_outcomes`: every directional signal scored
     against its realized forward return. This is how users judge which
     sources are worth following.
     """

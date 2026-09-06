@@ -132,16 +132,16 @@ const WatchlistPage: React.FC = () => {
                   onClick={() => item.symbol && navigate(`/stocks/${item.symbol}`)}
                 >
                   <td className="px-4 py-3 font-mono font-semibold text-blue-600 dark:text-blue-400">
-                    {item.symbol || '—'}
+                    {item.symbol || '--'}
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell text-neutral-700 dark:text-neutral-300">
-                    {item.company_name || '—'}
+                    {item.company_name || '--'}
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell text-neutral-500 dark:text-neutral-400 max-w-[200px] truncate">
-                    {item.notes || <span className="italic text-neutral-300 dark:text-neutral-600">—</span>}
+                    {item.notes || <span className="italic text-neutral-300 dark:text-neutral-600">--</span>}
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell text-neutral-400 text-xs">
-                    {item.added_at ? new Date(item.added_at).toLocaleDateString() : '—'}
+                    {item.added_at ? new Date(item.added_at).toLocaleDateString() : '--'}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button

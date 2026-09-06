@@ -261,11 +261,11 @@ const Dashboard: React.FC = () => {
             {morningBrief.isLoading ? (
               <SkeletonLines lines={4} />
             ) : morningBrief.error ? (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Intelligence gathering in progress — check back tomorrow</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Intelligence gathering in progress: check back tomorrow</p>
             ) : !morningBrief.data?.stocks?.length ? (
               <div className="text-center py-6">
                 <Brain className="w-8 h-8 text-purple-300 dark:text-purple-600 mx-auto mb-2" />
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Intelligence gathering in progress — check back tomorrow</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">Intelligence gathering in progress: check back tomorrow</p>
               </div>
             ) : (
               <div className="space-y-3">

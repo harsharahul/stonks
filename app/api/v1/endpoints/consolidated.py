@@ -1,4 +1,4 @@
-"""Consolidated rankings — the "every brain, one list" view.
+"""Consolidated rankings: the "every brain, one list" view.
 
 Public and cached: signal consensus (track-record-weighted) + AI Desk
 verdicts + quant recommendations blended into one explainable stance per

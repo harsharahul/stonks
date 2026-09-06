@@ -120,7 +120,7 @@ const MetricRow: React.FC<{
                 )}
               </div>
               <span className="w-16 text-xs text-neutral-600 dark:text-neutral-400 font-mono shrink-0 text-right">
-                {value !== null ? config.format(value) : '—'}
+                {value !== null ? config.format(value) : '--'}
               </span>
             </div>
           );

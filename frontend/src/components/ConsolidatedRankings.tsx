@@ -1,5 +1,5 @@
 /**
- * Consolidated Rankings — every brain, one list.
+ * Consolidated Rankings: every brain, one list.
  * Signal consensus (track-record-weighted) + AI Desk verdict + quant
  * recommendation blended into a single explainable stance per ticker.
  */
@@ -61,7 +61,7 @@ function whyLine(r: Ranking): string {
 const ConsolidatedRankings: React.FC = () => {
   const { isAuthenticated } = useAuth();
   // The act-on-it loop: intelligence → one click → Alpaca (prefilled ticket,
-  // user always confirms — the platform never auto-trades from rankings).
+  // user always confirms: the platform never auto-trades from rankings).
   const [ticket, setTicket] = useState<{ symbol: string; side: 'buy' | 'sell' } | null>(null);
   const rankings = useQuery({
     queryKey: ['consolidated', 'rankings'],
@@ -84,7 +84,7 @@ const ConsolidatedRankings: React.FC = () => {
         <div className="h-24 bg-neutral-100 dark:bg-neutral-800 rounded-lg animate-pulse" />
       ) : rankings.error || !rankings.data?.rankings?.length ? (
         <p className="text-sm text-neutral-500 dark:text-neutral-400 py-4 text-center">
-          No consolidated view yet — voices appear as signals, desk runs, and recommendations land.
+          No consolidated view yet: voices appear as signals, desk runs, and recommendations land.
         </p>
       ) : (
         <div className="space-y-1.5">
@@ -104,7 +104,7 @@ const ConsolidatedRankings: React.FC = () => {
                 {r.stance}
               </span>
               <span className="text-xs tabular-nums text-neutral-500 dark:text-neutral-400 w-12 shrink-0">
-                {r.composite != null ? (r.composite > 0 ? '+' : '') + r.composite.toFixed(2) : '—'}
+                {r.composite != null ? (r.composite > 0 ? '+' : '') + r.composite.toFixed(2) : '--'}
               </span>
               <span className="text-[11px] text-neutral-400 dark:text-neutral-500 truncate flex-1">{whyLine(r)}</span>
               {isAuthenticated && r.composite != null && r.stance !== 'neutral' && (

@@ -1,5 +1,5 @@
 /**
- * Notification bell — clean, modern replacement for the floating Live Alerts
+ * Notification bell: clean, modern replacement for the floating Live Alerts
  * overlay. Lives in the nav bar: a bell icon with an unread badge and a tiny
  * connection-status dot; clicking opens a dropdown listing recent alerts.
  * Keeps the same WebSocket wiring (useAlertsWebSocket) and REST hydration.
@@ -58,7 +58,7 @@ const NotificationBell: React.FC = () => {
         const res = await apiClient.get('/signals/alerts?hours=24&limit=20');
         if (!cancelled && res.data?.alerts) setAlerts(res.data.alerts.slice(0, MAX_ALERTS));
       } catch {
-        /* alerts are non-critical chrome — stay silent */
+        /* alerts are non-critical chrome: stay silent */
       }
     })();
     return () => { cancelled = true; };

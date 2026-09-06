@@ -709,7 +709,7 @@ class TimeSeriesAnomalyDetector:
 
 # NOTE: an empty duplicate `class TimeSeriesAnomalyDetector` used to live here
 # and SHADOWED the real implementation above (Python keeps the last definition),
-# deleting detect_pattern_breaks/detect_volatility_anomalies from existence —
+# deleting detect_pattern_breaks/detect_volatility_anomalies from existence:
 # every /anomalies/patterns call 500'd. Do not redefine the class below.
 
 

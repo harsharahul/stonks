@@ -19,9 +19,9 @@ const BEAT_TASKS = [
   { name: 'Anomaly Detection', schedule: 'Every 15 min', sourceKey: null },
   { name: 'Earnings Calendar', schedule: 'Daily 07:00 UTC', sourceKey: 'Earnings Calendar' },
   { name: 'Stock Knowledge (LLM)', schedule: 'Daily 02:30 UTC', sourceKey: null },
-  { name: 'AI Desk — Universe Refresh', schedule: 'Sunday 00:00 UTC', sourceKey: null },
-  { name: 'AI Desk — Nightly Batch', schedule: 'Daily 07:15 UTC', sourceKey: null },
-  { name: 'AI Desk — Outcome Scoring', schedule: 'Daily 23:00 UTC', sourceKey: null },
+  { name: 'AI Desk: Universe Refresh', schedule: 'Sunday 00:00 UTC', sourceKey: null },
+  { name: 'AI Desk: Nightly Batch', schedule: 'Daily 07:15 UTC', sourceKey: null },
+  { name: 'AI Desk: Outcome Scoring', schedule: 'Daily 23:00 UTC', sourceKey: null },
 ];
 
 const StatusDot: React.FC<{ ok: boolean | undefined; loading?: boolean }> = ({ ok, loading }) => {
@@ -131,7 +131,7 @@ const SystemStatus: React.FC = () => {
         <KPICard
           icon={<Monitor className="w-4 h-4" />}
           label="Coverage"
-          status={trackingStats ? `${trackingStats.coverage.feature_coverage}` : '—'}
+          status={trackingStats ? `${trackingStats.coverage.feature_coverage}` : '--'}
           ok={trackingStats ? parseFloat(trackingStats.coverage.feature_coverage) > 50 : undefined}
           loading={stockStats.isLoading}
           detail={trackingStats ? `${trackingStats.active_stocks} active stocks` : undefined}
@@ -239,7 +239,7 @@ const SystemStatus: React.FC = () => {
                             {freshness != null ? `${Math.round(freshness)}m ago` : matchedSource.status}
                           </span>
                         ) : (
-                          <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
+                          <span className="text-xs text-neutral-400 dark:text-neutral-500">--</span>
                         )}
                       </td>
                     </tr>

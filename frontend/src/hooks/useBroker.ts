@@ -18,7 +18,7 @@ export function useBrokerAccount() {
     queryFn: () => brokerApi.getAccount(),
     staleTime: 60 * 1000,
     retry: (failureCount, error: any) => {
-      // 404 = not linked — a stable state, don't retry
+      // 404 = not linked: a stable state, don't retry
       if (error?.response?.status === 404) return false;
       return failureCount < 2;
     },

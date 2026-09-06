@@ -1,5 +1,5 @@
 """
-Watchlist model — per-user saved/favorited stocks
+Watchlist model: per-user saved/favorited stocks
 """
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -14,7 +14,7 @@ from app.models.base import Base
 class WatchlistItem(Base):
     """
     A single stock on a user's watchlist.
-    (user_id, stock_id) is unique — one entry per stock per user.
+    (user_id, stock_id) is unique: one entry per stock per user.
     """
     __tablename__ = "watchlist_items"
     __table_args__ = (

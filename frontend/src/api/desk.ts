@@ -19,7 +19,7 @@ const deskClient = axios.create({
 });
 
 // Attach the OIDC bearer token via the shared token bridge (NEVER read browser
-// storage directly — tokens live in the react-oidc-context user and renew there).
+// storage directly: tokens live in the react-oidc-context user and renew there).
 deskClient.interceptors.request.use((config) => {
   const token = getAccessToken();
   if (token && config.url && !config.url.startsWith('http')) {

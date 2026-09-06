@@ -89,7 +89,7 @@ async def validate_token(token: str) -> Dict[str, Any]:
     # Use the canonical issuer from the discovery document (preserves trailing slash)
     issuer = _jwks_cache.get("issuer", settings.OIDC_ISSUER_URL)
 
-    # C4: Always enforce audience validation — fall back to client_id if OIDC_AUDIENCE not set
+    # C4: Always enforce audience validation: fall back to client_id if OIDC_AUDIENCE not set
     expected_audience = settings.OIDC_AUDIENCE or settings.OIDC_CLIENT_ID
 
     try:

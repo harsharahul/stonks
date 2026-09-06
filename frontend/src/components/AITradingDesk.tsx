@@ -11,7 +11,7 @@ import TradeTicket from './broker/TradeTicket';
 import { cn, formatRelativeTime } from '../utils/format';
 
 // ---------------------------------------------------------------------------
-// Decision color palette — BUY=emerald, HOLD=neutral, SELL=red, etc.
+// Decision color palette: BUY=emerald, HOLD=neutral, SELL=red, etc.
 // ---------------------------------------------------------------------------
 
 type DecisionTone = 'buy' | 'hold' | 'sell';
@@ -40,7 +40,7 @@ const TONE_RING: Record<DecisionTone, string> = {
 // ---------------------------------------------------------------------------
 
 function pct(n: number | null | undefined): string {
-  if (n === null || n === undefined) return '—';
+  if (n === null || n === undefined) return '--';
   const sign = n >= 0 ? '+' : '';
   return `${sign}${(n * 100).toFixed(1)}%`;
 }

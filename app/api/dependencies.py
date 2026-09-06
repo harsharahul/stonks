@@ -68,7 +68,7 @@ async def get_optional_user(request: Request):
     """
     Try to resolve the current user from a Bearer token.
     Returns a User ORM object if authenticated, None otherwise.
-    Never raises — safe to use on public endpoints.
+    Never raises: safe to use on public endpoints.
     """
     from app.core.auth import validate_token, extract_user_info
     from app.core.database import SessionLocal
@@ -142,7 +142,7 @@ async def get_optional_user(request: Request):
 
 
 def is_oidc_configured() -> bool:
-    """C2: Raise on partial OIDC config — both must be set or both unset."""
+    """C2: Raise on partial OIDC config: both must be set or both unset."""
     issuer = bool(settings.OIDC_ISSUER_URL)
     client = bool(settings.OIDC_CLIENT_ID)
     if issuer != client:
@@ -153,7 +153,7 @@ def is_oidc_configured() -> bool:
 async def get_current_user(request: Request):
     """
     Require an authenticated user. Raises 401 if not authenticated.
-    When OIDC is not configured (local dev), raises 401 — callers that need
+    When OIDC is not configured (local dev), raises 401: callers that need
     graceful fallback should use get_optional_user instead.
     """
     user = await get_optional_user(request)

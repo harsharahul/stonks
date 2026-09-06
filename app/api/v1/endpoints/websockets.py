@@ -38,7 +38,7 @@ async def websocket_alerts(
     - alerts:global - System-wide alerts
     - alerts:{user_id} - User-specific alerts (requires valid token)
     """
-    # Per-user channels require a VALID token — the bare user_id query param is
+    # Per-user channels require a VALID token, the bare user_id query param is
     # never trusted on its own (it would let any client subscribe to any user's
     # alert stream). No token / invalid token ⇒ global channel only.
     resolved_user_id = None

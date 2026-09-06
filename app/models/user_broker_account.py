@@ -7,7 +7,7 @@ persisted, logged, or returned by the API after the initial link call.
 Safety posture (v1):
 - `paper` defaults TRUE; linking a live account requires an explicit flag
   at the API layer and live order placement re-confirms per order.
-- `auto_execute` defaults FALSE and is reserved for a future release —
+- `auto_execute` defaults FALSE and is reserved for a future release:
   v1 only places orders a user explicitly confirms in the UI.
 """
 from datetime import datetime
@@ -41,7 +41,7 @@ class UserBrokerAccount(Base):
     auto_execute: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    # Display-only hint, e.g. "PA3X...9F2" — never the full account number.
+    # Display-only hint, e.g. "PA3X...9F2", never the full account number.
     account_label: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
@@ -62,7 +62,7 @@ class UserBrokerAccount(Base):
         )
 
     def to_dict(self) -> Dict[str, Any]:
-        """API-safe representation — never includes credentials."""
+        """API-safe representation: never includes credentials."""
         return {
             "id": str(self.id),
             "provider": self.provider,

@@ -57,7 +57,7 @@ def verify_account(account: UserBrokerAccount) -> Optional[dict]:
     """Round-trip the credentials against Alpaca; return account info or None.
 
     Used at link time and for the /broker/account status endpoint. Never
-    raises on auth errors — returns None so callers can surface a clean
+    raises on auth errors: returns None so callers can surface a clean
     'invalid credentials' message without leaking SDK internals.
     """
     try:

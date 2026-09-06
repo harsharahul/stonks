@@ -21,7 +21,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   isLoading = false
 }) => {
   const formatValue = (val: number | null) => {
-    if (val === null || val === undefined) return '—';
+    if (val === null || val === undefined) return '--';
     
     switch (format) {
       case 'percent':

@@ -8,7 +8,7 @@ interface TradeTicketProps {
   symbol: string;
   open: boolean;
   onClose: () => void;
-  /** Provenance for the order ledger — e.g. desk decision id */
+  /** Provenance for the order ledger, e.g. desk decision id */
   source?: 'manual' | 'desk' | 'signal';
   sourceRef?: string;
   /** Optional initial side, e.g. from a desk BUY decision */
@@ -35,7 +35,7 @@ const TradeTicket: React.FC<TradeTicketProps> = ({
   const [stopLoss, setStopLoss] = useState<string>('');
   const [takeProfit, setTakeProfit] = useState<string>('');
   const [liveConfirmed, setLiveConfirmed] = useState(false);
-  // Idempotency ref: one per ticket-open, stable across submit retries — a
+  // Idempotency ref: one per ticket-open, stable across submit retries, a
   // timeout + retry replays the same order at the backend instead of
   // double-placing. Regenerated whenever the ticket reopens.
   const [clientRef, setClientRef] = useState<string>('');
@@ -157,7 +157,7 @@ const TradeTicket: React.FC<TradeTicketProps> = ({
                 {placed.filled_avg_price ? ` @ $${placed.filled_avg_price.toFixed(2)}` : ''}
               </p>
               {placeOrder.data && placeOrder.data.market_open === false && (
-                <p className="text-xs text-amber-600 mt-2">Market closed — order queues for next open.</p>
+                <p className="text-xs text-amber-600 mt-2">Market closed: order queues for next open.</p>
               )}
             </div>
           ) : (
@@ -301,7 +301,7 @@ const TradeTicket: React.FC<TradeTicketProps> = ({
 
               {placeOrder.isError && (
                 <p className="text-sm text-red-600">
-                  {(placeOrder.error as any)?.response?.data?.detail || 'Order failed — see order history.'}
+                  {(placeOrder.error as any)?.response?.data?.detail || 'Order failed: see order history.'}
                 </p>
               )}
 

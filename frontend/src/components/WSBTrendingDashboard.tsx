@@ -207,7 +207,7 @@ const WSBTrendingDashboard: React.FC = () => {
   const alertCount = alerts.data?.count ?? 0;
   const pipelineHealth = ingestion.data
     ? `${ingestion.data.operational_sources}/${ingestion.data.total_sources}`
-    : '—';
+    : '--';
 
   // ===========================================================================
   // RENDER
@@ -252,7 +252,7 @@ const WSBTrendingDashboard: React.FC = () => {
         />
         <PulseCard
           label="Market Sentiment"
-          value={overallSentiment ? formatNumber(overallSentiment.score, 2) : '—'}
+          value={overallSentiment ? formatNumber(overallSentiment.score, 2) : '--'}
           subtitle={overallSentiment?.label ?? 'Loading...'}
           icon={<Activity className="w-4 h-4" />}
           color={cn(
@@ -383,7 +383,7 @@ const WSBTrendingDashboard: React.FC = () => {
                                 {formatPercent(t.ret_5d, 1)}
                               </span>
                             ) : (
-                              <span className="text-neutral-400 dark:text-neutral-500 text-xs">—</span>
+                              <span className="text-neutral-400 dark:text-neutral-500 text-xs">--</span>
                             )}
                           </td>
                         </tr>
@@ -432,7 +432,7 @@ const WSBTrendingDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-green-600" />
-                {effectiveTicker ? `$${effectiveTicker} — 30-Day Trends` : 'Select a ticker'}
+                {effectiveTicker ? `$${effectiveTicker}: 30-Day Trends` : 'Select a ticker'}
               </h2>
               {effectiveTicker && (
                 <Link to={`/stocks/${effectiveTicker}`} className="text-xs text-blue-600 hover:underline">

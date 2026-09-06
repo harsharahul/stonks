@@ -41,7 +41,7 @@ const queryClient = new QueryClient({
 /** Route guard: redirect to / if user is not authenticated. */
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading, isOidcEnabled } = useAuth();
-  if (!isOidcEnabled) return <>{children}</>; // OIDC not configured — allow through
+  if (!isOidcEnabled) return <>{children}</>; // OIDC not configured: allow through
   if (isLoading) return null; // wait for OIDC to resolve
   if (!isAuthenticated) return <Navigate to="/" replace />;
   return <>{children}</>;
@@ -50,7 +50,7 @@ const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 /** Route guard: require admin role. */
 const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isAdmin, isLoading, isOidcEnabled } = useAuth();
-  if (!isOidcEnabled) return <>{children}</>; // OIDC not configured — allow through
+  if (!isOidcEnabled) return <>{children}</>; // OIDC not configured: allow through
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!isAdmin) return (
@@ -63,7 +63,7 @@ const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return <>{children}</>;
 };
 
-/** OIDC callback — handles the redirect from Authentik. */
+/** OIDC callback: handles the redirect from Authentik. */
 const OidcCallback: React.FC = () => {
   const { isLoading, isAuthenticated } = useAuth();
   if (isLoading) return <div className="flex items-center justify-center h-screen text-neutral-500">Completing sign-in...</div>;
@@ -71,7 +71,7 @@ const OidcCallback: React.FC = () => {
   return <Navigate to="/" replace />;
 };
 
-// Grouped navigation — mirrors the platform architecture: market data,
+// Grouped navigation: mirrors the platform architecture: market data,
 // the unified intelligence brain, the social layer, personal trading.
 interface NavLeaf { to: string; label: string; description: string }
 interface NavGroup { label: string; icon: React.ReactNode; match: (p: string) => boolean; children: NavLeaf[] }
