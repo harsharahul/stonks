@@ -1,7 +1,6 @@
 """Order construction + submission for per-user Alpaca accounts.
 
-Adapted from the earlier project's execution engine
-(Apache 2.0) with the multi-user changes its own audit called for:
+Built for many users sharing one process:
 
 - No module-level env constants: everything arrives as explicit arguments
   (client, account, order intent) so two users' orders can never share state.

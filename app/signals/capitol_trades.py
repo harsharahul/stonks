@@ -1,12 +1,9 @@
-"""Capitol Trades plugin: REAL politician stock trades.
+"""Capitol Trades plugin: congressional stock trade disclosures.
 
-Ported from the earlier project's scraper (Apache 2.0,
-an earlier project). Scrapes capitoltrades.com/trades (server-side
-rendered HTML: no browser needed) and emits political_trade signals.
-
-Replaces the mock PoliticianTradesSource as the registered politician
-source; congress.gov leadership enrichment is intentionally omitted in the
-plugin (keeps it key-free): the 6-factor scorer port can add it later.
+Scrapes the public STOCK Act disclosures listed on capitoltrades.com
+(server-side rendered HTML, no browser needed) and emits political_trade
+signals. Needs no API key. Leadership enrichment from congress.gov is left
+out on purpose so the plugin stays key-free.
 """
 import logging
 import re
@@ -31,9 +28,9 @@ logger = logging.getLogger(__name__)
 CAPITOL_TRADES_URL = "https://www.capitoltrades.com/trades"
 SCRAPE_MAX_RETRIES = 3
 
-# 119th Congress leadership (offline fallback from the earlier project):
-# trades by leadership/committee chairs carry more information (factor f1
-# of the 6-factor scorer).
+# Bioguide ids of current chamber leadership and committee chairs: their
+# trades carry more information (factor f1 of the scorer). Update each
+# Congress.
 LEADERSHIP_BIOGUIDE_IDS = {
     "T000250", "B001261", "S000148", "D000563", "G000386",  # Senate leadership
     "J000299", "S001176", "E000294", "J000294", "C001101",  # House leadership

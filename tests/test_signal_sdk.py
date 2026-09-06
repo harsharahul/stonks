@@ -36,6 +36,8 @@ class TestRegistry:
         assert "wsb_momentum" in sources
         assert "capitol_trades" in sources
         assert "public_figure_mentions" in sources
+        assert "board_seat_tracker" in sources
+        assert "fund_13f_tracker" in sources
 
     def test_register_is_idempotent(self):
         register_default_sources()
@@ -106,31 +108,23 @@ class TestCapitolTradesParsing:
         assert sell == -big_buy
 
 
-class TestPublicFigureMentions:
-    def test_decay_filters_stale_mentions(self):
-        from app.signals.public_figure_mentions import PublicFigureMentionsSource
+class TestSourceConfigLayers:
+    def test_env_config_merges_under_database_state(self, monkeypatch):
+        from app.core.config import settings
+        from app.tasks import signal_dispatch as sd
 
-        src = PublicFigureMentionsSource(
-            {"extra_mentions": {"ZZZZ": {
-                "name": "Stale Corp", "mention_date": "2020-01-01",
-                "statement": "old", "day1_return_pct": 10.0, "source_type": "truth_social",
-            }}}
-        )
-        tickers = [s.ticker for s in src._curated_mention_signals("2026-06-10")]
-        assert "ZZZZ" not in tickers
+        monkeypatch.setattr(settings, "SIGNAL_SOURCE_CONFIG", '{"fund_13f_tracker": {"fund": "Env Fund", "min_weight": 0.02}}')
 
-    def test_fresh_mention_emits_bullish(self):
-        from datetime import date, timedelta as td
-        from app.signals.public_figure_mentions import PublicFigureMentionsSource
+        class State:
+            config = {"min_weight": 0.05}
 
-        fresh = (date.today() - td(days=2)).isoformat()
-        src = PublicFigureMentionsSource(
-            {"extra_mentions": {"FRSH": {
-                "name": "Fresh Corp", "mention_date": fresh,
-                "statement": "new", "day1_return_pct": 8.0, "source_type": "truth_social",
-            }}}
-        )
-        sigs = [s for s in src._curated_mention_signals(date.today().isoformat()) if s.ticker == "FRSH"]
-        assert len(sigs) == 1
-        assert sigs[0].direction == "bullish"
-        assert sigs[0].confidence > 0.5
+        merged = sd.effective_source_config("fund_13f_tracker", State())
+        assert merged == {"fund": "Env Fund", "min_weight": 0.05}
+        assert sd.effective_source_config("board_seat_tracker", None) == {}
+
+    def test_invalid_env_config_is_ignored(self, monkeypatch):
+        from app.core.config import settings
+        from app.tasks import signal_dispatch as sd
+
+        monkeypatch.setattr(settings, "SIGNAL_SOURCE_CONFIG", "{not json")
+        assert sd.env_source_config() == {}

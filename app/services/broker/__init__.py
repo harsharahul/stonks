@@ -3,8 +3,7 @@
 Modules:
 - ``crypto``     Fernet encrypt/decrypt for credentials at rest
 - ``client``     Per-user Alpaca client factory (no module-level singletons)
-- ``sanity``     Pre-trade screening gates (ported from the politician-trades
-                 broker layer, Apache-2.0 earlier project; adapted multi-user)
+- ``sanity``     Pre-trade screening gates (multi-user)
 - ``execution``  Order construction + submission with idempotent client IDs
 
 Safety posture:

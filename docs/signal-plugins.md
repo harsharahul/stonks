@@ -18,9 +18,9 @@ rankings; sources with fewer than ten scored signals are treated as neutral.
 |---|---|
 | `app/signals/wsb_momentum.py` | Database-backed source reading the platform's own feature store; needs no keys |
 | `app/signals/capitol_trades.py` | External scraper with retries, rate-limit handling, and a documented size-to-strength mapping |
-| `app/signals/public_figure_mentions.py` | Curated event list with time decay plus a live news scanner |
-| `app/signals/board_seat_tracker.py` | Board-seat and advisory positioning around a tracked public figure |
-| `app/signals/fund_13f_tracker.py` | Quarterly 13F holdings of a tracked fund with filing-age decay |
+| `app/signals/public_figure_mentions.py` | Configured curated mentions with time decay plus a headline scan; the tracked figure comes from config |
+| `app/signals/board_seat_tracker.py` | Positioning for companies where a configured individual holds a board or advisory seat |
+| `app/signals/fund_13f_tracker.py` | A configured fund's quarterly 13F holdings with filing-age decay |
 
 ## The contract
 
@@ -94,6 +94,48 @@ unless re-emitted.
 five trading days, compares the close five days after the signal with the
 close on the signal day, and records a win when the move agreed with the
 signal's direction. Neutral signals are not scored.
+
+## Configuring a source
+
+Sources that track a specific person, fund, or list carry no names in
+code. Their configuration comes from two layers, key by key:
+
+1. `SIGNAL_SOURCE_CONFIG`, a JSON object keyed by source id, set in the
+   environment of the workers.
+2. The per-deployment config stored by the admin API,
+   `PUT /api/v1/admin/signal-sources/{source_id}/config` with a JSON object
+   body, which overrides the environment layer.
+
+A source whose `required_config` keys are missing is skipped and reported
+as `skipped_config` in the admin console. Example:
+
+```json
+{
+  "public_figure_mentions": {
+    "figure": "Example Person",
+    "keywords": ["Example Person"],
+    "watchlist": ["AAAA", "BBBB"],
+    "mentions": {
+      "AAAA": {"name": "Alpha Corp", "mention_date": "2026-09-01", "statement": "Named the company in a speech", "source_type": "speech"}
+    }
+  },
+  "board_seat_tracker": {
+    "person": "Example Person",
+    "positions": {"BBBB": {"name": "Beta Inc", "role": "board_of_directors", "joined": "2026-01-15", "weight": 0.3}}
+  },
+  "fund_13f_tracker": {
+    "fund": "Example Capital",
+    "cik": "0000000000",
+    "filing_date": "2026-08-14",
+    "holdings": {"CCCC": {"name": "Gamma Ltd", "weight": 0.12, "sector": "compute", "position_type": "SH"}}
+  }
+}
+```
+
+Each module's docstring lists its keys and how they map to strength and
+confidence. If you rename a source id, set `SIGNAL_SOURCE_RENAMES` to
+`{"old_id": "new_id"}` before running migrations so the existing signals,
+outcomes, and admin state follow the new id.
 
 ## Review criteria for plugin pull requests
 

@@ -324,6 +324,39 @@ async def list_signal_sources(
     return {"sources": sources, "builtin_track_records": builtin, "total": len(sources)}
 
 
+@router.put("/signal-sources/{source_id}/config")
+async def set_signal_source_config(
+    source_id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """Replace a signal plugin's per-deployment config (layered over SIGNAL_SOURCE_CONFIG)."""
+    import json as _json
+
+    from app.core.signal_framework import register_default_sources, signal_registry
+    from app.models.signal_source_state import SignalSourceState
+
+    register_default_sources()
+    if source_id not in signal_registry.list_available_sources():
+        raise HTTPException(status_code=404, detail=f"Unknown signal source '{source_id}'")
+    if not isinstance(body, dict) or len(_json.dumps(body)) > 65536:
+        raise HTTPException(status_code=422, detail="config must be a JSON object under 64 KiB")
+
+    state = db.query(SignalSourceState).filter_by(source_id=source_id).first()
+    if state is None:
+        source_cls = signal_registry._sources[source_id]
+        state = SignalSourceState(
+            source_id=source_id,
+            enabled=getattr(source_cls, "default_enabled", True),
+        )
+        db.add(state)
+    state.config = body
+    db.commit()
+    db.refresh(state)
+    return state.to_dict()
+
+
 @router.post("/signal-sources/{source_id}/toggle")
 async def toggle_signal_source(
     source_id: str,

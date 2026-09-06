@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     BROKER_CREDS_ENCRYPTION_KEY: Optional[str] = os.getenv("BROKER_CREDS_ENCRYPTION_KEY")
     # Global trading halt: when true, all order placement is rejected regardless of per-user settings.
     BROKER_TRADING_HALTED: bool = os.getenv("BROKER_TRADING_HALTED", "false").lower() == "true"
+
+    # Signal plugin configuration: JSON object mapping source id to that source's
+    # config (tracked figures, curated lists, keys). Per-deployment admin
+    # settings stored in the database override these values key by key.
+    SIGNAL_SOURCE_CONFIG: str = os.getenv("SIGNAL_SOURCE_CONFIG", "")
     
     # Application Configuration
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"

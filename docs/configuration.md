@@ -36,6 +36,8 @@ every integration degrades to "skipped" when its key is absent.
 | `POLYGON_API_KEY` | reserved for market data; prices currently come from yfinance |
 | `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USER_AGENT` | Reddit API application (script type); without it Reddit ingestion skips |
 | `SEC_CONTACT_EMAIL` | contact address declared to SEC EDGAR, as its fair-access policy requires |
+| `SIGNAL_SOURCE_CONFIG` | JSON object keyed by signal source id with that source's config (tracked figures, curated lists, keys); the admin console's per-source config overrides it key by key. See [signal-plugins.md](signal-plugins.md). |
+| `SIGNAL_SOURCE_RENAMES` | JSON object `{old_id: new_id}` applied once by the migration that generalized the tracked-figure sources; leave unset on a fresh install |
 
 ## Identity
 

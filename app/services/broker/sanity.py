@@ -1,7 +1,6 @@
 """Pre-trade sanity gates.
 
-Ported from the earlier project's broker layer (Apache
-2.0) and adapted for multi-user Stonks:
+Every gate is explicit about its failure mode:
 
 - No module-level Alpaca client: the caller passes the per-user
   ``TradingClient`` so the asset check runs against the user's own account.

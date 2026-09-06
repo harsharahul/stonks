@@ -6,6 +6,8 @@ All notable changes to Stonks are documented here, following
 ## [Unreleased]
 
 ### Added
+- Per-source plugin configuration from the environment (`SIGNAL_SOURCE_CONFIG`)
+  and from the admin API (`PUT /admin/signal-sources/{id}/config`).
 - Open-source release: AGPL-3.0 license, contribution guide, security policy,
   code of conduct, contributor license agreement, third-party notices,
   references, GitHub Actions CI publishing multi-architecture images to
@@ -18,6 +20,11 @@ All notable changes to Stonks are documented here, following
   under `scripts/` need a running database and are run by hand.
 
 ### Changed
+- The three tracked-figure signal sources are now generic and configurable:
+  `public_figure_mentions`, `board_seat_tracker`, and `fund_13f_tracker`
+  read who and what they track from `SIGNAL_SOURCE_CONFIG` or the admin
+  console instead of lists in code. Existing deployments carry their track
+  records across by setting `SIGNAL_SOURCE_RENAMES` before migrating.
 - One backend image (`Dockerfile.backend`) and one frontend image
   (`Dockerfile.frontend`); the separate API and worker Dockerfiles are gone.
 - Frontend image builds on Node 22.

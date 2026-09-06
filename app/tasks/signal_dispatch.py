@@ -15,6 +15,7 @@ lives in ``signal_source_states``.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
@@ -23,6 +24,7 @@ from celery import shared_task
 from sqlalchemy import select
 
 from app.core.database import SessionLocal
+from app.core.config import settings
 from app.core.signal_framework import (
     RawSignal,
     register_default_sources,
@@ -78,6 +80,26 @@ def _get_or_create_state(db, source_id: str, source_cls) -> SignalSourceState:
     return state
 
 
+def env_source_config() -> Dict[str, Dict]:
+    """Per-source config from ``SIGNAL_SOURCE_CONFIG`` (JSON object keyed by source id)."""
+    raw = settings.SIGNAL_SOURCE_CONFIG
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+    except ValueError as exc:
+        logger.error("SIGNAL_SOURCE_CONFIG is not valid JSON: %s", exc)
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def effective_source_config(source_id: str, state: Optional["SignalSourceState"]) -> Dict:
+    """Environment config as the base, database state layered on top."""
+    base = env_source_config().get(source_id) or {}
+    override = (state.config if state is not None else None) or {}
+    return {**base, **override}
+
+
 def _existing_fingerprints(db, source_id: str) -> set:
     """Fingerprints this plugin emitted inside the dedupe window."""
     cutoff = datetime.utcnow() - timedelta(hours=DEDUPE_WINDOW_HOURS)
@@ -93,7 +115,7 @@ def _existing_fingerprints(db, source_id: str) -> set:
 def _run_source(db, source_id: str, state: SignalSourceState) -> Dict:
     """Run one plugin end-to-end; returns a per-source result summary."""
     source_cls = signal_registry._sources[source_id]
-    source = source_cls({**(state.config or {}), "enabled": True})
+    source = source_cls({**effective_source_config(source_id, state), "enabled": True})
 
     config_errors = asyncio.run(source.validate_config())
     if config_errors:
