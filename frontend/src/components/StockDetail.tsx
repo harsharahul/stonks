@@ -288,7 +288,7 @@ const StockDetail: React.FC = () => {
       {/* WSB Sentiment Section */}
       <div className="card mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">🦍 WSB Sentiment Analysis</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">WSB Sentiment Analysis</h2>
           <div className="flex items-center space-x-2">
             <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium rounded-full">
               LIVE DATA

@@ -218,7 +218,7 @@ const WSBTrendingDashboard: React.FC = () => {
       {/* ====== HEADER ====== */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">🦍 WSB Terminal</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">WSB Terminal</h1>
           <span className="flex items-center gap-1.5 px-2.5 py-1 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-xs font-semibold rounded-full">
             <span className="w-2 h-2 rounded-full bg-red-500 pulse-green" />
             LIVE
@@ -315,7 +315,7 @@ const WSBTrendingDashboard: React.FC = () => {
               </div>
             ) : sortedTrending.length === 0 ? (
               <div className="text-center py-12">
-                <span className="text-4xl block mb-2">🦍</span>
+                <span className="text-4xl block mb-2">📊</span>
                 <p className="text-neutral-500 dark:text-neutral-400">No trending tickers found</p>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">WSB data will appear here when available</p>
               </div>
