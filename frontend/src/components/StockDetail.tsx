@@ -42,7 +42,7 @@ const StockDetail: React.FC = () => {
   const { toasts, showSuccess, showError: showErrorToast, removeToast } = useToast();
 
   // The star is the USER's watchlist (per-account), not the legacy global
-  // tracked-stocks list: the two were conflated before, so the star showed the wrong state.
+  // tracked-stocks list: the two used to be conflated and the star showed the wrong state.
   const { isAuthenticated } = useAuth();
   const watchlist = useQuery({
     queryKey: ['my-watchlist'],
