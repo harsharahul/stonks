@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="frontend/public/brand/stonks-logo-dark.svg">
+  <img src="frontend/public/brand/stonks-logo.svg" alt="Stonks" width="280">
+</picture>
+
 # Stonks
 
 **A self-hostable market terminal: open signals with public track records, an AI analyst desk that debates every stock, and paper trading through your own broker.**
@@ -64,7 +69,7 @@ ticket is prefilled and sent to your own Alpaca account, paper by default.
 
 Requirements: Docker with Compose. For the AI desk, an
 [Ollama](https://ollama.com) host with a model pulled (the default is
-`qwen3:14b`); everything else works without it.
+`gemma4:e4b`); everything else works without it.
 
 ```bash
 git clone https://github.com/harsharahul/stonks.git

@@ -189,9 +189,10 @@ const Navigation: React.FC<{ onOpenSearch: () => void }> = ({ onOpenSearch }) =>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-neutral-900 dark:text-white">Stonks</h1>
+            <Link to="/" className="flex items-center" aria-label="Stonks home">
+              <img src="/brand/stonks-logo.svg" alt="" className="h-7 w-auto dark:hidden" />
+              <img src="/brand/stonks-logo-dark.svg" alt="" className="h-7 w-auto hidden dark:block" />
+              <h1 className="sr-only">Stonks</h1>
             </Link>
           </div>
           {/* Desktop nav */}

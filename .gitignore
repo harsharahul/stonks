@@ -34,6 +34,10 @@ frontend.log
 
 # Screenshots & temp artifacts
 *.png
+!frontend/public/brand/*.png
+
+# Raw brand deliverables (the served copies live in frontend/public/brand)
+logos/
 
 # Browser automation output
 .playwright-mcp/
