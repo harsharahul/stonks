@@ -24,7 +24,7 @@ import StrategiesPage from './components/strategies/StrategiesPage';
 import StrategyDetailPage from './components/strategies/StrategyDetailPage';
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './hooks/useAuth';
-import { TrendingUp, Brain, Menu, X, Search, Shield, Briefcase, Users, ChevronDown } from 'lucide-react';
+import { Brain, Menu, X, Search, Shield, Briefcase, Users, ChevronDown } from 'lucide-react';
 import { cn } from './utils/format';
 
 // Create a client
