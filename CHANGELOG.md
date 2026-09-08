@@ -5,6 +5,14 @@ All notable changes to Stonks are documented here, following
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-08
+
+First public release, under the AGPL-3.0 license. The major version marks
+three changes that need attention when upgrading from 1.16.0: signal source
+identifiers for the tracked-figure plugins change (a migration carries the
+scored history across), the container images move to `ghcr.io/harsharahul`,
+and the Kubernetes manifests leave the source tree. See `docs/deployment.md`.
+
 ### Added
 - Database bootstrap on container start: waits for PostgreSQL, creates the
   schema on an empty database, migrates an existing one, and seeds a starter

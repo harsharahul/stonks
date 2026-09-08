@@ -11,7 +11,7 @@ and on every push to `main`:
 - `ghcr.io/harsharahul/stonks-frontend`: nginx serving the UI and proxying
   `/api/` to `stonks-api:8080`.
 
-Tags: `latest` for main, the semantic version for releases (`1.17.0`), and
+Tags: `latest` for main, the semantic version for releases (`2.0.0`), and
 the short commit sha.
 
 Build locally:
@@ -70,5 +70,5 @@ responsibility; every table lives in the one PostgreSQL database.
 ## Releases
 
 Releases are cut from `main` with a version tag that matches the `VERSION`
-file (`v1.17.0`). The release workflow verifies the tag, the changelog
+file (`v2.0.0`). The release workflow verifies the tag, the changelog
 entry, the tests, and the frontend build, and CI publishes the images.
