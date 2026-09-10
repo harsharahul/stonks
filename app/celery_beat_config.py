@@ -58,7 +58,7 @@ beat_schedule = {
     'cleanup-expired-signals': {
         'task': 'app.tasks.signal_generation.cleanup_expired_signals_task',
         'schedule': crontab(minute=0, hour='*/6'),  # Every 6 hours
-        'args': (7,),  # Remove signals older than 7 days
+        'args': (120,),  # Retain past the 90-day scoring window
         'options': {
             'expires': 1800,  # Task expires after 30 minutes
         }
@@ -173,6 +173,14 @@ beat_schedule = {
     'cleanup-old-etl-runs': {
         'task': 'app.tasks.post_ingest_hooks.cleanup_old_etl_runs',
         'schedule': crontab(hour=3, minute=15),
+        'options': {'expires': 1800},
+    },
+
+    # Price retention: delete daily bars older than 400 days, daily at 3:30 AM
+    # (keeps a full year for charts and scoring; bounds unbounded price growth)
+    'cleanup-old-prices': {
+        'task': 'app.tasks.price_ingestion.cleanup_old_prices',
+        'schedule': crontab(hour=3, minute=30),
         'options': {'expires': 1800},
     },
 
