@@ -5,6 +5,15 @@ All notable changes to Stonks are documented here, following
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-09-10
+
+### Fixed
+- Signal outcome scoring walks the whole pending set in pages instead of
+  one fixed batch of the oldest rows, so signals that cannot be priced yet no
+  longer block the ones behind them. Prices are read once per ticker per run,
+  and tickers outside the tracked stock list are backfilled from the market
+  data source so every directional signal earns a track record.
+
 ## [2.0.0] - 2026-09-08
 
 First public release, under the AGPL-3.0 license. The major version marks

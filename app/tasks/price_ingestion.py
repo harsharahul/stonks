@@ -2,6 +2,7 @@
 Price data ingestion tasks using Yahoo Finance and Alpha Vantage
 """
 
+import logging
 import time
 from datetime import datetime, timedelta, date
 from typing import List, Dict, Optional
@@ -10,10 +11,13 @@ from celery import shared_task
 import yfinance as yf
 import pandas as pd
 import requests
+from sqlalchemy import select
 
 from app.core.database import SessionLocal
 from app.models import Stock, Price, ETLJobRun
 from app.tasks.etl_helpers import get_or_create_etl_job
+
+logger = logging.getLogger(__name__)
 
 
 class PriceIngestionError(Exception):
@@ -422,3 +426,65 @@ def test_price_ingestion(self, test_symbols: List[str] = None) -> Dict:
 
     finally:
         db.close()
+
+
+def ensure_daily_prices(db, symbol: str, start: date, end: date) -> int:
+    """Backfill daily bars for ``symbol`` over [start, end] from Yahoo Finance.
+
+    Works for any symbol, tracked or not: rows are keyed by ``symbol`` and
+    ``timestamp`` and get a ``stock_id`` only when the symbol is in the
+    tracked stock list. Days that already have a row are left alone. Returns
+    the number of rows inserted; a failed fetch logs a warning and returns 0.
+    """
+    symbol = symbol.upper()
+    start_dt = datetime.combine(start, datetime.min.time())
+    end_dt = datetime.combine(end, datetime.max.time())
+    have = {
+        row[0].date()
+        for row in db.execute(
+            select(Price.timestamp).where(
+                Price.symbol == symbol,
+                Price.timestamp >= start_dt,
+                Price.timestamp <= end_dt,
+            )
+        )
+    }
+    try:
+        hist = yf.Ticker(symbol).history(start=start, end=end + timedelta(days=1))
+    except Exception as exc:
+        logger.warning("price backfill: market data fetch failed for %s: %s", symbol, exc)
+        return 0
+    if hist is None or hist.empty:
+        return 0
+
+    stock = db.query(Stock).filter(Stock.symbol == symbol).first()
+    inserted = 0
+    for timestamp, row in hist.iterrows():
+        ts = timestamp.to_pydatetime() if hasattr(timestamp, "to_pydatetime") else pd.to_datetime(timestamp).to_pydatetime()
+        if ts.date() in have or pd.isna(row.get("Close")):
+            continue
+        close_price = float(row["Close"])
+        def _num(key):
+            value = row.get(key)
+            return None if value is None or pd.isna(value) else Decimal(str(float(value)))
+        db.add(
+            Price(
+                symbol=symbol,
+                price=Decimal(str(close_price)),
+                timestamp=ts,
+                source="yfinance",
+                stock_id=stock.id if stock else None,
+                ts=ts,
+                open_price=_num("Open"),
+                high=_num("High"),
+                low=_num("Low"),
+                close=Decimal(str(close_price)),
+                volume=int(row["Volume"]) if not pd.isna(row.get("Volume")) else None,
+            )
+        )
+        have.add(ts.date())
+        inserted += 1
+    if inserted:
+        db.flush()
+        logger.info("price backfill: %s rows for %s (%s to %s)", inserted, symbol, start, end)
+    return inserted
