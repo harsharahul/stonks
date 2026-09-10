@@ -248,13 +248,18 @@ def daily_signal_generation_task(self) -> Dict:
 
 
 @shared_task(bind=True)
-def cleanup_expired_signals_task(self, days_old: int = 7) -> Dict:
+def cleanup_expired_signals_task(self, days_old: int = 120) -> Dict:
     """
-    Clean up old and expired signals to manage database size
-    
+    Clean up old signals to bound table growth.
+
+    Retention must stay longer than the signal outcome scoring window
+    (90 days) so a signal is never deleted before it can be scored. Outcomes
+    are durable regardless (signal_id is SET NULL on delete), so pruning an
+    old signal never loses its track record.
+
     Args:
-        days_old: Remove signals older than N days
-        
+        days_old: Remove signals older than N days (default 120)
+
     Returns:
         Dict with cleanup statistics
     """

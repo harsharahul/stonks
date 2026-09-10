@@ -488,3 +488,22 @@ def ensure_daily_prices(db, symbol: str, start: date, end: date) -> int:
         db.flush()
         logger.info("price backfill: %s rows for %s (%s to %s)", inserted, symbol, start, end)
     return inserted
+
+
+@shared_task(bind=True, queue="ingestion")
+def cleanup_old_prices(self, days_to_keep: int = 400) -> Dict:
+    """Delete daily price bars older than ``days_to_keep`` to bound growth.
+
+    The retention window stays well past the one-year price history charts and
+    the signal scoring lookback, so nothing in active use is removed.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=days_to_keep)
+    with SessionLocal() as db:
+        deleted = (
+            db.query(Price)
+            .filter(Price.timestamp < cutoff)
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+    logger.info("cleanup_old_prices: deleted %s rows older than %s", deleted, cutoff.date())
+    return {"status": "success", "deleted": deleted, "cutoff": cutoff.isoformat()}

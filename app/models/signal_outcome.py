@@ -23,8 +23,11 @@ class SignalOutcome(Base):
     id: Mapped[PG_UUID] = mapped_column(
         PG_UUID, primary_key=True, server_default=func.gen_random_uuid()
     )
-    signal_id: Mapped[PG_UUID] = mapped_column(
-        PG_UUID, ForeignKey("signals.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    # SET NULL, not CASCADE: an outcome is a durable track record and must
+    # outlive the signal it scored, which signal cleanup deletes after the
+    # scoring window. The columns below are denormalized for exactly this.
+    signal_id: Mapped[Optional[PG_UUID]] = mapped_column(
+        PG_UUID, ForeignKey("signals.id", ondelete="SET NULL"), nullable=True, unique=True, index=True
     )
 
     # Denormalized from the signal so aggregates survive signal cleanup

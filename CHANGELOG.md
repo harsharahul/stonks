@@ -8,6 +8,10 @@ All notable changes to Stonks are documented here, following
 ## [2.0.1] - 2026-09-10
 
 ### Fixed
+- Signal outcomes are durable: the outcome record now survives deletion of the
+  signal it scored (foreign key set null on delete, not cascade), and signal
+  cleanup retains signals past the scoring window instead of removing them
+  after seven days, so a track record is never lost to housekeeping.
 - Signal outcome scoring walks the whole pending set in pages instead of
   one fixed batch of the oldest rows, so signals that cannot be priced yet no
   longer block the ones behind them. Prices are read once per ticker per run,
