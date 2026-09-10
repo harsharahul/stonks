@@ -5,6 +5,15 @@ All notable changes to Stonks are documented here, following
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-09-10
+
+### Fixed
+- Backfilled prices are visible to scoring within the same run. The scorer
+  read prices through a fresh database session, so bars it had just written
+  for a previously unpriced ticker were not seen until a later run. It now
+  reads within the run's session, so a ticker backfilled from the market data
+  source is scored immediately.
+
 ## [2.0.1] - 2026-09-10
 
 ### Fixed
