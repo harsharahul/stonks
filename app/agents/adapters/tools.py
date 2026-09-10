@@ -87,13 +87,17 @@ def _stock_knowledge_excerpt(ticker: str, db) -> str:
 # Core stock data
 # ---------------------------------------------------------------------------
 
-def fetch_daily_bars(symbol: str, start: date, end: date) -> list:
+def fetch_daily_bars(symbol: str, start: date, end: date, db=None) -> list:
     """Daily OHLCV bars for `symbol` from the `prices` table.
 
     The Price model stores `symbol` + `timestamp` (DateTime) with OHLCV in
     `open_price`/`high`/`low`/`close`/`volume`; intraday snapshots may coexist
     with daily bars, so we keep the LAST row per calendar day that has a
     close. Returns a list of objects with .date/.open/.high/.low/.close/.volume.
+
+    Pass ``db`` to read within an existing session so rows just written (and
+    flushed) in that session are visible, for example bars a caller backfilled
+    moments earlier. Without it a fresh session is opened.
     """
     from dataclasses import dataclass as _dc
 
@@ -111,9 +115,9 @@ def fetch_daily_bars(symbol: str, start: date, end: date) -> list:
     start_dt = datetime.combine(start, datetime.min.time())
     end_dt = datetime.combine(end, datetime.max.time())
 
-    with SessionLocal() as db:
-        rows = (
-            db.execute(
+    def _read(session):
+        return (
+            session.execute(
                 select(Price)
                 .where(
                     Price.symbol == symbol.upper(),
@@ -125,6 +129,12 @@ def fetch_daily_bars(symbol: str, start: date, end: date) -> list:
             .scalars()
             .all()
         )
+
+    if db is not None:
+        rows = _read(db)
+    else:
+        with SessionLocal() as _db:
+            rows = _read(_db)
 
     by_day: dict = {}
     for r in rows:

@@ -252,8 +252,11 @@ def score_signal_outcomes_task(self) -> Dict:
     with SessionLocal() as db:
         job_run = get_or_create_etl_job(db, self.request.id, "signal_outcome_scoring", {"task_id": self.request.id})
         try:
+            # Read within the task's session so bars just backfilled (and
+            # flushed) in this session are visible on the re-read.
+            session_bars = lambda ticker, start, end: fetch_daily_bars(ticker, start, end, db=db)
             cache = BarCache(
-                fetch_daily_bars,
+                session_bars,
                 backfill=lambda ticker, start, end: ensure_daily_prices(db, ticker, start, end),
                 max_backfills=MAX_BACKFILLS_PER_RUN,
             )
