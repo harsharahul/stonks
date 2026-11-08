@@ -10,3 +10,4 @@ from app.signals import capitol_trades  # noqa: F401
 from app.signals import public_figure_mentions  # noqa: F401
 from app.signals import board_seat_tracker  # noqa: F401
 from app.signals import fund_13f_tracker  # noqa: F401
+from app.signals import fda_device_clearances  # noqa: F401

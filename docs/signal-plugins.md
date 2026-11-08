@@ -21,6 +21,7 @@ rankings; sources with fewer than ten scored signals are treated as neutral.
 | `app/signals/public_figure_mentions.py` | Configured curated mentions with time decay plus a headline scan; the tracked figure comes from config |
 | `app/signals/board_seat_tracker.py` | Positioning for companies where a configured individual holds a board or advisory seat |
 | `app/signals/fund_13f_tracker.py` | A configured fund's quarterly 13F holdings with filing-age decay |
+| `app/signals/fda_device_clearances.py` | Small-cap FDA 510(k) device clearances from press releases and openFDA, graded by sales growth, cash runway, and share dilution from SEC filings; needs no keys |
 
 ## The contract
 

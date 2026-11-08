@@ -5,6 +5,17 @@ All notable changes to Stonks are documented here, following
 
 ## [Unreleased]
 
+### Added
+- `fda_device_clearances` signal source: emits a `news_catalyst` signal when a
+  listed small-cap company receives an FDA 510(k) device clearance, found in
+  company press releases (Google News RSS) and the openFDA 510(k) dataset.
+  Each company is graded from its SEC filings (year-over-year revenue growth,
+  quarters of cash at the current loss rate, one-year share dilution): strong
+  companies emit bullish, companies short of cash or heavily diluting emit
+  bearish, and incomplete filings emit neutral. Clearances are matched to a
+  ticker only by exact company name or an explicit exchange tag. Needs no API
+  key; size bounds, lookback windows, and a repeat window are configurable.
+
 ### Security
 - Dependency updates that clear the CI audits: aiohttp 3.14.5, black 26.10.1,
   and follow-redirects 1.16.3 (through axios 1.21), plus patch and minor
