@@ -207,3 +207,36 @@ class TestIterPendingSignals:
     def test_empty(self):
         db = self._FakeDB([[]])
         assert list(iter_pending_signals(db, horizon_cutoff=datetime.now(timezone.utc), age_floor=datetime.now(timezone.utc), page_size=3)) == []
+
+
+class TestBackfillSameSessionVisibility:
+    """Backfilled bars must be visible to the re-read within the same run.
+
+    Regression: the scorer re-read prices through a helper that opened its own
+    database session, so rows the backfill had only flushed (not committed) in
+    the run's session were invisible, and backfilled tickers scored a run late.
+    The cache must re-read through the same fetch the backfill fed, not a fresh
+    one.
+    """
+
+    def test_backfilled_bars_score_in_the_same_run(self):
+        committed = {}   # what a fresh session would see: nothing yet
+        flushed = {}     # what the run's session sees after a flush
+
+        def session_fetch(ticker, start, end):
+            return [b for b in flushed.get(ticker, []) if start <= b.date <= end]
+
+        def backfill(ticker, start, end):
+            rows = _daily(date(2026, 8, 3), [100 + i for i in range(20)])
+            flushed[ticker] = [_Bar(d, c) for d, c in rows]  # flushed, not committed
+            return len(flushed[ticker])
+
+        cache = BarCache(session_fetch, backfill=backfill, max_backfills=5)
+        sig = _Sig("s", "LMT", "bullish", datetime(2026, 8, 3, tzinfo=timezone.utc),
+                   model_version="plugin:fund_13f_tracker")
+        sink = []
+        stats = score_signals([sig], cache, sink.append, horizon_days=5)
+
+        assert stats["scored"] == 1
+        assert sink[0].source == "fund_13f_tracker"
+        assert committed == {}  # proves scoring did not depend on a committed/fresh read
