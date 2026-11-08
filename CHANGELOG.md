@@ -5,6 +5,17 @@ All notable changes to Stonks are documented here, following
 
 ## [Unreleased]
 
+### Security
+- Dependency updates that clear the CI audits: aiohttp 3.14.5, black 26.10.1,
+  and follow-redirects 1.16.3 (through axios 1.21), plus patch and minor
+  updates across the backend, frontend, and GitHub Actions. Major upgrades
+  that need code changes (React 19, React Router 7, TanStack Query 5,
+  Tailwind 4, Vite 8, the langchain / langgraph 1.x line, OpenAI SDK 2,
+  redis-py 8, SQLAlchemy 2.1) are left for their own pull requests.
+- pip-audit ignores PYSEC-2026-4298 (python-jose HMAC key confusion, no fixed
+  release): token verification only accepts RS256 and ES256, so the HS256
+  forgery path is not reachable.
+
 ## [2.0.2] - 2026-09-10
 
 ### Fixed
